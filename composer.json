@@ -1,0 +1,37 @@
+{
+    "name": "phalcon/scribe",
+    "description": "API documentation generator for Zephir and PHP sources",
+    "type": "library",
+    "license": "BSD-3-Clause",
+    "keywords": ["phalcon", "documentation", "api", "zephir", "generator"],
+    "require": {
+        "php": "^8.1"
+    },
+    "require-dev": {
+        "phalcon/zephir": "dev-development",
+        "phpstan/phpstan": "^2",
+        "phpunit/phpunit": "^10.5",
+        "squizlabs/php_codesniffer": "^3 || ^4"
+    },
+    "suggest": {
+        "phalcon/zephir": "Required by ZephirReader to parse .zep sources"
+    },
+    "autoload": {
+        "psr-4": { "Phalcon\\Scribe\\": "src/" }
+    },
+    "autoload-dev": {
+        "psr-4": { "Phalcon\\Scribe\\Tests\\": "tests/" }
+    },
+    "bin": ["bin/scribe"],
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "scripts": {
+        "analyze": "phpstan analyse -c resources/phpstan.neon",
+        "cs": "phpcs --standard=resources/phpcs.xml",
+        "cs-fix": "phpcbf --standard=resources/phpcs.xml",
+        "test": "phpunit -c resources/phpunit.xml.dist"
+    }
+}

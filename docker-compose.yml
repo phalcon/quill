@@ -1,0 +1,34 @@
+services:
+  scribe-8.1:
+    build:
+      context: .
+      dockerfile: resources/docker/Dockerfile
+      args:
+        PHP_VERSION: "8.1"
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: scribe-8.1
+    hostname: scribe-8.1
+    working_dir: /srv
+    volumes:
+      - .:/srv
+      # Read-only so the reader and the byte-for-byte gate can reach cphalcon's
+      # .zep sources without copying them in.
+      - ../cphalcon:/cphalcon:ro
+    command: tail -f /dev/null
+
+  scribe-8.5:
+    build:
+      context: .
+      dockerfile: resources/docker/Dockerfile
+      args:
+        PHP_VERSION: "8.5"
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: scribe-8.5
+    hostname: scribe-8.5
+    working_dir: /srv
+    volumes:
+      - .:/srv
+      - ../cphalcon:/cphalcon:ro
+    command: tail -f /dev/null

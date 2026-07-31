@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<ruleset name="Scribe">
+    <description>Scribe Coding Standards (PSR-12)</description>
+    <arg value="-colors"/>
+    <arg name="extensions" value="php"/>
+    <rule ref="PSR12"/>
+    <file>../bin</file>
+    <file>../src</file>
+    <file>../tests</file>
+    <exclude-pattern>*/tests/_baseline/*</exclude-pattern>
+    <exclude-pattern>*/tests/_output/*</exclude-pattern>
+</ruleset>

@@ -1,0 +1,4 @@
+/vendor/
+/tests/_baseline/
+/tests/_output/
+composer.lock
