@@ -15,21 +15,20 @@ namespace Phalcon\Scribe\Formatter;
 
 use Phalcon\Scribe\Config;
 use Phalcon\Scribe\Contracts\Formatter;
+use Phalcon\Scribe\Formatter\Markdown\Html;
+use Phalcon\Scribe\Formatter\Markdown\Naming;
+use Phalcon\Scribe\Formatter\Markdown\Signature;
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\Keyword;
-use Phalcon\Scribe\Model\MethodDefinition;
 use Phalcon\Scribe\Model\MethodDefinitionCollection;
-use Phalcon\Scribe\Model\ParameterDefinitionCollection;
 use Phalcon\Scribe\Model\Registry;
 
 use function array_keys;
 use function array_map;
 use function count;
 use function explode;
-use function htmlspecialchars;
 use function implode;
 use function ksort;
-use function preg_replace;
 use function sort;
 use function str_repeat;
 use function str_replace;
@@ -39,9 +38,6 @@ use function strtolower;
 use function trim;
 use function ucfirst;
 
-use const DIRECTORY_SEPARATOR;
-use const ENT_QUOTES;
-use const ENT_SUBSTITUTE;
 use const PHP_EOL;
 
 /**
@@ -49,11 +45,24 @@ use const PHP_EOL;
  *
  * A direct port of the emit and render half of cphalcon's
  * bin/generate-api-docs.php. Rendering quirks are reproduced rather than
- * cleaned up - the byte-for-byte gate depends on it, and improvements land
- * once that gate is green.
+ * cleaned up - the byte-for-byte comparison against that script depends on it.
+ *
+ * Naming, escaping and signature rendering live in the Markdown namespace;
+ * what stays here is page assembly and the section layout.
  */
 final class MarkdownFormatter implements Formatter
 {
+    private readonly Html $html;
+    private readonly Naming $naming;
+    private readonly Signature $signature;
+
+    public function __construct()
+    {
+        $this->html      = new Html();
+        $this->naming    = new Naming();
+        $this->signature = new Signature($this->html);
+    }
+
     /**
      * @return array<string, string>
      */
@@ -131,7 +140,7 @@ final class MarkdownFormatter implements Formatter
             $css   = 'final';
         }
 
-        $output = "\n\n## " . $this->title($class) . "\n\n"
+        $output = "\n\n## " . $this->naming->title($class) . "\n\n"
             . "<span class=\"badge badge--{$css}\">{$badge}</span>\n"
             . "[:material-github: Source on GitHub]"
             . '(' . $config->sourceUrl($class->location->relPath) . ')'
@@ -161,33 +170,19 @@ final class MarkdownFormatter implements Formatter
         $output = "\n### Constants\n\n<div class=\"api-list\">\n";
         foreach ($class->members->constants as $constant) {
             $output .= "<div class=\"api-item\">\n"
-                . '<code class="ret">' . $this->escape($constant->varType) . "</code>\n"
-                . '<code class="sig"><span class="sc">' . $this->escape($constant->name)
-                . '</span>' . $this->htmlDefault($constant->default) . "</code>\n";
+                . '<code class="ret">' . $this->html->escape($constant->varType) . "</code>\n"
+                . '<code class="sig"><span class="sc">' . $this->html->escape($constant->name)
+                . '</span>' . $this->html->default($constant->default) . "</code>\n";
 
             if ($constant->description !== '') {
                 $output .= '<span class="desc">'
-                    . $this->inlineCode($constant->description) . "</span>\n";
+                    . $this->html->inlineCode($constant->description) . "</span>\n";
             }
 
             $output .= "</div>\n";
         }
 
         return $output . "</div>\n";
-    }
-
-    /**
-     * The mkdocs heading anchor. An output concern, so it is derived here
-     * rather than carried on the model.
-     */
-    private function anchor(ClassDefinition $class): string
-    {
-        return strtolower((string) preg_replace('/[^\w\s-]/', '', $this->title($class)));
-    }
-
-    private function escape(string $text): string
-    {
-        return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE);
     }
 
     /**
@@ -205,8 +200,8 @@ final class MarkdownFormatter implements Formatter
             return "`{$display}`";
         }
 
-        $href       = '#' . $this->anchor($target);
-        $targetPage = $this->pageKey($target, $config);
+        $href       = '#' . $this->naming->anchor($target);
+        $targetPage = $this->naming->pageKey($target, $config);
         if ($targetPage !== $currentPage) {
             $href = $targetPage . '.md' . $href;
         }
@@ -214,122 +209,10 @@ final class MarkdownFormatter implements Formatter
         return "[`{$display}`]({$href})";
     }
 
-    /**
-     * Default-value expression as a muted highlight span, or empty.
-     */
-    private function htmlDefault(?string $default): string
-    {
-        if ($default === null) {
-            return '';
-        }
-
-        return '<span class="sm"> = ' . $this->escape($default) . '</span>';
-    }
-
-    /**
-     * @param ParameterDefinitionCollection $parameters
-     *
-     * @return list<string> one HTML-rendered string per parameter
-     */
-    private function htmlParams(ParameterDefinitionCollection $parameters): array
-    {
-        $rendered = [];
-        foreach ($parameters as $parameter) {
-            $rendered[] = '<span class="st">' . $this->escape($parameter->type) . '</span>'
-                . ' <span class="sv">$' . $this->escape($parameter->name) . '</span>'
-                . $this->htmlDefault($parameter->default);
-        }
-
-        return $rendered;
-    }
-
-    /**
-     * Page key => the FQCNs on it, keys sorted and FQCNs sorted within each.
-     *
-     * Which file a class lands in is a Markdown decision, so the grouping
-     * lives here rather than on the registry.
-     *
-     * @return array<string, list<string>>
-     */
-    private function pages(Registry $registry, Config $config): array
-    {
-        $pages = [];
-        foreach ($registry->all() as $fqcn => $class) {
-            $pages[$this->pageKey($class, $config)][] = $fqcn;
-        }
-
-        ksort($pages);
-
-        foreach ($pages as $page => $fqcns) {
-            sort($fqcns);
-            $pages[$page] = $fqcns;
-        }
-
-        return $pages;
-    }
-
-    private function pageKey(ClassDefinition $class, Config $config): string
-    {
-        $segments = explode(DIRECTORY_SEPARATOR, $class->location->relPath);
-        $key      = str_replace('.' . $config->extension(), '', $segments[0]);
-
-        return 'phalcon_' . strtolower($key);
-    }
-
-    /**
-     * The heading text: the FQCN without the vendor root, which the page's
-     * own notice already states.
-     */
-    private function title(ClassDefinition $class): string
-    {
-        return (string) preg_replace('/^Phalcon\\\\/', '', $class->location->fqcn);
-    }
-
     private function indexLine(string $page): string
     {
         return '- [Phalcon ' . ucfirst(str_replace('phalcon_', '', $page)) . ']'
             . '(' . $page . '.md)' . PHP_EOL;
-    }
-
-    /**
-     * Escaped text with markdown backtick spans converted to <code>.
-     */
-    private function inlineCode(string $text): string
-    {
-        return (string) preg_replace('/`([^`]+)`/', '<code>$1</code>', $this->escape($text));
-    }
-
-    /**
-     * Signature for the summary rows as HTML with highlight spans. With two or
-     * more parameters each is wrapped in a .prm span which the CSS renders as
-     * its own indented line; the markup stays on one line so the markdown
-     * pipeline cannot disturb it.
-     */
-    private function inlineSignature(MethodDefinition $method): string
-    {
-        $name   = '<span class="sf">' . $this->escape($method->name) . '</span>';
-        $params = $this->htmlParams($method->parameters);
-
-        if (count($method->parameters) < 2) {
-            $inline = implode(', ', $params);
-            $inline = $inline !== '' ? '( ' . $inline . ' )' : '()';
-
-            return $name . $inline;
-        }
-
-        $lines = '';
-        $last  = count($params) - 1;
-        foreach ($params as $index => $param) {
-            $comma  = $index < $last ? ',' : '';
-            $lines .= '<span class="prm">' . $param . $comma . '</span>';
-        }
-
-        return $name . '(' . $lines . ')';
-    }
-
-    private function methodAnchor(ClassDefinition $class, string $methodName): string
-    {
-        return $this->anchor($class) . "-" . strtolower($methodName);
     }
 
     private function methodDetails(ClassDefinition $class): string
@@ -351,8 +234,8 @@ final class MarkdownFormatter implements Formatter
             $output .= "\n<div class=\"api-group\">{$label} · {$count}</div>\n";
 
             foreach ($groups[$group] as $method) {
-                $anchor    = $this->methodAnchor($class, $method->name);
-                $signature = implode("\n", $this->signatureLines($method));
+                $anchor    = $this->naming->methodAnchor($class, $method->name);
+                $signature = implode("\n", $this->signature->lines($method));
 
                 $output .= "\n#### `{$method->name}()` { #{$anchor} }\n\n"
                     . "```php\n{$signature}\n```\n";
@@ -387,6 +270,31 @@ final class MarkdownFormatter implements Formatter
         ];
     }
 
+    /**
+     * Page key => the FQCNs on it, keys sorted and FQCNs sorted within each.
+     *
+     * Which file a class lands in is a Markdown decision, so the grouping
+     * lives here rather than on the registry.
+     *
+     * @return array<string, list<string>>
+     */
+    private function pages(Registry $registry, Config $config): array
+    {
+        $pages = [];
+        foreach ($registry->all() as $fqcn => $class) {
+            $pages[$this->naming->pageKey($class, $config)][] = $fqcn;
+        }
+
+        ksort($pages);
+
+        foreach ($pages as $page => $fqcns) {
+            sort($fqcns);
+            $pages[$page] = $fqcns;
+        }
+
+        return $pages;
+    }
+
     private function properties(ClassDefinition $class): string
     {
         $visible = $class->members->properties->withoutPrivate();
@@ -400,66 +308,19 @@ final class MarkdownFormatter implements Formatter
 
             $output .= "<div class=\"api-item\">\n"
                 . "<code class=\"vis vis-{$visibility}\">{$visibility}</code>\n"
-                . '<code class="ret">' . $this->escape($property->varType) . "</code>\n"
-                . '<code class="sig"><span class="sv">$' . $this->escape($property->name)
-                . '</span>' . $this->htmlDefault($property->default) . "</code>\n";
+                . '<code class="ret">' . $this->html->escape($property->varType) . "</code>\n"
+                . '<code class="sig"><span class="sv">$' . $this->html->escape($property->name)
+                . '</span>' . $this->html->default($property->default) . "</code>\n";
 
             if ($property->description !== '') {
                 $output .= '<span class="desc">'
-                    . $this->inlineCode($property->description) . "</span>\n";
+                    . $this->html->inlineCode($property->description) . "</span>\n";
             }
 
             $output .= "</div>\n";
         }
 
         return $output . "</div>\n";
-    }
-
-    /**
-     * @param ParameterDefinitionCollection $parameters
-     *
-     * @return list<string> one rendered string per parameter
-     */
-    private function renderParams(ParameterDefinitionCollection $parameters): array
-    {
-        $rendered = [];
-        foreach ($parameters as $parameter) {
-            $param = $parameter->type . ' $' . $parameter->name;
-            if ($parameter->default !== null) {
-                $param .= ' = ' . $parameter->default;
-            }
-
-            $rendered[] = $param;
-        }
-
-        return $rendered;
-    }
-
-    /**
-     * @return list<string> lines of the fenced signature block
-     */
-    private function signatureLines(MethodDefinition $method): array
-    {
-        $prefix = implode(' ', $method->modifiers) . ' function ' . $method->name;
-        $suffix = ($method->returnType !== null ? ': ' . $method->returnType : '') . ';';
-        $params = $this->renderParams($method->parameters);
-
-        if (count($params) < 2) {
-            $inline = implode(', ', $params);
-            $inline = $inline !== '' ? '( ' . $inline . ' )' : '()';
-
-            return [$prefix . $inline . $suffix];
-        }
-
-        $lines = [$prefix . '('];
-        foreach ($params as $index => $param) {
-            $comma   = $index < count($params) - 1 ? ',' : '';
-            $lines[] = '    ' . $param . $comma;
-        }
-
-        $lines[] = ')' . $suffix;
-
-        return $lines;
     }
 
     private function summary(ClassDefinition $class): string
@@ -473,22 +334,22 @@ final class MarkdownFormatter implements Formatter
 
         foreach (['public', 'protected'] as $group) {
             foreach ($groups[$group] as $method) {
-                $anchor = $this->methodAnchor($class, $method->name);
-                $sig    = $this->inlineSignature($method);
+                $anchor = $this->naming->methodAnchor($class, $method->name);
 
                 $output .= "<a class=\"api-item\" href=\"#{$anchor}\">\n"
                     . "<code class=\"vis vis-{$group}\">{$group}</code>\n";
 
                 if ($method->returnType !== null) {
-                    $output .= '<code class="ret">' . $this->escape($method->returnType) . "</code>\n";
+                    $output .= '<code class="ret">'
+                        . $this->html->escape($method->returnType) . "</code>\n";
                 }
 
-                $output .= "<code class=\"sig\">{$sig}</code>\n";
+                $output .= '<code class="sig">' . $this->signature->inline($method) . "</code>\n";
 
                 $line = $this->summaryLine($method->description);
                 if ($line !== '') {
                     $output .= '<span class="desc">'
-                        . $this->inlineCode($line) . "</span>\n";
+                        . $this->html->inlineCode($line) . "</span>\n";
                 }
 
                 $output .= "</a>\n";
@@ -520,7 +381,7 @@ final class MarkdownFormatter implements Formatter
 
     private function tree(ClassDefinition $class, Registry $registry, Config $config): string
     {
-        $currentPage = $this->pageKey($class, $config);
+        $currentPage = $this->naming->pageKey($class, $config);
         $level       = 0;
         $lines       = [];
 
@@ -586,7 +447,7 @@ final class MarkdownFormatter implements Formatter
 
         sort($users);
 
-        $currentPage = $this->pageKey($class, $config);
+        $currentPage = $this->naming->pageKey($class, $config);
 
         $links = array_map(
             fn (string $fqcn): string => $this->fqcnLink($fqcn, $fqcn, $registry, $config, $currentPage),
