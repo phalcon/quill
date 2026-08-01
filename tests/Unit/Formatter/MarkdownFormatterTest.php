@@ -17,9 +17,12 @@ use Phalcon\Scribe\Config;
 use Phalcon\Scribe\Formatter\MarkdownFormatter;
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\ConstantDefinition;
-use Phalcon\Scribe\Model\Structure;
+use Phalcon\Scribe\Model\ConstantDefinitionCollection;
+use Phalcon\Scribe\Model\MethodDefinitionCollection;
 use Phalcon\Scribe\Model\PropertyDefinition;
+use Phalcon\Scribe\Model\PropertyDefinitionCollection;
 use Phalcon\Scribe\Model\Registry;
+use Phalcon\Scribe\Model\Structure;
 use PHPUnit\Framework\TestCase;
 
 use function substr_count;
@@ -134,9 +137,9 @@ final class MarkdownFormatterTest extends TestCase
             [],
             [],
             ['Child'],
-            [],
-            [],
-            []
+            new ConstantDefinitionCollection(),
+            new PropertyDefinitionCollection(),
+            new MethodDefinitionCollection()
         );
 
         $child = new ClassDefinition(
@@ -153,12 +156,14 @@ final class MarkdownFormatterTest extends TestCase
             ['Base'],
             [],
             [],
-            [new ConstantDefinition('LIMIT', '10', 'int', 'How many.')],
-            [
+            new ConstantDefinitionCollection([
+                new ConstantDefinition('LIMIT', '10', 'int', 'How many.'),
+            ]),
+            new PropertyDefinitionCollection([
                 new PropertyDefinition('hidden', 'private', null, 'mixed', 'Hidden.', []),
                 new PropertyDefinition('store', 'protected', '[]', 'array', 'The store.', []),
-            ],
-            []
+            ]),
+            new MethodDefinitionCollection()
         );
 
         return new Registry([

@@ -17,7 +17,7 @@ namespace Phalcon\Scribe\Model;
  * One class constant. `$varType` comes from the `@var` tag when present, and
  * otherwise from the default value's type.
  */
-final class ConstantDefinition
+final class ConstantDefinition implements Definition
 {
     public function __construct(
         public readonly string $name,

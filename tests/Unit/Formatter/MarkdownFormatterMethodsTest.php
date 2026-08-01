@@ -16,10 +16,14 @@ namespace Phalcon\Scribe\Tests\Unit\Formatter;
 use Phalcon\Scribe\Config;
 use Phalcon\Scribe\Formatter\MarkdownFormatter;
 use Phalcon\Scribe\Model\ClassDefinition;
-use Phalcon\Scribe\Model\Structure;
+use Phalcon\Scribe\Model\ConstantDefinitionCollection;
 use Phalcon\Scribe\Model\MethodDefinition;
+use Phalcon\Scribe\Model\MethodDefinitionCollection;
 use Phalcon\Scribe\Model\ParameterDefinition;
+use Phalcon\Scribe\Model\ParameterDefinitionCollection;
+use Phalcon\Scribe\Model\PropertyDefinitionCollection;
 use Phalcon\Scribe\Model\Registry;
+use Phalcon\Scribe\Model\Structure;
 use PHPUnit\Framework\TestCase;
 
 use function strpos;
@@ -165,9 +169,9 @@ final class MarkdownFormatterMethodsTest extends TestCase
             [],
             [],
             [],
-            [],
-            [],
-            $methods
+            new ConstantDefinitionCollection(),
+            new PropertyDefinitionCollection(),
+            new MethodDefinitionCollection($methods)
         );
 
         return new Registry(['Phalcon\\Sample\\Child' => $child]);
@@ -189,7 +193,7 @@ final class MarkdownFormatterMethodsTest extends TestCase
             $name,
             $modifiers,
             $visibility,
-            $parameters,
+            new ParameterDefinitionCollection($parameters),
             $returnType,
             'Does a thing.'
         );

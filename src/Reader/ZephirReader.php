@@ -18,10 +18,14 @@ use Phalcon\Scribe\Config;
 use Phalcon\Scribe\Contracts\Reader;
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\ConstantDefinition;
+use Phalcon\Scribe\Model\ConstantDefinitionCollection;
 use Phalcon\Scribe\Model\Structure;
 use Phalcon\Scribe\Model\MethodDefinition;
+use Phalcon\Scribe\Model\MethodDefinitionCollection;
 use Phalcon\Scribe\Model\ParameterDefinition;
+use Phalcon\Scribe\Model\ParameterDefinitionCollection;
 use Phalcon\Scribe\Model\PropertyDefinition;
+use Phalcon\Scribe\Model\PropertyDefinitionCollection;
 use Phalcon\Scribe\Model\Registry;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -35,7 +39,6 @@ use function in_array;
 use function is_array;
 use function is_scalar;
 use function is_string;
-use function ksort;
 use function ltrim;
 use function preg_match;
 use function preg_replace;
@@ -246,10 +249,8 @@ final class ZephirReader implements Reader
 
     /**
      * @param array<string, mixed> $definition
-     *
-     * @return list<ConstantDefinition>
      */
-    private function readConstants(array $definition): array
+    private function readConstants(array $definition): ConstantDefinitionCollection
     {
         $constants = [];
         foreach ($this->section($definition, 'constants') as $constant) {
@@ -269,9 +270,7 @@ final class ZephirReader implements Reader
             );
         }
 
-        ksort($constants);
-
-        return array_values($constants);
+        return (new ConstantDefinitionCollection(array_values($constants)))->sortedByName();
     }
 
     /**
@@ -416,10 +415,8 @@ final class ZephirReader implements Reader
      * Source order is preserved - the formatter's ordering depends on it.
      *
      * @param array<string, mixed> $definition
-     *
-     * @return list<MethodDefinition>
      */
-    private function readMethods(array $definition): array
+    private function readMethods(array $definition): MethodDefinitionCollection
     {
         $methods = [];
         foreach ($this->section($definition, 'methods') as $method) {
@@ -446,21 +443,19 @@ final class ZephirReader implements Reader
                 $name,
                 $modifiers,
                 $this->methodVisibility($modifiers),
-                $parameters,
+                new ParameterDefinitionCollection($parameters),
                 $this->renderReturnType($this->node($method, 'return-type')),
                 $this->describe($this->cleanDocblock($this->text($method, 'docblock')))
             );
         }
 
-        return array_values($methods);
+        return new MethodDefinitionCollection(array_values($methods));
     }
 
     /**
      * @param array<string, mixed> $definition
-     *
-     * @return list<PropertyDefinition>
      */
-    private function readProperties(array $definition): array
+    private function readProperties(array $definition): PropertyDefinitionCollection
     {
         $properties = [];
         foreach ($this->section($definition, 'properties') as $property) {
@@ -491,9 +486,7 @@ final class ZephirReader implements Reader
             );
         }
 
-        ksort($properties);
-
-        return array_values($properties);
+        return (new PropertyDefinitionCollection(array_values($properties)))->sortedByName();
     }
 
     /**

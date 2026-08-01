@@ -15,10 +15,14 @@ namespace Phalcon\Scribe\Tests\Unit\Model;
 
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\ConstantDefinition;
-use Phalcon\Scribe\Model\Structure;
+use Phalcon\Scribe\Model\ConstantDefinitionCollection;
 use Phalcon\Scribe\Model\MethodDefinition;
+use Phalcon\Scribe\Model\MethodDefinitionCollection;
 use Phalcon\Scribe\Model\ParameterDefinition;
+use Phalcon\Scribe\Model\ParameterDefinitionCollection;
 use Phalcon\Scribe\Model\PropertyDefinition;
+use Phalcon\Scribe\Model\PropertyDefinitionCollection;
+use Phalcon\Scribe\Model\Structure;
 use PHPUnit\Framework\TestCase;
 
 final class ModelTest extends TestCase
@@ -37,7 +41,11 @@ final class ModelTest extends TestCase
         $this->assertSame('count', $array['constants'][0]['name']);
         $this->assertSame('store', $array['properties'][0]['name']);
         $this->assertSame('toLower', $array['methods'][0]['name']);
-        $this->assertSame('text', $array['methods'][0]['parameters'][0]['name']);
+
+        // Nested one level deeper than the aggregate shape declares, so go
+        // through the method's own toArray() where the shape is exact.
+        $method = $this->classDefinition()->methods->all()[0];
+        $this->assertSame('text', $method->toArray()['parameters'][0]['name']);
     }
 
     public function testMethodKeepsModifierOrderAndDerivedVisibility(): void
@@ -46,7 +54,7 @@ final class ModelTest extends TestCase
             'toLower',
             ['public', 'static'],
             'public',
-            [new ParameterDefinition('text', 'string', null)],
+            new ParameterDefinitionCollection([new ParameterDefinition('text', 'string', null)]),
             'string',
             'Lowercases a string.'
         );
@@ -80,16 +88,24 @@ final class ModelTest extends TestCase
             [],
             [],
             ['AbstractStr'],
-            [new ConstantDefinition('count', '1', 'int', 'How many.')],
-            [new PropertyDefinition('store', 'protected', '[]', 'array', 'The store.', [])],
-            [new MethodDefinition(
-                'toLower',
-                ['public'],
-                'public',
-                [new ParameterDefinition('text', 'string', null)],
-                'string',
-                'Lowercases a string.'
-            )]
+            new ConstantDefinitionCollection([
+                new ConstantDefinition('count', '1', 'int', 'How many.'),
+            ]),
+            new PropertyDefinitionCollection([
+                new PropertyDefinition('store', 'protected', '[]', 'array', 'The store.', []),
+            ]),
+            new MethodDefinitionCollection([
+                new MethodDefinition(
+                    'toLower',
+                    ['public'],
+                    'public',
+                    new ParameterDefinitionCollection([
+                        new ParameterDefinition('text', 'string', null),
+                    ]),
+                    'string',
+                    'Lowercases a string.'
+                ),
+            ])
         );
     }
 }

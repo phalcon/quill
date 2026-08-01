@@ -18,13 +18,12 @@ use Phalcon\Scribe\Contracts\Formatter;
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\Keyword;
 use Phalcon\Scribe\Model\MethodDefinition;
-use Phalcon\Scribe\Model\ParameterDefinition;
-use Phalcon\Scribe\Model\PropertyDefinition;
+use Phalcon\Scribe\Model\MethodDefinitionCollection;
+use Phalcon\Scribe\Model\ParameterDefinitionCollection;
 use Phalcon\Scribe\Model\Registry;
 
 use function array_keys;
 use function array_map;
-use function array_values;
 use function count;
 use function explode;
 use function htmlspecialchars;
@@ -38,7 +37,6 @@ use function stripos;
 use function strtolower;
 use function trim;
 use function ucfirst;
-use function uksort;
 
 use const ENT_QUOTES;
 use const ENT_SUBSTITUTE;
@@ -154,7 +152,7 @@ final class MarkdownFormatter implements Formatter
 
     private function constants(ClassDefinition $class): string
     {
-        if ($class->constants === []) {
+        if ($class->constants->isEmpty()) {
             return '';
         }
 
@@ -216,11 +214,11 @@ final class MarkdownFormatter implements Formatter
     }
 
     /**
-     * @param list<ParameterDefinition> $parameters
+     * @param ParameterDefinitionCollection $parameters
      *
      * @return list<string> one HTML-rendered string per parameter
      */
-    private function htmlParams(array $parameters): array
+    private function htmlParams(ParameterDefinitionCollection $parameters): array
     {
         $rendered = [];
         foreach ($parameters as $parameter) {
@@ -282,18 +280,18 @@ final class MarkdownFormatter implements Formatter
     private function methodDetails(ClassDefinition $class): string
     {
         $groups = $this->orderMethods($class->methods);
-        if ($groups['public'] === [] && $groups['protected'] === []) {
+        if ($groups['public']->isEmpty() && $groups['protected']->isEmpty()) {
             return '';
         }
 
         $output = "\n### Methods\n";
 
         foreach (['public', 'protected'] as $group) {
-            if ($groups[$group] === []) {
+            if ($groups[$group]->isEmpty()) {
                 continue;
             }
 
-            $count   = count($groups[$group]);
+            $count   = $groups[$group]->count();
             $label   = ucfirst($group);
             $output .= "\n<div class=\"api-group\">{$label} · {$count}</div>\n";
 
@@ -322,52 +320,22 @@ final class MarkdownFormatter implements Formatter
      * already discarded - checking the raw list would emit a bare heading for
      * a class whose methods are all private.
      *
-     * @param list<MethodDefinition> $methods
-     *
-     * @return array{public: list<MethodDefinition>, protected: list<MethodDefinition>}
+     * @return array{public: MethodDefinitionCollection, protected: MethodDefinitionCollection}
      */
-    private function orderMethods(array $methods): array
+    private function orderMethods(MethodDefinitionCollection $methods): array
     {
-        $groups = ['public' => [], 'protected' => []];
-        foreach ($methods as $method) {
-            if ($method->visibility === 'private') {
-                continue;
-            }
+        $visible = $methods->withoutPrivate()->ordered();
 
-            $key = $method->visibility === 'protected' ? 'protected' : 'public';
-
-            $groups[$key][$method->name] = $method;
-        }
-
-        $ordered = ['public' => [], 'protected' => []];
-        foreach ($groups as $key => $group) {
-            uksort(
-                $group,
-                static function (string $a, string $b): int {
-                    $ra = str_starts_with($a, '__') ? 0 : 1;
-                    $rb = str_starts_with($b, '__') ? 0 : 1;
-
-                    return [$ra, $a] <=> [$rb, $b];
-                }
-            );
-
-            $ordered[$key] = array_values($group);
-        }
-
-        return $ordered;
+        return [
+            'public'    => $visible->withVisibility('public'),
+            'protected' => $visible->withVisibility('protected'),
+        ];
     }
 
     private function properties(ClassDefinition $class): string
     {
-        /** @var list<PropertyDefinition> $visible */
-        $visible = [];
-        foreach ($class->properties as $property) {
-            if ($property->visibility !== 'private') {
-                $visible[] = $property;
-            }
-        }
-
-        if ($visible === []) {
+        $visible = $class->properties->withoutPrivate();
+        if ($visible->isEmpty()) {
             return '';
         }
 
@@ -393,11 +361,11 @@ final class MarkdownFormatter implements Formatter
     }
 
     /**
-     * @param list<ParameterDefinition> $parameters
+     * @param ParameterDefinitionCollection $parameters
      *
      * @return list<string> one rendered string per parameter
      */
-    private function renderParams(array $parameters): array
+    private function renderParams(ParameterDefinitionCollection $parameters): array
     {
         $rendered = [];
         foreach ($parameters as $parameter) {
@@ -442,7 +410,7 @@ final class MarkdownFormatter implements Formatter
     private function summary(ClassDefinition $class): string
     {
         $groups = $this->orderMethods($class->methods);
-        if ($groups['public'] === [] && $groups['protected'] === []) {
+        if ($groups['public']->isEmpty() && $groups['protected']->isEmpty()) {
             return '';
         }
 

@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Phalcon\Scribe\Model;
 
-use function array_map;
-
 /**
  * One method, private ones included.
  *
@@ -22,18 +20,17 @@ use function array_map;
  * - because the rendered signature joins them verbatim. `$visibility` is the
  * single word derived from it, used for grouping and filtering.
  */
-final class MethodDefinition
+final class MethodDefinition implements Definition
 {
     /**
      * @param list<string>                   $modifiers
      * @param 'public'|'protected'|'private' $visibility
-     * @param list<ParameterDefinition>      $parameters
      */
     public function __construct(
         public readonly string $name,
         public readonly array $modifiers,
         public readonly string $visibility,
-        public readonly array $parameters,
+        public readonly ParameterDefinitionCollection $parameters,
         public readonly ?string $returnType,
         public readonly string $description,
     ) {
@@ -44,7 +41,7 @@ final class MethodDefinition
      *     name: string,
      *     modifiers: list<string>,
      *     visibility: string,
-     *     parameters: list<array{name: string, type: string, default: string|null}>,
+     *     parameters: list<array<string, mixed>>,
      *     returnType: string|null,
      *     description: string
      * }
@@ -55,10 +52,7 @@ final class MethodDefinition
             'name'        => $this->name,
             'modifiers'   => $this->modifiers,
             'visibility'  => $this->visibility,
-            'parameters'  => array_map(
-                static fn (ParameterDefinition $parameter): array => $parameter->toArray(),
-                $this->parameters
-            ),
+            'parameters'  => $this->parameters->toArray(),
             'returnType'  => $this->returnType,
             'description' => $this->description,
         ];

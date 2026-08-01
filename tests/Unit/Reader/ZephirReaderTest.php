@@ -31,25 +31,25 @@ final class ZephirReaderTest extends TestCase
 
         $this->assertSame(
             ['hidden', 'store'],
-            array_map(static fn ($property): string => $property->name, $class->properties)
+            array_map(static fn ($property): string => $property->name, $class->properties->all())
         );
-        $this->assertSame('private', $class->properties[0]->visibility);
-        $this->assertSame('protected', $class->properties[1]->visibility);
+        $this->assertSame('private', $class->properties->all()[0]->visibility);
+        $this->assertSame('protected', $class->properties->all()[1]->visibility);
 
         $this->assertSame(
             ['toLower', 'secret'],
-            array_map(static fn ($method): string => $method->name, $class->methods)
+            array_map(static fn ($method): string => $method->name, $class->methods->all())
         );
-        $this->assertSame('private', $class->methods[1]->visibility);
+        $this->assertSame('private', $class->methods->all()[1]->visibility);
     }
 
     public function testDefaultsAreRenderedStrings(): void
     {
         $class = $this->sample();
 
-        $this->assertSame('[]', $class->properties[1]->default);
-        $this->assertSame('array', $class->properties[1]->varType);
-        $this->assertSame('"strict"', $class->constants[0]->default);
+        $this->assertSame('[]', $class->properties->all()[1]->default);
+        $this->assertSame('array', $class->properties->all()[1]->varType);
+        $this->assertSame('"strict"', $class->constants->all()[0]->default);
     }
 
     public function testStructureIsTrait(): void
@@ -65,14 +65,14 @@ final class ZephirReaderTest extends TestCase
 
     public function testMethodModifiersKeepSourceOrder(): void
     {
-        $method = $this->sample()->methods[0];
+        $method = $this->sample()->methods->all()[0];
 
         $this->assertSame(['public', 'static'], $method->modifiers);
         $this->assertSame('public', $method->visibility);
         $this->assertSame('string', $method->returnType);
-        $this->assertSame('true', $method->parameters[1]->default);
-        $this->assertSame('string', $method->parameters[0]->type);
-        $this->assertNull($method->parameters[0]->default);
+        $this->assertSame('true', $method->parameters->all()[1]->default);
+        $this->assertSame('string', $method->parameters->all()[0]->type);
+        $this->assertNull($method->parameters->all()[0]->default);
     }
 
     public function testPageAnchorAndPathsFollowTheLegacyRules(): void
@@ -117,7 +117,7 @@ final class ZephirReaderTest extends TestCase
 
     public function testVoidReturnIsRendered(): void
     {
-        $this->assertSame('void', $this->sample()->methods[1]->returnType);
+        $this->assertSame('void', $this->sample()->methods->all()[1]->returnType);
     }
 
     private function registry(): Registry

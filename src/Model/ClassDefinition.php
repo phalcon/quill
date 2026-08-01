@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Phalcon\Scribe\Model;
 
-use function array_map;
-
 /**
  * One class, interface, trait or enum.
  *
@@ -22,7 +20,7 @@ use function array_map;
  * names to FQCNs, ancestors and children is Registry's job, which keeps this
  * object language-agnostic and readonly.
  */
-final class ClassDefinition
+final class ClassDefinition implements Definition
 {
     /**
      * Bumped whenever toArray()'s shape changes. It is a published format the
@@ -45,9 +43,6 @@ final class ClassDefinition
      * @param list<string>              $extends    a class uses index 0; an interface may list several
      * @param list<string>              $implements
      * @param list<string>              $traits     short names, resolved by Registry
-     * @param list<ConstantDefinition>  $constants
-     * @param list<PropertyDefinition>  $properties
-     * @param list<MethodDefinition>    $methods
      */
     public function __construct(
         public readonly string $fqcn,
@@ -63,9 +58,9 @@ final class ClassDefinition
         public readonly array $extends,
         public readonly array $implements,
         public readonly array $traits,
-        public readonly array $constants,
-        public readonly array $properties,
-        public readonly array $methods,
+        public readonly ConstantDefinitionCollection $constants,
+        public readonly PropertyDefinitionCollection $properties,
+        public readonly MethodDefinitionCollection $methods,
     ) {
     }
 
@@ -89,29 +84,13 @@ final class ClassDefinition
      *     extends: list<string>,
      *     implements: list<string>,
      *     traits: list<string>,
-     *     constants: list<array{
-     *         name: string,
-     *         default: string|null,
-     *         varType: string,
-     *         description: string
-     *     }>,
-     *     properties: list<array{
-     *         name: string,
-     *         visibility: string,
-     *         default: string|null,
-     *         varType: string,
-     *         description: string,
-     *         shortcuts: list<string>
-     *     }>,
-     *     methods: list<array{
-     *         name: string,
-     *         modifiers: list<string>,
-     *         visibility: string,
-     *         parameters: list<array{name: string, type: string, default: string|null}>,
-     *         returnType: string|null,
-     *         description: string
-     *     }>
+     *     constants: list<array<string, mixed>>,
+     *     properties: list<array<string, mixed>>,
+     *     methods: list<array<string, mixed>>
      * }
+     *
+     * The three member lists are declared loosely here; each entry's own
+     * toArray() carries the exact shape.
      */
     public function toArray(): array
     {
@@ -130,18 +109,9 @@ final class ClassDefinition
             'extends'     => $this->extends,
             'implements'  => $this->implements,
             'traits'      => $this->traits,
-            'constants'   => array_map(
-                static fn (ConstantDefinition $constant): array => $constant->toArray(),
-                $this->constants
-            ),
-            'properties'  => array_map(
-                static fn (PropertyDefinition $property): array => $property->toArray(),
-                $this->properties
-            ),
-            'methods'     => array_map(
-                static fn (MethodDefinition $method): array => $method->toArray(),
-                $this->methods
-            ),
+            'constants'   => $this->constants->toArray(),
+            'properties'  => $this->properties->toArray(),
+            'methods'     => $this->methods->toArray(),
         ];
     }
 }

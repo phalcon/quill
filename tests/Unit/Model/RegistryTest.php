@@ -14,8 +14,11 @@ declare(strict_types=1);
 namespace Phalcon\Scribe\Tests\Unit\Model;
 
 use Phalcon\Scribe\Model\ClassDefinition;
-use Phalcon\Scribe\Model\Structure;
+use Phalcon\Scribe\Model\ConstantDefinitionCollection;
+use Phalcon\Scribe\Model\MethodDefinitionCollection;
+use Phalcon\Scribe\Model\PropertyDefinitionCollection;
 use Phalcon\Scribe\Model\Registry;
+use Phalcon\Scribe\Model\Structure;
 use PHPUnit\Framework\TestCase;
 
 final class RegistryTest extends TestCase
@@ -136,9 +139,9 @@ final class RegistryTest extends TestCase
             $extends,
             [],
             $traits,
-            [],
-            [],
-            []
+            new ConstantDefinitionCollection(),
+            new PropertyDefinitionCollection(),
+            new MethodDefinitionCollection()
         );
     }
 

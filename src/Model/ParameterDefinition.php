@@ -17,7 +17,7 @@ namespace Phalcon\Scribe\Model;
  * One method parameter. `$default` is an already-rendered expression such as
  * `"[]"` or `"self::FOO"` - no source AST reaches the model.
  */
-final class ParameterDefinition
+final class ParameterDefinition implements Definition
 {
     public function __construct(
         public readonly string $name,
