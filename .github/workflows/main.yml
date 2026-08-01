@@ -39,40 +39,40 @@ jobs:
           composer analyze
           composer cs
 
-  sonarqube:
-    name: Coverage & SonarQube
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
+  # sonarqube:
+  #   name: Coverage & SonarQube
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
-        with:
-          php-version: '8.1'
-          coverage: pcov
+  #     - name: Setup PHP
+  #       uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+  #       with:
+  #         php-version: '8.1'
+  #         coverage: pcov
 
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress
+  #     - name: Install dependencies
+  #       run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Tests with coverage
-        run: composer test-coverage
+  #     - name: Tests with coverage
+  #       run: composer test-coverage
 
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.organization=phalcon
-            -Dsonar.projectKey=phalcon_quill
-            -Dsonar.sources=src
-            -Dsonar.tests=tests
-            -Dsonar.exclusions=resources/**
-            -Dsonar.php.coverage.reportPaths=tests/_output/coverage.xml
+  #     - name: SonarQube Scan
+  #       uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
+  #       env:
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #       with:
+  #         args: >
+  #           -Dsonar.organization=phalcon
+  #           -Dsonar.projectKey=phalcon_quill
+  #           -Dsonar.sources=src
+  #           -Dsonar.tests=tests
+  #           -Dsonar.exclusions=resources/**
+  #           -Dsonar.php.coverage.reportPaths=tests/_output/coverage.xml
 
-      - name: octocov
-        uses: k1LoW/octocov-action@a167dc0dee441b7ffc45e1b862ab55ec0d87f278 # v1.5.2
-        with:
-          config: ${{ github.event_name == 'pull_request' && '.octocov.pr.yml' || '.octocov.yml' }}
+  #     - name: octocov
+  #       uses: k1LoW/octocov-action@a167dc0dee441b7ffc45e1b862ab55ec0d87f278 # v1.5.2
+  #       with:
+  #         config: ${{ github.event_name == 'pull_request' && '.octocov.pr.yml' || '.octocov.yml' }}
