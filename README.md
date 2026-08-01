@@ -1,8 +1,8 @@
-# Scribe
+# 
 
 API documentation generator for Zephir and PHP sources.
 
-Scribe reads a source tree into a typed model, then renders that model. Readers
+ reads a source tree into a typed model, then renders that model. Readers
 know one language and nothing about output; formatters know one output format
 and nothing about the language it came from.
 
@@ -14,8 +14,8 @@ PhpReader     (Phase 2)         ─┘   (object graph)        └─→ (furthe
 
 ## Configuration
 
-Everything project-specific lives in a `scribe.php` at the project root, which
-returns an array. Nothing about any particular repository is baked into scribe.
+Everything project-specific lives in a `quill.php` at the project root, which
+returns an array. Nothing about any particular repository is baked into quill.
 
 ```php
 <?php
@@ -46,10 +46,10 @@ Every key is required and must be a non-empty string; anything missing raises
 ## Usage
 
 ```bash
-scribe generate                                  # everything, using ./scribe.php
-scribe generate encryption                       # only pages matching the filter
-scribe generate --config=build/scribe.php
-scribe generate --output=/somewhere/else
+quill generate                                  # everything, using ./quill.php
+quill generate encryption                       # only pages matching the filter
+quill generate --config=build/quill.php
+quill generate --output=/somewhere/else
 ```
 
 The filter is matched case-insensitively against the page key and narrows what
@@ -104,14 +104,14 @@ modifier and the `.api-used-by` block.
 
 ```bash
 docker compose up -d --build
-docker exec -w /srv scribe-8.1 composer install
-docker exec -w /srv scribe-8.1 composer test
-docker exec -w /srv scribe-8.1 composer analyze
-docker exec -w /srv scribe-8.1 composer cs
+docker exec -w /srv quill-8.1 composer install
+docker exec -w /srv quill-8.1 composer test
+docker exec -w /srv quill-8.1 composer analyze
+docker exec -w /srv quill-8.1 composer cs
 ```
 
-`scribe-8.1` is the floor and where the byte-for-byte comparison runs;
-`scribe-8.5` covers deprecations. The suite must pass on both.
+`quill-8.1` is the floor and where the byte-for-byte comparison runs;
+`quill-8.5` covers deprecations. The suite must pass on both.
 
 `phalcon/zephir` is a dev dependency and a `suggest` rather than a hard
 requirement, so a project using only the PHP reader does not pull in the Zephir

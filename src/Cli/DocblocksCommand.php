@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,11 +11,11 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Cli;
+namespace Phalcon\Quill\Cli;
 
-use Phalcon\Scribe\Exceptions\InvalidConfiguration;
-use Phalcon\Scribe\Exceptions\WriteFailed;
-use Phalcon\Scribe\Parity\Descriptions;
+use Phalcon\Quill\Exceptions\InvalidConfiguration;
+use Phalcon\Quill\Exceptions\WriteFailed;
+use Phalcon\Quill\Parity\Descriptions;
 
 use function count;
 use function fclose;

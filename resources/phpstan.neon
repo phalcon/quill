@@ -9,7 +9,7 @@ parameters:
     excludePaths:
         # Fixtures are parse targets, not code. The PHP one deliberately
         # references undefined parents and traits so the reader has something
-        # to resolve; analysing it reports on the fixture, not on scribe.
+        # to resolve; analysing it reports on the fixture, not on quill.
         - %currentWorkingDirectory%/tests/Fixtures/config
         - %currentWorkingDirectory%/tests/Fixtures/php
     bootstrapFiles:

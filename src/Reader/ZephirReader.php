@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,27 +11,27 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Reader;
+namespace Phalcon\Quill\Reader;
 
 use FilesystemIterator;
-use Phalcon\Scribe\Config;
-use Phalcon\Scribe\Contracts\Reader;
-use Phalcon\Scribe\Model\ClassDefinition;
-use Phalcon\Scribe\Model\ConstantDefinition;
-use Phalcon\Scribe\Model\ConstantDefinitionCollection;
-use Phalcon\Scribe\Model\Imports;
-use Phalcon\Scribe\Model\Location;
-use Phalcon\Scribe\Model\Members;
-use Phalcon\Scribe\Model\MethodDefinition;
-use Phalcon\Scribe\Model\MethodDefinitionCollection;
-use Phalcon\Scribe\Model\ParameterDefinition;
-use Phalcon\Scribe\Model\ParameterDefinitionCollection;
-use Phalcon\Scribe\Model\PropertyDefinition;
-use Phalcon\Scribe\Model\PropertyDefinitionCollection;
-use Phalcon\Scribe\Model\Registry;
-use Phalcon\Scribe\Model\Relations;
-use Phalcon\Scribe\Model\Structure;
-use Phalcon\Scribe\Reader\Zephir\AstNode;
+use Phalcon\Quill\Config;
+use Phalcon\Quill\Contracts\Reader;
+use Phalcon\Quill\Model\ClassDefinition;
+use Phalcon\Quill\Model\ConstantDefinition;
+use Phalcon\Quill\Model\ConstantDefinitionCollection;
+use Phalcon\Quill\Model\Imports;
+use Phalcon\Quill\Model\Location;
+use Phalcon\Quill\Model\Members;
+use Phalcon\Quill\Model\MethodDefinition;
+use Phalcon\Quill\Model\MethodDefinitionCollection;
+use Phalcon\Quill\Model\ParameterDefinition;
+use Phalcon\Quill\Model\ParameterDefinitionCollection;
+use Phalcon\Quill\Model\PropertyDefinition;
+use Phalcon\Quill\Model\PropertyDefinitionCollection;
+use Phalcon\Quill\Model\Registry;
+use Phalcon\Quill\Model\Relations;
+use Phalcon\Quill\Model\Structure;
+use Phalcon\Quill\Reader\Zephir\AstNode;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,9 +11,9 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Tests\Unit\Reader;
+namespace Phalcon\Quill\Tests\Unit\Reader;
 
-use Phalcon\Scribe\Reader\Docblock;
+use Phalcon\Quill\Reader\Docblock;
 use PHPUnit\Framework\TestCase;
 
 final class DocblockTest extends TestCase

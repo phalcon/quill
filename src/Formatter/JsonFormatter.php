@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,12 +11,12 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Formatter;
+namespace Phalcon\Quill\Formatter;
 
-use Phalcon\Scribe\Config;
-use Phalcon\Scribe\Contracts\Formatter;
-use Phalcon\Scribe\Model\ClassDefinition;
-use Phalcon\Scribe\Model\Registry;
+use Phalcon\Quill\Config;
+use Phalcon\Quill\Contracts\Formatter;
+use Phalcon\Quill\Model\ClassDefinition;
+use Phalcon\Quill\Model\Registry;
 
 use function json_encode;
 use function ksort;

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,17 +11,17 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Formatter;
+namespace Phalcon\Quill\Formatter;
 
-use Phalcon\Scribe\Config;
-use Phalcon\Scribe\Contracts\Formatter;
-use Phalcon\Scribe\Formatter\Markdown\Html;
-use Phalcon\Scribe\Formatter\Markdown\Naming;
-use Phalcon\Scribe\Formatter\Markdown\Signature;
-use Phalcon\Scribe\Model\ClassDefinition;
-use Phalcon\Scribe\Model\Keyword;
-use Phalcon\Scribe\Model\MethodDefinitionCollection;
-use Phalcon\Scribe\Model\Registry;
+use Phalcon\Quill\Config;
+use Phalcon\Quill\Contracts\Formatter;
+use Phalcon\Quill\Formatter\Markdown\Html;
+use Phalcon\Quill\Formatter\Markdown\Naming;
+use Phalcon\Quill\Formatter\Markdown\Signature;
+use Phalcon\Quill\Model\ClassDefinition;
+use Phalcon\Quill\Model\Keyword;
+use Phalcon\Quill\Model\MethodDefinitionCollection;
+use Phalcon\Quill\Model\Registry;
 
 use function array_keys;
 use function array_map;

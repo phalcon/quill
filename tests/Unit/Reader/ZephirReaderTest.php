@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,13 +11,13 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Tests\Unit\Reader;
+namespace Phalcon\Quill\Tests\Unit\Reader;
 
-use Phalcon\Scribe\Config;
-use Phalcon\Scribe\Model\ClassDefinition;
-use Phalcon\Scribe\Model\Keyword;
-use Phalcon\Scribe\Model\Registry;
-use Phalcon\Scribe\Reader\ZephirReader;
+use Phalcon\Quill\Config;
+use Phalcon\Quill\Model\ClassDefinition;
+use Phalcon\Quill\Model\Keyword;
+use Phalcon\Quill\Model\Registry;
+use Phalcon\Quill\Reader\ZephirReader;
 use PHPUnit\Framework\TestCase;
 
 use function array_map;

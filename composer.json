@@ -1,5 +1,5 @@
 {
-    "name": "phalcon/scribe",
+    "name": "phalcon/quill",
     "description": "API documentation generator for Zephir and PHP sources",
     "type": "library",
     "license": "BSD-3-Clause",
@@ -19,12 +19,12 @@
         "phalcon/zephir": "Required by ZephirReader to parse .zep sources"
     },
     "autoload": {
-        "psr-4": { "Phalcon\\Scribe\\": "src/" }
+        "psr-4": { "Phalcon\\Quill\\": "src/" }
     },
     "autoload-dev": {
-        "psr-4": { "Phalcon\\Scribe\\Tests\\": "tests/" }
+        "psr-4": { "Phalcon\\Quill\\Tests\\": "tests/" }
     },
-    "bin": ["bin/scribe"],
+    "bin": ["bin/quill"],
     "config": {
         "sort-packages": true
     },

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,10 +11,10 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Contracts;
+namespace Phalcon\Quill\Contracts;
 
-use Phalcon\Scribe\Config;
-use Phalcon\Scribe\Model\Registry;
+use Phalcon\Quill\Config;
+use Phalcon\Quill\Model\Registry;
 
 /**
  * Turns the model into output. Every presentation decision - what to hide,

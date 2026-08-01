@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,13 +11,13 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Tests\Unit\Cli;
+namespace Phalcon\Quill\Tests\Unit\Cli;
 
-use Phalcon\Scribe\Cli\GenerateCommand;
-use Phalcon\Scribe\Config;
-use Phalcon\Scribe\Exceptions\WriteFailed;
-use Phalcon\Scribe\Formatter\MarkdownFormatter;
-use Phalcon\Scribe\Reader\ReaderFactory;
+use Phalcon\Quill\Cli\GenerateCommand;
+use Phalcon\Quill\Config;
+use Phalcon\Quill\Exceptions\WriteFailed;
+use Phalcon\Quill\Formatter\MarkdownFormatter;
+use Phalcon\Quill\Reader\ReaderFactory;
 use PHPUnit\Framework\TestCase;
 
 use function chmod;

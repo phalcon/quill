@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,18 +11,18 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Tests\Unit\Model;
+namespace Phalcon\Quill\Tests\Unit\Model;
 
-use Phalcon\Scribe\Model\ClassDefinition;
-use Phalcon\Scribe\Model\ConstantDefinitionCollection;
-use Phalcon\Scribe\Model\Imports;
-use Phalcon\Scribe\Model\Location;
-use Phalcon\Scribe\Model\Members;
-use Phalcon\Scribe\Model\MethodDefinitionCollection;
-use Phalcon\Scribe\Model\PropertyDefinitionCollection;
-use Phalcon\Scribe\Model\Registry;
-use Phalcon\Scribe\Model\Relations;
-use Phalcon\Scribe\Model\Structure;
+use Phalcon\Quill\Model\ClassDefinition;
+use Phalcon\Quill\Model\ConstantDefinitionCollection;
+use Phalcon\Quill\Model\Imports;
+use Phalcon\Quill\Model\Location;
+use Phalcon\Quill\Model\Members;
+use Phalcon\Quill\Model\MethodDefinitionCollection;
+use Phalcon\Quill\Model\PropertyDefinitionCollection;
+use Phalcon\Quill\Model\Registry;
+use Phalcon\Quill\Model\Relations;
+use Phalcon\Quill\Model\Structure;
 use PHPUnit\Framework\TestCase;
 
 final class RegistryTest extends TestCase

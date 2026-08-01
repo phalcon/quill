@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,11 +11,11 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Reader;
+namespace Phalcon\Quill\Reader;
 
-use Phalcon\Scribe\Contracts\Reader;
-use Phalcon\Scribe\Exceptions\MissingDependency;
-use Phalcon\Scribe\Exceptions\UnknownLanguage;
+use Phalcon\Quill\Contracts\Reader;
+use Phalcon\Quill\Exceptions\MissingDependency;
+use Phalcon\Quill\Exceptions\UnknownLanguage;
 use Zephir\Parser\Parser;
 
 use function class_exists;

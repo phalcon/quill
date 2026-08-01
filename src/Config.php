@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,9 +11,9 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe;
+namespace Phalcon\Quill;
 
-use Phalcon\Scribe\Exceptions\InvalidConfiguration;
+use Phalcon\Quill\Exceptions\InvalidConfiguration;
 
 use function dirname;
 use function is_array;

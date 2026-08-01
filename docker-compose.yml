@@ -1,5 +1,5 @@
 services:
-  scribe-8.1:
+  quill-8.1:
     build:
       context: .
       dockerfile: resources/docker/Dockerfile
@@ -7,8 +7,8 @@ services:
         PHP_VERSION: "8.1"
         UID: ${UID:-1000}
         GID: ${GID:-1000}
-    container_name: scribe-8.1
-    hostname: scribe-8.1
+    container_name: quill-8.1
+    hostname: quill-8.1
     working_dir: /srv
     volumes:
       - .:/srv
@@ -18,7 +18,7 @@ services:
       - ../phalcon:/phalcon:ro
     command: tail -f /dev/null
 
-  scribe-8.5:
+  quill-8.5:
     build:
       context: .
       dockerfile: resources/docker/Dockerfile
@@ -26,8 +26,8 @@ services:
         PHP_VERSION: "8.5"
         UID: ${UID:-1000}
         GID: ${GID:-1000}
-    container_name: scribe-8.5
-    hostname: scribe-8.5
+    container_name: quill-8.5
+    hostname: quill-8.5
     working_dir: /srv
     volumes:
       - .:/srv

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,10 +11,10 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Tests\Unit\Cli;
+namespace Phalcon\Quill\Tests\Unit\Cli;
 
-use Phalcon\Scribe\Cli\DocblocksCommand;
-use Phalcon\Scribe\Exceptions\InvalidConfiguration;
+use Phalcon\Quill\Cli\DocblocksCommand;
+use Phalcon\Quill\Exceptions\InvalidConfiguration;
 use PHPUnit\Framework\TestCase;
 
 use function dirname;

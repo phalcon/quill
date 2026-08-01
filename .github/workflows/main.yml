@@ -1,4 +1,4 @@
-name: Phalcon Scribe CI
+name: Phalcon Quill CI
 
 on: [push, pull_request]
 
@@ -9,7 +9,7 @@ jobs:
       fail-fast: false
       matrix:
         php:
-          # The floor is forced: cphalcon and phalcon dev-require scribe, and
+          # The floor is forced: cphalcon and phalcon dev-require quill, and
           # both support 8.1. The newest release covers deprecations. The
           # versions in between add no signal for a package with no extensions
           # and no database.
@@ -66,7 +66,7 @@ jobs:
         with:
           args: >
             -Dsonar.organization=phalcon
-            -Dsonar.projectKey=phalcon_scribe
+            -Dsonar.projectKey=phalcon_quill
             -Dsonar.sources=src
             -Dsonar.tests=tests
             -Dsonar.exclusions=resources/**

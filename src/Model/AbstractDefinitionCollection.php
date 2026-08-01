@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Model;
+namespace Phalcon\Quill\Model;
 
 use ArrayIterator;
 use Countable;

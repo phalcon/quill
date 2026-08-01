@@ -2,7 +2,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -12,13 +12,13 @@
 
 declare(strict_types=1);
 
-use Phalcon\Scribe\Cli\DocblocksCommand;
-use Phalcon\Scribe\Cli\GenerateCommand;
-use Phalcon\Scribe\Cli\ParityCommand;
-use Phalcon\Scribe\Config;
-use Phalcon\Scribe\Exceptions\Exception;
-use Phalcon\Scribe\Formatter\FormatterFactory;
-use Phalcon\Scribe\Reader\ReaderFactory;
+use Phalcon\Quill\Cli\DocblocksCommand;
+use Phalcon\Quill\Cli\GenerateCommand;
+use Phalcon\Quill\Cli\ParityCommand;
+use Phalcon\Quill\Config;
+use Phalcon\Quill\Exceptions\Exception;
+use Phalcon\Quill\Formatter\FormatterFactory;
+use Phalcon\Quill\Reader\ReaderFactory;
 
 foreach ([__DIR__ . '/../vendor/autoload.php', __DIR__ . '/../../../autoload.php'] as $file) {
     if (file_exists($file)) {
@@ -29,18 +29,18 @@ foreach ([__DIR__ . '/../vendor/autoload.php', __DIR__ . '/../../../autoload.php
 }
 
 $usage = <<<'USAGE'
-    Scribe API documentation generator
+    Quill API documentation generator
 
     Usage:
-      scribe generate [filter] [--config=<path>] [--output=<dir>] [--format=<name>]
-      scribe parity <left.json> <right.json>
-      scribe docblocks <left.json> <right.json> <out.csv>
+      quill generate [filter] [--config=<path>] [--output=<dir>] [--format=<name>]
+      quill parity <left.json> <right.json>
+      quill docblocks <left.json> <right.json> <out.csv>
 
     parity reports structural differences between two model documents.
     docblocks writes the documentation disagreements to a spreadsheet, with a
     winner column to fill in.
 
-    Paths, repository and language come from a scribe.php at the project root.
+    Paths, repository and language come from a quill.php at the project root.
     --config points elsewhere; --output overrides just the destination;
     --format picks the output (markdown or json), defaulting to markdown. The
     optional filter limits what is written, matched case-insensitively.
@@ -63,7 +63,7 @@ if ($command === 'docblocks') {
     ));
 
     if (count($args) !== 3) {
-        fwrite(STDERR, 'scribe: docblocks needs two model documents and a csv path' . PHP_EOL . $usage);
+        fwrite(STDERR, 'quill: docblocks needs two model documents and a csv path' . PHP_EOL . $usage);
 
         exit(1);
     }
@@ -71,7 +71,7 @@ if ($command === 'docblocks') {
     try {
         exit((new DocblocksCommand())->execute($args[0], $args[1], $args[2]));
     } catch (Exception $exception) {
-        fwrite(STDERR, 'scribe: ' . $exception->getMessage() . PHP_EOL);
+        fwrite(STDERR, 'quill: ' . $exception->getMessage() . PHP_EOL);
 
         exit(1);
     }
@@ -84,7 +84,7 @@ if ($command === 'parity') {
     ));
 
     if (count($paths) !== 2) {
-        fwrite(STDERR, 'scribe: parity needs two model documents' . PHP_EOL . $usage);
+        fwrite(STDERR, 'quill: parity needs two model documents' . PHP_EOL . $usage);
 
         exit(1);
     }
@@ -92,19 +92,19 @@ if ($command === 'parity') {
     try {
         exit((new ParityCommand())->execute($paths[0], $paths[1]));
     } catch (Exception $exception) {
-        fwrite(STDERR, 'scribe: ' . $exception->getMessage() . PHP_EOL);
+        fwrite(STDERR, 'quill: ' . $exception->getMessage() . PHP_EOL);
 
         exit(1);
     }
 }
 
 if ($command !== 'generate') {
-    fwrite(STDERR, "scribe: unknown command '{$command}'" . PHP_EOL . $usage);
+    fwrite(STDERR, "quill: unknown command '{$command}'" . PHP_EOL . $usage);
 
     exit(1);
 }
 
-$configPath = 'scribe.php';
+$configPath = 'quill.php';
 $outputDir  = null;
 $format     = 'markdown';
 $filter     = '';
@@ -129,7 +129,7 @@ foreach (array_slice($argv, 2) as $token) {
     }
 
     if (str_starts_with($token, '-')) {
-        fwrite(STDERR, "scribe: unknown option '{$token}'" . PHP_EOL . $usage);
+        fwrite(STDERR, "quill: unknown option '{$token}'" . PHP_EOL . $usage);
 
         exit(1);
     }
@@ -150,7 +150,7 @@ try {
 
     exit($command->execute($config, $filter));
 } catch (Exception $exception) {
-    fwrite(STDERR, 'scribe: ' . $exception->getMessage() . PHP_EOL);
+    fwrite(STDERR, 'quill: ' . $exception->getMessage() . PHP_EOL);
 
     exit(1);
 }

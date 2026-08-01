@@ -5,10 +5,10 @@ FROM php:${PHP_VERSION}-cli AS base
 
 ARG UID=1000
 ARG GID=1000
-ARG USER=scribe
-ARG GROUP=scribe
+ARG USER=quill
+ARG GROUP=quill
 
-# Scribe has nothing to compile - the Zephir parser is pure PHP and there is no
+# Quill has nothing to compile - the Zephir parser is pure PHP and there is no
 # database, so this stays to PHP, composer and the tools composer needs.
 RUN <<EOT
 set -eux

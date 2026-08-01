@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,10 +11,10 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Formatter\Markdown;
+namespace Phalcon\Quill\Formatter\Markdown;
 
-use Phalcon\Scribe\Config;
-use Phalcon\Scribe\Model\ClassDefinition;
+use Phalcon\Quill\Config;
+use Phalcon\Quill\Model\ClassDefinition;
 
 use function explode;
 use function preg_replace;

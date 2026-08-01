@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,10 +11,10 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Formatter;
+namespace Phalcon\Quill\Formatter;
 
-use Phalcon\Scribe\Contracts\Formatter;
-use Phalcon\Scribe\Exceptions\UnknownFormat;
+use Phalcon\Quill\Contracts\Formatter;
+use Phalcon\Quill\Exceptions\UnknownFormat;
 
 /**
  * Resolves a requested output format to its formatter.

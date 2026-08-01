@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the Phalcon Scribe.
+ * This file is part of the Phalcon Quill.
  *
  * (c) Phalcon Team <team@phalcon.io>
  *
@@ -11,12 +11,12 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Cli;
+namespace Phalcon\Quill\Cli;
 
-use Phalcon\Scribe\Config;
-use Phalcon\Scribe\Contracts\Formatter;
-use Phalcon\Scribe\Exceptions\WriteFailed;
-use Phalcon\Scribe\Reader\ReaderFactory;
+use Phalcon\Quill\Config;
+use Phalcon\Quill\Contracts\Formatter;
+use Phalcon\Quill\Exceptions\WriteFailed;
+use Phalcon\Quill\Reader\ReaderFactory;
 
 use function basename;
 use function file_put_contents;
