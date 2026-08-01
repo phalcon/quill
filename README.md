@@ -65,13 +65,18 @@ need it.
 `version` key. It is a published format the moment anything reads it — treat a
 shape change as a version bump.
 
+`ClassDefinition` is six things: a `Location` (fqcn, namespace, relPath), a
+`Structure` (keyword plus modifiers, which are `null` rather than `false` where
+they do not apply), a `description`, `Imports`, `Relations` and `Members`. The
+serialization mirrors that graph exactly.
+
 The model is deliberately complete and the formatter is deliberately opinionated:
 
 | | Model | `MarkdownFormatter` |
 |---|---|---|
 | Private members | captured, with visibility | filtered out |
-| Enums | `structure: enum` | rendered as a class |
-| Traits | `structure: trait` | `Trait` badge, plus a `Used by` list |
+| Enums | `structure.keyword: enum` | rendered as a class |
+| Traits | `structure.keyword: trait` | `Trait` badge, plus a `Used by` list |
 
 `uses` and `traits` are different relations that share a keyword: `uses` are the
 file's namespace imports, `traits` are what the class body pulls in. `Registry`
