@@ -350,7 +350,7 @@ final class ZephirReader implements Reader
             $kind,
             ($node['abstract'] ?? 0) === 1,
             ($node['final'] ?? 0) === 1,
-            $this->cleanDocblock($comment),
+            $this->describe($this->cleanDocblock($comment)),
             $uses,
             $usesMap,
             $this->readExtends($node),
