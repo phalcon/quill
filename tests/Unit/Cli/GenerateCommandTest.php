@@ -15,13 +15,16 @@ namespace Phalcon\Scribe\Tests\Unit\Cli;
 
 use Phalcon\Scribe\Cli\GenerateCommand;
 use Phalcon\Scribe\Config;
+use Phalcon\Scribe\Exceptions\WriteFailed;
 use Phalcon\Scribe\Formatter\MarkdownFormatter;
 use Phalcon\Scribe\Reader\ReaderFactory;
 use PHPUnit\Framework\TestCase;
 
+use function chmod;
 use function dirname;
 use function file_exists;
 use function file_get_contents;
+use function file_put_contents;
 use function fopen;
 use function glob;
 use function is_dir;
@@ -72,6 +75,64 @@ final class GenerateCommandTest extends TestCase
             '- [Phalcon Sample](phalcon_sample.md)',
             (string) file_get_contents($this->outputDir . '/index.md')
         );
+    }
+
+    public function testStaleDocumentsArePruned(): void
+    {
+        $this->command()->execute($this->config());
+
+        // A page whose source namespace has since been deleted.
+        $orphan = $this->outputDir . '/phalcon_gone.md';
+        file_put_contents($orphan, 'stale');
+
+        $this->command()->execute($this->config());
+
+        $this->assertFileDoesNotExist($orphan);
+        $this->assertFileExists($this->outputDir . '/phalcon_sample.md');
+    }
+
+    public function testAFilteredRunPrunesNothing(): void
+    {
+        $this->command()->execute($this->config());
+
+        $kept = $this->outputDir . '/phalcon_sample.md';
+        $this->assertFileExists($kept);
+
+        // Filtered runs are deliberately partial, so untouched pages stay.
+        $this->command()->execute($this->config(), 'nothingmatches');
+
+        $this->assertFileExists($kept);
+    }
+
+    public function testOtherFileTypesAreLeftAlone(): void
+    {
+        $this->command()->execute($this->config());
+
+        $foreign = $this->outputDir . '/notes.txt';
+        file_put_contents($foreign, 'not ours');
+
+        $this->command()->execute($this->config());
+
+        $this->assertFileExists($foreign);
+        unlink($foreign);
+    }
+
+    public function testAnUnwritableDestinationFailsLoudly(): void
+    {
+        $this->command()->execute($this->config());
+
+        // Simulate what a root-owned output directory does to a non-root run.
+        $page = $this->outputDir . '/phalcon_sample.md';
+        chmod($page, 0444);
+
+        $this->expectException(WriteFailed::class);
+        $this->expectExceptionMessage('Could not write');
+
+        try {
+            $this->command()->execute($this->config());
+        } finally {
+            chmod($page, 0644);
+        }
     }
 
     public function testCreatesTheOutputDirectoryWhenAbsent(): void

@@ -15,12 +15,17 @@ namespace Phalcon\Scribe\Cli;
 
 use Phalcon\Scribe\Config;
 use Phalcon\Scribe\Contracts\Formatter;
+use Phalcon\Scribe\Exceptions\WriteFailed;
 use Phalcon\Scribe\Reader\ReaderFactory;
 
+use function basename;
 use function file_put_contents;
 use function fwrite;
+use function glob;
 use function is_dir;
+use function is_file;
 use function mkdir;
+use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
@@ -56,17 +61,68 @@ final class GenerateCommand
             mkdir($output, 0777, true);
         }
 
+        $written = [];
         foreach ($pages as $page => $document) {
-            file_put_contents(
-                $output . DIRECTORY_SEPARATOR . $page . '.' . $this->formatter->extension(),
-                $document
-            );
+            $path = $output . DIRECTORY_SEPARATOR . $page . '.' . $this->formatter->extension();
+
+            /**
+             * A silent failure here is worse than a loud one: an unwritable
+             * destination would otherwise report a full, successful run. The
+             * native warning is suppressed because the return value is
+             * checked and WriteFailed says more than the warning does.
+             */
+            if (@file_put_contents($path, $document) === false) {
+                throw new WriteFailed($path);
+            }
+
+            $written[$path] = true;
 
             fwrite($this->stdout, 'Processing: ' . $page . PHP_EOL);
+        }
+
+        /**
+         * Only a complete run may prune. A filtered run is deliberately
+         * partial, so everything it did not write is a page it was never
+         * asked about - not a stale one.
+         */
+        if ($filter === '') {
+            foreach ($this->prune($output, $written) as $path) {
+                fwrite($this->stdout, 'Removed: ' . basename($path) . PHP_EOL);
+            }
         }
 
         fwrite($this->stdout, 'Done. Output: ' . $output . PHP_EOL);
 
         return 0;
+    }
+
+    /**
+     * Deletes documents this run did not produce, so a source namespace that
+     * disappears takes its page with it instead of leaving an orphan that the
+     * index no longer links.
+     *
+     * Scoped to the formatter's own extension: anything else in the output
+     * directory belongs to someone else.
+     *
+     * @param array<string, true> $written
+     *
+     * @return list<string>
+     */
+    private function prune(string $output, array $written): array
+    {
+        $pattern = $output . DIRECTORY_SEPARATOR . '*.' . $this->formatter->extension();
+
+        $removed = [];
+        foreach (glob($pattern) ?: [] as $path) {
+            if (isset($written[$path]) || !is_file($path)) {
+                continue;
+            }
+
+            if (unlink($path)) {
+                $removed[] = $path;
+            }
+        }
+
+        return $removed;
     }
 }
