@@ -134,7 +134,7 @@ final class MarkdownFormatter implements Formatter
         $output = "\n\n## " . $this->title($class) . "\n\n"
             . "<span class=\"badge badge--{$css}\">{$badge}</span>\n"
             . "[:material-github: Source on GitHub]"
-            . '(' . $config->sourceUrl($class->relPath) . ')'
+            . '(' . $config->sourceUrl($class->location->relPath) . ')'
             . "{ .src-btn }\n";
 
         if ($class->description !== '') {
@@ -154,12 +154,12 @@ final class MarkdownFormatter implements Formatter
 
     private function constants(ClassDefinition $class): string
     {
-        if ($class->constants->isEmpty()) {
+        if ($class->members->constants->isEmpty()) {
             return '';
         }
 
         $output = "\n### Constants\n\n<div class=\"api-list\">\n";
-        foreach ($class->constants as $constant) {
+        foreach ($class->members->constants as $constant) {
             $output .= "<div class=\"api-item\">\n"
                 . '<code class="ret">' . $this->escape($constant->varType) . "</code>\n"
                 . '<code class="sig"><span class="sc">' . $this->escape($constant->name)
@@ -270,7 +270,7 @@ final class MarkdownFormatter implements Formatter
 
     private function pageKey(ClassDefinition $class, Config $config): string
     {
-        $segments = explode(DIRECTORY_SEPARATOR, $class->relPath);
+        $segments = explode(DIRECTORY_SEPARATOR, $class->location->relPath);
         $key      = str_replace('.' . $config->extension(), '', $segments[0]);
 
         return 'phalcon_' . strtolower($key);
@@ -282,7 +282,7 @@ final class MarkdownFormatter implements Formatter
      */
     private function title(ClassDefinition $class): string
     {
-        return (string) preg_replace('/^Phalcon\\\\/', '', $class->fqcn);
+        return (string) preg_replace('/^Phalcon\\\\/', '', $class->location->fqcn);
     }
 
     private function indexLine(string $page): string
@@ -334,7 +334,7 @@ final class MarkdownFormatter implements Formatter
 
     private function methodDetails(ClassDefinition $class): string
     {
-        $groups = $this->orderMethods($class->methods);
+        $groups = $this->orderMethods($class->members->methods);
         if ($groups['public']->isEmpty() && $groups['protected']->isEmpty()) {
             return '';
         }
@@ -389,7 +389,7 @@ final class MarkdownFormatter implements Formatter
 
     private function properties(ClassDefinition $class): string
     {
-        $visible = $class->properties->withoutPrivate();
+        $visible = $class->members->properties->withoutPrivate();
         if ($visible->isEmpty()) {
             return '';
         }
@@ -464,7 +464,7 @@ final class MarkdownFormatter implements Formatter
 
     private function summary(ClassDefinition $class): string
     {
-        $groups = $this->orderMethods($class->methods);
+        $groups = $this->orderMethods($class->members->methods);
         if ($groups['public']->isEmpty() && $groups['protected']->isEmpty()) {
             return '';
         }
@@ -530,12 +530,12 @@ final class MarkdownFormatter implements Formatter
             $level++;
         }
 
-        $current = str_repeat(' ', $level * 4) . "- **`{$class->fqcn}`**";
+        $current = str_repeat(' ', $level * 4) . "- **`{$class->location->fqcn}`**";
 
         $annotations = [];
-        if ($class->structure->keyword === Keyword::Interface && count($class->extends) > 1) {
+        if ($class->structure->keyword === Keyword::Interface && count($class->relations->extends) > 1) {
             $links = [];
-            foreach ($class->extends as $name) {
+            foreach ($class->relations->extends as $name) {
                 $fqcn    = $registry->resolve($name, $class);
                 $links[] = $this->fqcnLink($fqcn ?? $name, $fqcn, $registry, $config, $currentPage);
             }
@@ -543,9 +543,9 @@ final class MarkdownFormatter implements Formatter
             $annotations[] = 'extends ' . implode(', ', $links);
         }
 
-        if ($class->implements !== []) {
+        if ($class->relations->implements !== []) {
             $links = [];
-            foreach ($class->implements as $name) {
+            foreach ($class->relations->implements as $name) {
                 $fqcn    = $registry->resolve($name, $class);
                 $links[] = $this->fqcnLink($fqcn ?? $name, $fqcn, $registry, $config, $currentPage);
             }
@@ -598,11 +598,11 @@ final class MarkdownFormatter implements Formatter
 
     private function uses(ClassDefinition $class): string
     {
-        if ($class->uses === []) {
+        if ($class->imports->uses === []) {
             return '';
         }
 
-        $uses = $class->uses;
+        $uses = $class->imports->uses;
         sort($uses);
 
         $codes = array_map(

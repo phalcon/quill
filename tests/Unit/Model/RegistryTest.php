@@ -15,9 +15,13 @@ namespace Phalcon\Scribe\Tests\Unit\Model;
 
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\ConstantDefinitionCollection;
+use Phalcon\Scribe\Model\Imports;
+use Phalcon\Scribe\Model\Location;
+use Phalcon\Scribe\Model\Members;
 use Phalcon\Scribe\Model\MethodDefinitionCollection;
 use Phalcon\Scribe\Model\PropertyDefinitionCollection;
 use Phalcon\Scribe\Model\Registry;
+use Phalcon\Scribe\Model\Relations;
 use Phalcon\Scribe\Model\Structure;
 use PHPUnit\Framework\TestCase;
 
@@ -114,19 +118,16 @@ final class RegistryTest extends TestCase
         array $traits = []
     ): ClassDefinition {
         return new ClassDefinition(
-            $fqcn,
-            'rel.zep',
-            'Phalcon',
+            new Location($fqcn, 'Phalcon', 'rel.zep'),
             Structure::classType(false, false),
             '',
-            [],
-            $usesMap,
-            $extends,
-            [],
-            $traits,
-            new ConstantDefinitionCollection(),
-            new PropertyDefinitionCollection(),
-            new MethodDefinitionCollection()
+            new Imports([], $usesMap),
+            new Relations($extends, [], $traits),
+            new Members(
+                new ConstantDefinitionCollection(),
+                new PropertyDefinitionCollection(),
+                new MethodDefinitionCollection()
+            )
         );
     }
 

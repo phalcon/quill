@@ -46,7 +46,7 @@ final class Registry
                 $this->children[$parent][] = $fqcn;
             }
 
-            foreach ($definition->traits as $name) {
+            foreach ($definition->relations->traits as $name) {
                 $trait = $this->resolve($name, $definition);
                 if ($trait !== null) {
                     $this->usedBy[$trait][] = $fqcn;
@@ -73,8 +73,8 @@ final class Registry
     public function ancestorsOf(ClassDefinition $class): array
     {
         $chain = [];
-        $seen  = [$class->fqcn => true];
-        $name  = $class->extends[0] ?? null;
+        $seen  = [$class->location->fqcn => true];
+        $name  = $class->relations->extends[0] ?? null;
         $fqcn  = $name === null ? null : $this->resolve($name, $class);
 
         while ($name !== null) {
@@ -91,7 +91,7 @@ final class Registry
             $seen[$entry['fqcn']] = true;
 
             $parent = $this->definitions[$entry['fqcn']];
-            $name   = $parent->extends[0] ?? null;
+            $name   = $parent->relations->extends[0] ?? null;
             $fqcn   = $name === null ? null : $this->resolve($name, $parent);
         }
 
@@ -106,7 +106,7 @@ final class Registry
      */
     public function childrenOf(ClassDefinition $class): array
     {
-        return $this->children[$class->fqcn] ?? [];
+        return $this->children[$class->location->fqcn] ?? [];
     }
 
     public function get(string $fqcn): ?ClassDefinition
@@ -121,7 +121,7 @@ final class Registry
 
     public function parentOf(ClassDefinition $class): ?string
     {
-        $name = $class->extends[0] ?? null;
+        $name = $class->relations->extends[0] ?? null;
         if ($name === null) {
             return null;
         }
@@ -145,8 +145,8 @@ final class Registry
         }
 
         $candidates = [
-            $context->usesMap[$name] ?? null,
-            $context->namespace . '\\' . $name,
+            $context->imports->aliases[$name] ?? null,
+            $context->location->namespace . '\\' . $name,
             'Phalcon\\' . $name,
         ];
 
@@ -167,7 +167,7 @@ final class Registry
      */
     public function usedBy(ClassDefinition $class): array
     {
-        return $this->usedBy[$class->fqcn] ?? [];
+        return $this->usedBy[$class->location->fqcn] ?? [];
     }
 
     /**

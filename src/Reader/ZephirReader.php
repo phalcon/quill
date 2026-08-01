@@ -19,7 +19,9 @@ use Phalcon\Scribe\Contracts\Reader;
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\ConstantDefinition;
 use Phalcon\Scribe\Model\ConstantDefinitionCollection;
-use Phalcon\Scribe\Model\Structure;
+use Phalcon\Scribe\Model\Imports;
+use Phalcon\Scribe\Model\Location;
+use Phalcon\Scribe\Model\Members;
 use Phalcon\Scribe\Model\MethodDefinition;
 use Phalcon\Scribe\Model\MethodDefinitionCollection;
 use Phalcon\Scribe\Model\ParameterDefinition;
@@ -27,6 +29,8 @@ use Phalcon\Scribe\Model\ParameterDefinitionCollection;
 use Phalcon\Scribe\Model\PropertyDefinition;
 use Phalcon\Scribe\Model\PropertyDefinitionCollection;
 use Phalcon\Scribe\Model\Registry;
+use Phalcon\Scribe\Model\Relations;
+use Phalcon\Scribe\Model\Structure;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
@@ -73,7 +77,7 @@ final class ZephirReader implements Reader
             $class = $this->readFile($ast, $relPath);
 
             if ($class !== null) {
-                $definitions[$class->fqcn] = $class;
+                $definitions[$class->location->fqcn] = $class;
             }
         }
 
@@ -336,19 +340,20 @@ final class ZephirReader implements Reader
         $definition = $this->node($node, 'definition') ?? [];
 
         return new ClassDefinition(
-            $fqcn,
-            $relPath,
-            $namespace,
+            new Location($fqcn, $namespace, $relPath),
             $structure,
             $this->describe($this->cleanDocblock($comment)),
-            $uses,
-            $usesMap,
-            $this->readExtends($node),
-            $this->readImplements($node),
-            $this->readTraits($definition),
-            $this->readConstants($definition),
-            $this->readProperties($definition),
-            $this->readMethods($definition)
+            new Imports($uses, $usesMap),
+            new Relations(
+                $this->readExtends($node),
+                $this->readImplements($node),
+                $this->readTraits($definition)
+            ),
+            new Members(
+                $this->readConstants($definition),
+                $this->readProperties($definition),
+                $this->readMethods($definition)
+            )
         );
     }
 
@@ -415,7 +420,10 @@ final class ZephirReader implements Reader
             $modifiers  = $this->strings($method, 'visibility');
             $parameters = [];
             foreach ($this->section($method, 'parameters') as $parameter) {
-                if (($parameter['type'] ?? '') !== 'parameter' || !is_string($parameter['name'] ?? null)) {
+                if (
+                    ($parameter['type'] ?? '') !== 'parameter'
+                    || !is_string($parameter['name'] ?? null)
+                ) {
                     continue;
                 }
 

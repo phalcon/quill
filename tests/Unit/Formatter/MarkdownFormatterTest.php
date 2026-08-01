@@ -18,10 +18,14 @@ use Phalcon\Scribe\Formatter\MarkdownFormatter;
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\ConstantDefinition;
 use Phalcon\Scribe\Model\ConstantDefinitionCollection;
+use Phalcon\Scribe\Model\Imports;
+use Phalcon\Scribe\Model\Location;
+use Phalcon\Scribe\Model\Members;
 use Phalcon\Scribe\Model\MethodDefinitionCollection;
 use Phalcon\Scribe\Model\PropertyDefinition;
 use Phalcon\Scribe\Model\PropertyDefinitionCollection;
 use Phalcon\Scribe\Model\Registry;
+use Phalcon\Scribe\Model\Relations;
 use Phalcon\Scribe\Model\Structure;
 use PHPUnit\Framework\TestCase;
 
@@ -124,40 +128,37 @@ final class MarkdownFormatterTest extends TestCase
     private function registry(): Registry
     {
         $base = new ClassDefinition(
-            'Phalcon\\Sample\\Base',
-            'Sample/Base.zep',
-            'Phalcon\\Sample',
+            new Location('Phalcon\\Sample\\Base', 'Phalcon\\Sample', 'Sample/Base.zep'),
             Structure::classType(false, false),
             'The base.',
-            [],
-            [],
-            [],
-            [],
-            ['Child'],
-            new ConstantDefinitionCollection(),
-            new PropertyDefinitionCollection(),
-            new MethodDefinitionCollection()
+            new Imports([], []),
+            new Relations([], [], ['Child']),
+            new Members(
+                new ConstantDefinitionCollection(),
+                new PropertyDefinitionCollection(),
+                new MethodDefinitionCollection()
+            )
         );
 
         $child = new ClassDefinition(
-            'Phalcon\\Sample\\Child',
-            'Sample/Child.zep',
-            'Phalcon\\Sample',
+            new Location('Phalcon\\Sample\\Child', 'Phalcon\\Sample', 'Sample/Child.zep'),
             Structure::trait(),
             'The child.',
-            ['Phalcon\\Sample\\Base'],
-            ['Base' => 'Phalcon\\Sample\\Base'],
-            ['Base'],
-            [],
-            [],
-            new ConstantDefinitionCollection([
-                new ConstantDefinition('LIMIT', '10', 'int', 'How many.'),
-            ]),
-            new PropertyDefinitionCollection([
-                new PropertyDefinition('hidden', 'private', null, 'mixed', 'Hidden.', []),
-                new PropertyDefinition('store', 'protected', '[]', 'array', 'The store.', []),
-            ]),
-            new MethodDefinitionCollection()
+            new Imports(
+                ['Phalcon\\Sample\\Base'],
+                ['Base' => 'Phalcon\\Sample\\Base']
+            ),
+            new Relations(['Base'], [], []),
+            new Members(
+                new ConstantDefinitionCollection([
+                    new ConstantDefinition('LIMIT', '10', 'int', 'How many.'),
+                ]),
+                new PropertyDefinitionCollection([
+                    new PropertyDefinition('hidden', 'private', null, 'mixed', 'Hidden.', []),
+                    new PropertyDefinition('store', 'protected', '[]', 'array', 'The store.', []),
+                ]),
+                new MethodDefinitionCollection()
+            )
         );
 
         return new Registry([

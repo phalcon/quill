@@ -17,12 +17,16 @@ use Phalcon\Scribe\Config;
 use Phalcon\Scribe\Formatter\MarkdownFormatter;
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\ConstantDefinitionCollection;
+use Phalcon\Scribe\Model\Imports;
+use Phalcon\Scribe\Model\Location;
+use Phalcon\Scribe\Model\Members;
 use Phalcon\Scribe\Model\MethodDefinition;
 use Phalcon\Scribe\Model\MethodDefinitionCollection;
 use Phalcon\Scribe\Model\ParameterDefinition;
 use Phalcon\Scribe\Model\ParameterDefinitionCollection;
 use Phalcon\Scribe\Model\PropertyDefinitionCollection;
 use Phalcon\Scribe\Model\Registry;
+use Phalcon\Scribe\Model\Relations;
 use Phalcon\Scribe\Model\Structure;
 use PHPUnit\Framework\TestCase;
 
@@ -156,19 +160,16 @@ final class MarkdownFormatterMethodsTest extends TestCase
             ];
 
         $child = new ClassDefinition(
-            'Phalcon\\Sample\\Child',
-            'Sample/Child.zep',
-            'Phalcon\\Sample',
+            new Location('Phalcon\\Sample\\Child', 'Phalcon\\Sample', 'Sample/Child.zep'),
             Structure::classType(false, false),
             '',
-            [],
-            [],
-            [],
-            [],
-            [],
-            new ConstantDefinitionCollection(),
-            new PropertyDefinitionCollection(),
-            new MethodDefinitionCollection($methods)
+            new Imports([], []),
+            new Relations([], [], []),
+            new Members(
+                new ConstantDefinitionCollection(),
+                new PropertyDefinitionCollection(),
+                new MethodDefinitionCollection($methods)
+            )
         );
 
         return new Registry(['Phalcon\\Sample\\Child' => $child]);

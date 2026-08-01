@@ -31,25 +31,25 @@ final class ZephirReaderTest extends TestCase
 
         $this->assertSame(
             ['hidden', 'store'],
-            array_map(static fn ($property): string => $property->name, $class->properties->all())
+            array_map(static fn ($property): string => $property->name, $class->members->properties->all())
         );
-        $this->assertSame('private', $class->properties->all()[0]->visibility);
-        $this->assertSame('protected', $class->properties->all()[1]->visibility);
+        $this->assertSame('private', $class->members->properties->all()[0]->visibility);
+        $this->assertSame('protected', $class->members->properties->all()[1]->visibility);
 
         $this->assertSame(
             ['toLower', 'secret'],
-            array_map(static fn ($method): string => $method->name, $class->methods->all())
+            array_map(static fn ($method): string => $method->name, $class->members->methods->all())
         );
-        $this->assertSame('private', $class->methods->all()[1]->visibility);
+        $this->assertSame('private', $class->members->methods->all()[1]->visibility);
     }
 
     public function testDefaultsAreRenderedStrings(): void
     {
         $class = $this->sample();
 
-        $this->assertSame('[]', $class->properties->all()[1]->default);
-        $this->assertSame('array', $class->properties->all()[1]->varType);
-        $this->assertSame('"strict"', $class->constants->all()[0]->default);
+        $this->assertSame('[]', $class->members->properties->all()[1]->default);
+        $this->assertSame('array', $class->members->properties->all()[1]->varType);
+        $this->assertSame('"strict"', $class->members->constants->all()[0]->default);
     }
 
     public function testStructureIsTrait(): void
@@ -65,7 +65,7 @@ final class ZephirReaderTest extends TestCase
 
     public function testMethodModifiersKeepSourceOrder(): void
     {
-        $method = $this->sample()->methods->all()[0];
+        $method = $this->sample()->members->methods->all()[0];
 
         $this->assertSame(['public', 'static'], $method->modifiers);
         $this->assertSame('public', $method->visibility);
@@ -79,9 +79,9 @@ final class ZephirReaderTest extends TestCase
     {
         $class = $this->sample();
 
-        $this->assertSame('Phalcon\\Sample\\Sample', $class->fqcn);
-        $this->assertSame('Phalcon\\Sample', $class->namespace);
-        $this->assertSame('Sample.zep', $class->relPath);
+        $this->assertSame('Phalcon\\Sample\\Sample', $class->location->fqcn);
+        $this->assertSame('Phalcon\\Sample', $class->location->namespace);
+        $this->assertSame('Sample.zep', $class->location->relPath);
     }
 
     public function testTraitUsageIsReadAndInverted(): void
@@ -93,29 +93,29 @@ final class ZephirReaderTest extends TestCase
             ?? self::fail('Phalcon\\Sample\\Sample was not read');
 
         // Forward: the class records the short trait name.
-        $this->assertSame(['Sample'], $consumer->traits);
+        $this->assertSame(['Sample'], $consumer->relations->traits);
 
         // Inverse: the registry resolves it and indexes the other way.
         $this->assertSame(['Phalcon\\Sample\\Consumer'], $registry->usedBy($sample));
 
         // Namespace imports are a different relation and stay empty here.
-        $this->assertSame([], $consumer->uses);
+        $this->assertSame([], $consumer->imports->uses);
     }
 
     public function testUsesAreMapped(): void
     {
         $class = $this->sample();
 
-        $this->assertSame(['Phalcon\\Support\\Helper\\Str\\AbstractStr'], $class->uses);
+        $this->assertSame(['Phalcon\\Support\\Helper\\Str\\AbstractStr'], $class->imports->uses);
         $this->assertSame(
             ['AbstractStr' => 'Phalcon\\Support\\Helper\\Str\\AbstractStr'],
-            $class->usesMap
+            $class->imports->aliases
         );
     }
 
     public function testVoidReturnIsRendered(): void
     {
-        $this->assertSame('void', $this->sample()->methods->all()[1]->returnType);
+        $this->assertSame('void', $this->sample()->members->methods->all()[1]->returnType);
     }
 
     private function registry(): Registry
