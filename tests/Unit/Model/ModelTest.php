@@ -35,7 +35,7 @@ final class ModelTest extends TestCase
     {
         $array = $this->classDefinition()->toArray();
 
-        $this->assertSame(6, $array['version']);
+        $this->assertSame(7, $array['version']);
         $this->assertSame(
             ['keyword' => 'trait', 'isAbstract' => null, 'isFinal' => null],
             $array['structure']
@@ -96,7 +96,7 @@ final class ModelTest extends TestCase
                     new ConstantDefinition('count', '1', 'int', 'How many.'),
                 ]),
                 new PropertyDefinitionCollection([
-                    new PropertyDefinition('store', 'protected', '[]', 'array', 'The store.', []),
+                    new PropertyDefinition('store', 'protected', false, '[]', 'array', 'The store.', []),
                 ]),
                 new MethodDefinitionCollection([
                     new MethodDefinition(

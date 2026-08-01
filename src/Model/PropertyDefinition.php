@@ -29,6 +29,7 @@ final class PropertyDefinition implements Definition
     public function __construct(
         public readonly string $name,
         public readonly string $visibility,
+        public readonly bool $isReadonly,
         public readonly ?string $default,
         public readonly string $varType,
         public readonly string $description,
@@ -40,6 +41,7 @@ final class PropertyDefinition implements Definition
      * @return array{
      *     name: string,
      *     visibility: string,
+     *     isReadonly: bool,
      *     default: string|null,
      *     varType: string,
      *     description: string,
@@ -51,6 +53,7 @@ final class PropertyDefinition implements Definition
         return [
             'name'        => $this->name,
             'visibility'  => $this->visibility,
+            'isReadonly'  => $this->isReadonly,
             'default'     => $this->default,
             'varType'     => $this->varType,
             'description' => $this->description,

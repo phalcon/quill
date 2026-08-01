@@ -32,7 +32,6 @@ use Phalcon\Scribe\Model\Registry;
 use Phalcon\Scribe\Model\Relations;
 use Phalcon\Scribe\Model\Structure;
 use Phalcon\Scribe\Reader\Zephir\AstNode;
-use Phalcon\Scribe\Reader\Zephir\Docblock;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
@@ -402,6 +401,7 @@ final class ZephirReader implements Reader
             $properties[] = new PropertyDefinition(
                 $name,
                 $this->propertyVisibility($property->strings('visibility')),
+                false,
                 $this->renderDefault($default),
                 $this->varType($doc, $default),
                 $doc->description(),

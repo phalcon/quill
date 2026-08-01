@@ -15,6 +15,7 @@ services:
       # Read-only so the reader and the byte-for-byte gate can reach cphalcon's
       # .zep sources without copying them in.
       - ../cphalcon:/cphalcon:ro
+      - ../phalcon:/phalcon:ro
     command: tail -f /dev/null
 
   scribe-8.5:
@@ -31,4 +32,5 @@ services:
     volumes:
       - .:/srv
       - ../cphalcon:/cphalcon:ro
+      - ../phalcon:/phalcon:ro
     command: tail -f /dev/null

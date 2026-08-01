@@ -38,8 +38,9 @@ final class ClassDefinition implements Definition
      *     concerns, not facts about the declaration.
      * 6 - grouped into location/imports/relations/members, mirroring the
      *     object graph.
+     * 7 - properties carry isReadonly.
      */
-    public const MODEL_VERSION = 6;
+    public const MODEL_VERSION = 7;
 
     public function __construct(
         public readonly Location $location,

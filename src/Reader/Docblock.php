@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Scribe\Reader\Zephir;
+namespace Phalcon\Scribe\Reader;
 
 use function explode;
 use function implode;

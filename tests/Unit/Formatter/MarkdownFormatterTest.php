@@ -154,8 +154,8 @@ final class MarkdownFormatterTest extends TestCase
                     new ConstantDefinition('LIMIT', '10', 'int', 'How many.'),
                 ]),
                 new PropertyDefinitionCollection([
-                    new PropertyDefinition('hidden', 'private', null, 'mixed', 'Hidden.', []),
-                    new PropertyDefinition('store', 'protected', '[]', 'array', 'The store.', []),
+                    new PropertyDefinition('hidden', 'private', false, null, 'mixed', 'Hidden.', []),
+                    new PropertyDefinition('store', 'protected', false, '[]', 'array', 'The store.', []),
                 ]),
                 new MethodDefinitionCollection()
             )
