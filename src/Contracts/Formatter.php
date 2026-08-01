@@ -23,7 +23,10 @@ use Phalcon\Scribe\Model\Registry;
 interface Formatter
 {
     /**
+     * The registry always covers every source file; `$filter` narrows only
+     * what gets emitted, index included.
+     *
      * @return array<string, string> page key => rendered document
      */
-    public function format(Registry $registry, Config $config): array;
+    public function format(Registry $registry, Config $config, string $filter = ''): array;
 }

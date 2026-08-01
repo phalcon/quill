@@ -34,6 +34,7 @@ use function sort;
 use function str_repeat;
 use function str_replace;
 use function str_starts_with;
+use function stripos;
 use function strtolower;
 use function trim;
 use function ucfirst;
@@ -56,10 +57,16 @@ final class MarkdownFormatter implements Formatter
     /**
      * @return array<string, string>
      */
-    public function format(Registry $registry, Config $config): array
+    public function format(Registry $registry, Config $config, string $filter = ''): array
     {
         $pages  = $registry->pages();
         $output = [];
+
+        foreach (array_keys($pages) as $page) {
+            if ($filter !== '' && stripos($page, strtolower($filter)) === false) {
+                unset($pages[$page]);
+            }
+        }
 
         $index = <<<EOT
             ---

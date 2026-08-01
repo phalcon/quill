@@ -147,6 +147,23 @@ final class Config
     }
 
     /**
+     * A copy writing somewhere else. Exists for ad-hoc runs such as the
+     * byte-for-byte gate; normal use never needs it.
+     */
+    public function withOutputDir(string $outputDir): self
+    {
+        return new self(
+            $this->language,
+            $this->sourceRoot,
+            $outputDir,
+            $this->repository,
+            $this->branch,
+            $this->sourcePrefix,
+            $this->extension,
+        );
+    }
+
+    /**
      * Mirrors Talon\Cli\SuiteMap::absolute() - a leading slash wins, anything
      * else is relative to the configuration file's directory.
      */
