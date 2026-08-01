@@ -57,7 +57,10 @@ final class GenerateCommand
         }
 
         foreach ($pages as $page => $document) {
-            file_put_contents($output . DIRECTORY_SEPARATOR . $page . '.md', $document);
+            file_put_contents(
+                $output . DIRECTORY_SEPARATOR . $page . '.' . $this->formatter->extension(),
+                $document
+            );
 
             fwrite($this->stdout, 'Processing: ' . $page . PHP_EOL);
         }

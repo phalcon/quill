@@ -23,10 +23,15 @@ use Phalcon\Scribe\Model\Registry;
 interface Formatter
 {
     /**
+     * The file extension the documents are written with, without the dot.
+     */
+    public function extension(): string;
+
+    /**
      * The registry always covers every source file; `$filter` narrows only
      * what gets emitted, index included.
      *
-     * @return array<string, string> page key => rendered document
+     * @return array<string, string> document key => rendered document
      */
     public function format(Registry $registry, Config $config, string $filter = ''): array;
 }

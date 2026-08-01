@@ -63,6 +63,11 @@ final class MarkdownFormatter implements Formatter
         $this->signature = new Signature($this->html);
     }
 
+    public function extension(): string
+    {
+        return 'md';
+    }
+
     /**
      * @return array<string, string>
      */
