@@ -70,7 +70,10 @@ final class PhpReaderTest extends TestCase
         $interface = $this->definition('Phalcon\\Sample\\SampleInterface');
 
         $this->assertSame(Keyword::Interface, $interface->structure->keyword);
-        $this->assertSame(['Countable', 'Stringable'], $interface->relations->extends);
+        $this->assertSame(
+            ['\\Phalcon\\Sample\\Countable', '\\Phalcon\\Sample\\Stringable'],
+            $interface->relations->extends
+        );
         // Only classes and enums implement; an interface never does.
         $this->assertSame([], $interface->relations->implements);
     }
@@ -133,7 +136,7 @@ final class PhpReaderTest extends TestCase
 
         $this->assertSame(Keyword::Enum, $enum->structure->keyword);
         $this->assertNull($enum->structure->isAbstract);
-        $this->assertSame(['Countable'], $enum->relations->implements);
+        $this->assertSame(['\\Phalcon\\Sample\\Countable'], $enum->relations->implements);
 
         $cases = $enum->members->constants->all();
         $this->assertSame(['Loose', 'Strict'], array_map(static fn ($c): string => $c->name, $cases));
@@ -261,9 +264,9 @@ final class PhpReaderTest extends TestCase
         $this->assertSame(Keyword::ClassType, $class->structure->keyword);
         $this->assertFalse($class->structure->isAbstract);
         $this->assertTrue($class->structure->isFinal);
-        $this->assertSame(['Base'], $class->relations->extends);
-        $this->assertSame(['Countable'], $class->relations->implements);
-        $this->assertSame(['SampleTrait'], $class->relations->traits);
+        $this->assertSame(['\\Phalcon\\Sample\\Base'], $class->relations->extends);
+        $this->assertSame(['\\Phalcon\\Sample\\Countable'], $class->relations->implements);
+        $this->assertSame(['\\Phalcon\\Sample\\SampleTrait'], $class->relations->traits);
     }
 
     public function testUnionNullableAndIntersectionTypesRender(): void

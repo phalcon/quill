@@ -179,18 +179,18 @@ final class ZephirReader implements Reader
      *
      * @return list<string>
      */
-    private function readExtends(AstNode $node): array
+    private function readExtends(AstNode $node, Imports $imports, string $namespace): array
     {
         $single = $node->text('extends');
         if ($single !== null && $single !== '') {
-            return [$single];
+            return [$imports->qualify($single, $namespace)];
         }
 
         $names = [];
         foreach ($node->section('extends') as $entry) {
             $value = $entry->text('value');
             if ($value !== null) {
-                $names[] = $value;
+                $names[] = $imports->qualify($value, $namespace);
             }
         }
 
@@ -208,18 +208,20 @@ final class ZephirReader implements Reader
         }
 
         $node       = $header['node'];
-        $fqcn       = $header['namespace'] . '\\' . ($node->text('name') ?? '');
+        $namespace  = $header['namespace'];
+        $fqcn       = $namespace . '\\' . ($node->text('name') ?? '');
         $definition = $node->node('definition') ?? new AstNode([]);
+        $imports    = new Imports($header['uses'], $header['aliases']);
 
         return new ClassDefinition(
-            new Location($fqcn, $header['namespace'], $relPath),
+            new Location($fqcn, $namespace, $relPath),
             $header['structure'],
             (new Docblock($header['comment']))->description(),
-            new Imports($header['uses'], $header['aliases']),
+            $imports,
             new Relations(
-                $this->readExtends($node),
-                $this->readImplements($node),
-                $this->readTraits($definition)
+                $this->readExtends($node, $imports, $namespace),
+                $this->readImplements($node, $imports, $namespace),
+                $this->readTraits($definition, $imports, $namespace)
             ),
             new Members(
                 $this->readConstants($definition),
@@ -303,13 +305,13 @@ final class ZephirReader implements Reader
     /**
      * @return list<string>
      */
-    private function readImplements(AstNode $node): array
+    private function readImplements(AstNode $node, Imports $imports, string $namespace): array
     {
         $names = [];
         foreach ($node->section('implements') as $entry) {
             $value = $entry->text('value');
             if ($value !== null) {
-                $names[] = $value;
+                $names[] = $imports->qualify($value, $namespace);
             }
         }
 
@@ -397,7 +399,7 @@ final class ZephirReader implements Reader
      *
      * @return list<string>
      */
-    private function readTraits(AstNode $definition): array
+    private function readTraits(AstNode $definition, Imports $imports, string $namespace): array
     {
         $traits = [];
         foreach ($definition->section('uses') as $use) {
@@ -408,7 +410,7 @@ final class ZephirReader implements Reader
             foreach ($use->section('traits') as $trait) {
                 $value = $trait->text('value');
                 if ($value !== null) {
-                    $traits[] = $value;
+                    $traits[] = $imports->qualify($value, $namespace);
                 }
             }
         }

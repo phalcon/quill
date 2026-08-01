@@ -87,17 +87,19 @@ final class PhpReader implements Reader
     }
 
     /**
-     * A referenced name as written. php-parser drops the leading backslash
-     * from a fully qualified name, which loses the one thing that says the
-     * name is global rather than relative to the current namespace - and
-     * `Phalcon\X\Exception extends \Exception` would then resolve to itself.
-     * Zephir keeps the backslash, so this keeps it too.
+     * A referenced name, resolved. php-parser drops the leading backslash from
+     * a fully qualified name, which loses the one thing that says the name is
+     * global rather than relative to the current namespace - and
+     * `Phalcon\X\Exception extends \Exception` would then resolve to itself -
+     * so it goes back on before Imports resolves the rest.
      */
-    private function name(Node\Name $name): string
+    private function name(Node\Name $name, Imports $imports, string $namespace): string
     {
-        return $name instanceof Node\Name\FullyQualified
+        $written = $name instanceof Node\Name\FullyQualified
             ? '\\' . $name->toString()
             : $name->toString();
+
+        return $imports->qualify($written, $namespace);
     }
 
     /**
@@ -188,16 +190,18 @@ final class PhpReader implements Reader
     /**
      * @return list<string>
      */
-    private function readExtends(Stmt\ClassLike $node): array
+    private function readExtends(Stmt\ClassLike $node, Imports $imports, string $namespace): array
     {
         if ($node instanceof Stmt\Class_) {
-            return $node->extends === null ? [] : [$this->name($node->extends)];
+            return $node->extends === null
+                ? []
+                : [$this->name($node->extends, $imports, $namespace)];
         }
 
         if ($node instanceof Stmt\Interface_) {
             $names = [];
             foreach ($node->extends as $name) {
-                $names[] = $this->name($name);
+                $names[] = $this->name($name, $imports, $namespace);
             }
 
             return $names;
@@ -221,16 +225,17 @@ final class PhpReader implements Reader
         $fqcn      = $namespace === ''
             ? (string) $node->name
             : $namespace . '\\' . (string) $node->name;
+        $imports   = new Imports($header['uses'], $header['aliases']);
 
         return new ClassDefinition(
             new Location($fqcn, $namespace, $relPath),
             $this->structure($node),
             (new Docblock($this->docComment($node)))->description(),
-            new Imports($header['uses'], $header['aliases']),
+            $imports,
             new Relations(
-                $this->readExtends($node),
-                $this->readImplements($node),
-                $this->readTraits($node)
+                $this->readExtends($node, $imports, $namespace),
+                $this->readImplements($node, $imports, $namespace),
+                $this->readTraits($node, $imports, $namespace)
             ),
             $this->readMembers($node)
         );
@@ -278,7 +283,7 @@ final class PhpReader implements Reader
     /**
      * @return list<string>
      */
-    private function readImplements(Stmt\ClassLike $node): array
+    private function readImplements(Stmt\ClassLike $node, Imports $imports, string $namespace): array
     {
         if (!$node instanceof Stmt\Class_ && !$node instanceof Stmt\Enum_) {
             return [];
@@ -286,7 +291,7 @@ final class PhpReader implements Reader
 
         $names = [];
         foreach ($node->implements as $name) {
-            $names[] = $this->name($name);
+            $names[] = $this->name($name, $imports, $namespace);
         }
 
         return $names;
@@ -442,7 +447,7 @@ final class PhpReader implements Reader
     /**
      * @return list<string>
      */
-    private function readTraits(Stmt\ClassLike $node): array
+    private function readTraits(Stmt\ClassLike $node, Imports $imports, string $namespace): array
     {
         $traits = [];
         foreach ($node->stmts as $member) {
@@ -451,7 +456,7 @@ final class PhpReader implements Reader
             }
 
             foreach ($member->traits as $trait) {
-                $traits[] = $trait->toString();
+                $traits[] = $this->name($trait, $imports, $namespace);
             }
         }
 

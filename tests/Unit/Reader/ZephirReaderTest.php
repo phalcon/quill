@@ -32,8 +32,11 @@ final class ZephirReaderTest extends TestCase
         $this->assertSame(Keyword::ClassType, $class->structure->keyword);
         $this->assertTrue($class->structure->isAbstract);
         $this->assertFalse($class->structure->isFinal);
-        $this->assertSame(['Consumer'], $class->relations->extends);
-        $this->assertSame(['Countable', 'Stringable'], $class->relations->implements);
+        $this->assertSame(['\\Phalcon\\Sample\\Consumer'], $class->relations->extends);
+        $this->assertSame(
+            ['\\Phalcon\\Sample\\Countable', '\\Phalcon\\Sample\\Stringable'],
+            $class->relations->implements
+        );
     }
 
     public function testAliasesFallBackToTheLastSegment(): void
@@ -50,7 +53,10 @@ final class ZephirReaderTest extends TestCase
             ?? self::fail('Phalcon\\Sample\\Contract was not read');
 
         $this->assertSame(Keyword::Interface, $contract->structure->keyword);
-        $this->assertSame(['Countable', 'Stringable'], $contract->relations->extends);
+        $this->assertSame(
+            ['\\Phalcon\\Sample\\Countable', '\\Phalcon\\Sample\\Stringable'],
+            $contract->relations->extends
+        );
     }
 
     /**
@@ -200,8 +206,8 @@ final class ZephirReaderTest extends TestCase
         $sample   = $registry->get('Phalcon\\Sample\\Sample')
             ?? self::fail('Phalcon\\Sample\\Sample was not read');
 
-        // Forward: the class records the short trait name.
-        $this->assertSame(['Sample'], $consumer->relations->traits);
+        // Forward: the class records the trait, resolved against its namespace.
+        $this->assertSame(['\\Phalcon\\Sample\\Sample'], $consumer->relations->traits);
 
         // Inverse: the registry resolves it and indexes the other way.
         $this->assertSame(['Phalcon\\Sample\\Consumer'], $registry->usedBy($sample));
