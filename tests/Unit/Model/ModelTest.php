@@ -27,8 +27,9 @@ final class ModelTest extends TestCase
     {
         $array = $this->classDefinition()->toArray();
 
-        $this->assertSame(1, $array['version']);
+        $this->assertSame(2, $array['version']);
         $this->assertSame('trait', $array['kind']);
+        $this->assertSame(['AbstractStr'], $array['traits']);
         $this->assertSame('Phalcon\\Support\\Helper\\Str\\Lower', $array['fqcn']);
         $this->assertSame('count', $array['constants'][0]['name']);
         $this->assertSame('store', $array['properties'][0]['name']);
@@ -77,6 +78,7 @@ final class ModelTest extends TestCase
             ['AbstractStr' => 'Phalcon\\Support\\Helper\\Str\\AbstractStr'],
             [],
             [],
+            ['AbstractStr'],
             [new ConstantDefinition('count', '1', 'int', 'How many.')],
             [new PropertyDefinition('store', 'protected', '[]', 'array', 'The store.', [])],
             [new MethodDefinition(

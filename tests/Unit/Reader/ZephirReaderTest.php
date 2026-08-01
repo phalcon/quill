@@ -16,6 +16,7 @@ namespace Phalcon\Scribe\Tests\Unit\Reader;
 use Phalcon\Scribe\Config;
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\Kind;
+use Phalcon\Scribe\Model\Registry;
 use Phalcon\Scribe\Reader\ZephirReader;
 use PHPUnit\Framework\TestCase;
 
@@ -79,6 +80,24 @@ final class ZephirReaderTest extends TestCase
         $this->assertSame('Sample.zep', $class->relPath);
     }
 
+    public function testTraitUsageIsReadAndInverted(): void
+    {
+        $registry = $this->registry();
+        $consumer = $registry->get('Phalcon\\Sample\\Consumer')
+            ?? self::fail('Phalcon\\Sample\\Consumer was not read');
+        $sample   = $registry->get('Phalcon\\Sample\\Sample')
+            ?? self::fail('Phalcon\\Sample\\Sample was not read');
+
+        // Forward: the class records the short trait name.
+        $this->assertSame(['Sample'], $consumer->traits);
+
+        // Inverse: the registry resolves it and indexes the other way.
+        $this->assertSame(['Phalcon\\Sample\\Consumer'], $registry->usedBy($sample));
+
+        // Namespace imports are a different relation and stay empty here.
+        $this->assertSame([], $consumer->uses);
+    }
+
     public function testUsesAreMapped(): void
     {
         $class = $this->sample();
@@ -95,7 +114,7 @@ final class ZephirReaderTest extends TestCase
         $this->assertSame('void', $this->sample()->methods[1]->returnType);
     }
 
-    private function sample(): ClassDefinition
+    private function registry(): Registry
     {
         $config = new Config(
             'zephir',
@@ -107,9 +126,12 @@ final class ZephirReaderTest extends TestCase
             'zep'
         );
 
-        $registry = (new ZephirReader())->read($config);
+        return (new ZephirReader())->read($config);
+    }
 
-        return $registry->get('Phalcon\\Sample\\Sample')
+    private function sample(): ClassDefinition
+    {
+        return $this->registry()->get('Phalcon\\Sample\\Sample')
             ?? self::fail('Phalcon\\Sample\\Sample was not read');
     }
 }

@@ -71,21 +71,29 @@ The model is deliberately complete and the formatter is deliberately opinionated
 |---|---|---|
 | Private members | captured, with visibility | filtered out |
 | Enums | `kind: enum` | rendered as a class |
-| Traits | `kind: trait` | see below |
+| Traits | `kind: trait` | `Trait` badge, plus a `Used by` list |
+
+`uses` and `traits` are different relations that share a keyword: `uses` are the
+file's namespace imports, `traits` are what the class body pulls in. `Registry`
+inverts the latter into `usedBy()`.
 
 Anything a reader can observe cheaply goes into the model even when today's only
 formatter ignores it, so adding a formatter never means revisiting a reader.
 
 ## Status
 
-Phase 1. Output is byte-for-byte identical to cphalcon's
-`bin/generate-api-docs.php`, which is verified by regenerating against that
-repository and diffing. Two known defects are reproduced on purpose so that
-comparison stays binary, and are fixed immediately after:
+Phase 1, complete. The port was verified byte-for-byte against cphalcon's
+`bin/generate-api-docs.php` before anything was changed, then two deliberate
+improvements were applied on top:
 
-- traits render with the `Class` badge, because the legacy script has no trait
-  branch in its badge selection
-- there is no "used by" relation for traits
+- traits carry a `Trait` badge instead of falling through to `Class`
+- traits list the classes that pull them in
+
+Against the frozen legacy baseline that is a diff of exactly 38 badge changes
+and 38 `Used by` blocks - one per trait - and nothing else.
+
+Both add markup the documentation theme needs styles for: the `badge--trait`
+modifier and the `.api-used-by` block.
 
 ## Development
 

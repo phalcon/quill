@@ -60,6 +60,20 @@ final class RegistryTest extends TestCase
         $this->assertCount(3, $registry->all());
     }
 
+    public function testUsedByIsTheInverseOfTraitUsage(): void
+    {
+        $registry = $this->registry();
+
+        $this->assertSame(
+            ['Phalcon\\Child'],
+            $registry->usedBy($this->definition($registry, 'Phalcon\\Thing'))
+        );
+        $this->assertSame(
+            [],
+            $registry->usedBy($this->definition($registry, 'Phalcon\\Base'))
+        );
+    }
+
     public function testPagesAreGroupedAndSorted(): void
     {
         $this->assertSame(
@@ -99,12 +113,14 @@ final class RegistryTest extends TestCase
     /**
      * @param array<string, string> $usesMap
      * @param list<string>          $extends
+     * @param list<string>          $traits
      */
     private function classDefinition(
         string $fqcn,
         string $page,
         array $extends = [],
-        array $usesMap = []
+        array $usesMap = [],
+        array $traits = []
     ): ClassDefinition {
         return new ClassDefinition(
             $fqcn,
@@ -121,6 +137,7 @@ final class RegistryTest extends TestCase
             $usesMap,
             $extends,
             [],
+            $traits,
             [],
             [],
             []
@@ -140,7 +157,8 @@ final class RegistryTest extends TestCase
                 'Phalcon\\Child',
                 'phalcon_base',
                 ['Base'],
-                ['Base' => 'Phalcon\\Base']
+                ['Base' => 'Phalcon\\Base'],
+                ['Thing']
             ),
             'Phalcon\\Thing' => $this->classDefinition('Phalcon\\Thing', 'phalcon_support'),
         ]);

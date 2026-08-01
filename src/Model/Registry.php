@@ -34,6 +34,9 @@ final class Registry
     /** @var array<string, list<string>> */
     private array $children = [];
 
+    /** @var array<string, list<string>> trait FQCN => the FQCNs pulling it in */
+    private array $usedBy = [];
+
     /**
      * @param array<string, ClassDefinition> $definitions
      */
@@ -43,6 +46,13 @@ final class Registry
             $parent = $this->parentOf($definition);
             if ($parent !== null) {
                 $this->children[$parent][] = $fqcn;
+            }
+
+            foreach ($definition->traits as $name) {
+                $trait = $this->resolve($name, $definition);
+                if ($trait !== null) {
+                    $this->usedBy[$trait][] = $fqcn;
+                }
             }
         }
     }
@@ -171,6 +181,17 @@ final class Registry
         }
 
         return null;
+    }
+
+    /**
+     * The classes that pull this trait in - the inverse of ClassDefinition's
+     * `traits`. Empty for anything that is not a used trait.
+     *
+     * @return list<string>
+     */
+    public function usedBy(ClassDefinition $class): array
+    {
+        return $this->usedBy[$class->fqcn] ?? [];
     }
 
     /**

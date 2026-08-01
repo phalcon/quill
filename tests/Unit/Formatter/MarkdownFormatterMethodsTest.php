@@ -168,6 +168,7 @@ final class MarkdownFormatterMethodsTest extends TestCase
             [],
             [],
             [],
+            [],
             $methods
         );
 

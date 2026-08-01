@@ -22,6 +22,8 @@ use Phalcon\Scribe\Model\PropertyDefinition;
 use Phalcon\Scribe\Model\Registry;
 use PHPUnit\Framework\TestCase;
 
+use function substr_count;
+
 final class MarkdownFormatterTest extends TestCase
 {
     public function testConstantsSectionRendersTheApiList(): void
@@ -58,14 +60,26 @@ final class MarkdownFormatterTest extends TestCase
         );
     }
 
-    public function testTraitsRenderWithTheClassBadgeForNow(): void
+    public function testTraitsCarryTheirOwnBadge(): void
     {
-        // Deliberate parity with the legacy script, which has no trait branch
-        // in its badge selection. The fix lands after the gate is green.
         $this->assertStringContainsString(
-            '<span class="badge badge--class">Class</span>',
+            '<span class="badge badge--trait">Trait</span>',
             $this->page()
         );
+    }
+
+    public function testUsedByListsTheClassesPullingTheTraitIn(): void
+    {
+        $this->assertStringContainsString(
+            "\n__Used by__ [`Phalcon\\Sample\\Base`](#samplebase)\n{ .api-used-by }\n",
+            $this->page()
+        );
+    }
+
+    public function testUsedByIsAbsentWhenNothingUsesIt(): void
+    {
+        // Base is a plain class; nothing pulls it in as a trait.
+        $this->assertSame(1, substr_count($this->page(), '__Used by__'));
     }
 
     public function testTreeLinksResolvedAncestors(): void
@@ -121,6 +135,7 @@ final class MarkdownFormatterTest extends TestCase
             [],
             [],
             [],
+            ['Child'],
             [],
             [],
             []
@@ -140,6 +155,7 @@ final class MarkdownFormatterTest extends TestCase
             ['Phalcon\\Sample\\Base'],
             ['Base' => 'Phalcon\\Sample\\Base'],
             ['Base'],
+            [],
             [],
             [new ConstantDefinition('LIMIT', '10', 'int', 'How many.')],
             [

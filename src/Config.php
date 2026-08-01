@@ -32,6 +32,7 @@ use function str_starts_with;
  */
 final class Config
 {
+    /** @var array<int, string> */
     private const KEYS = [
         'language',
         'source',

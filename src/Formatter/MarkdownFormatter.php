@@ -117,13 +117,12 @@ final class MarkdownFormatter implements Formatter
         $badge = 'Class';
         $css   = 'class';
 
-        /**
-         * No trait branch, deliberately: the legacy script has none, so a
-         * trait falls through to Class. Fixed once the gate is green.
-         */
         if ($class->kind === Kind::InterfaceKind) {
             $badge = 'Interface';
             $css   = 'interface';
+        } elseif ($class->kind === Kind::TraitKind) {
+            $badge = 'Trait';
+            $css   = 'trait';
         } elseif ($class->abstract) {
             $badge = 'Abstract';
             $css   = 'abstract';
@@ -144,6 +143,7 @@ final class MarkdownFormatter implements Formatter
 
         $output .= $this->tree($class, $registry);
         $output .= $this->uses($class);
+        $output .= $this->usedBy($class, $registry);
         $output .= $this->summary($class);
         $output .= $this->constants($class);
         $output .= $this->properties($class);
@@ -546,6 +546,28 @@ final class MarkdownFormatter implements Formatter
         return "\n<div class=\"api-tree\" markdown>\n\n"
             . implode("\n", $lines)
             . "\n\n</div>\n";
+    }
+
+    /**
+     * The inverse of a trait's usage: which classes pull it in. Rendered as
+     * links because, unlike the import list, every target is by construction
+     * in the registry.
+     */
+    private function usedBy(ClassDefinition $class, Registry $registry): string
+    {
+        $users = $registry->usedBy($class);
+        if ($users === []) {
+            return '';
+        }
+
+        sort($users);
+
+        $links = array_map(
+            fn (string $fqcn): string => $this->fqcnLink($fqcn, $fqcn, $registry, $class->page),
+            $users
+        );
+
+        return "\n__Used by__ " . implode(' · ', $links) . "\n{ .api-used-by }\n";
     }
 
     private function uses(ClassDefinition $class): string

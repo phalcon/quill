@@ -27,14 +27,21 @@ final class ClassDefinition
     /**
      * Bumped whenever toArray()'s shape changes. It is a published format the
      * moment anything downstream reads it.
+     *
+     * 2 - added `traits`.
      */
-    public const MODEL_VERSION = 1;
+    public const MODEL_VERSION = 2;
 
     /**
+     * `$uses` are namespace imports; `$traits` are the traits the body pulls
+     * in. Different relations that happen to share a keyword - do not conflate
+     * them.
+     *
      * @param list<string>              $uses
      * @param array<string, string>     $usesMap    short name => FQCN
      * @param list<string>              $extends    a class uses index 0; an interface may list several
      * @param list<string>              $implements
+     * @param list<string>              $traits     short names, resolved by Registry
      * @param list<ConstantDefinition>  $constants
      * @param list<PropertyDefinition>  $properties
      * @param list<MethodDefinition>    $methods
@@ -54,6 +61,7 @@ final class ClassDefinition
         public readonly array $usesMap,
         public readonly array $extends,
         public readonly array $implements,
+        public readonly array $traits,
         public readonly array $constants,
         public readonly array $properties,
         public readonly array $methods,
@@ -81,6 +89,7 @@ final class ClassDefinition
      *     usesMap: array<string, string>,
      *     extends: list<string>,
      *     implements: list<string>,
+     *     traits: list<string>,
      *     constants: list<array{
      *         name: string,
      *         default: string|null,
@@ -123,6 +132,7 @@ final class ClassDefinition
             'usesMap'     => $this->usesMap,
             'extends'     => $this->extends,
             'implements'  => $this->implements,
+            'traits'      => $this->traits,
             'constants'   => array_map(
                 static fn (ConstantDefinition $constant): array => $constant->toArray(),
                 $this->constants

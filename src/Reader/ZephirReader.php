@@ -355,6 +355,7 @@ final class ZephirReader implements Reader
             $usesMap,
             $this->readExtends($node),
             $this->readImplements($node),
+            $this->readTraits($definition),
             $this->readConstants($definition),
             $this->readProperties($definition),
             $this->readMethods($definition)
@@ -489,6 +490,33 @@ final class ZephirReader implements Reader
         ksort($properties);
 
         return array_values($properties);
+    }
+
+    /**
+     * Traits pulled in by the class body. The parser files these under
+     * `definition.uses` as `use-trait` nodes - not to be confused with the
+     * file's top-level namespace imports, which are a different relation.
+     *
+     * @param array<string, mixed> $definition
+     *
+     * @return list<string>
+     */
+    private function readTraits(array $definition): array
+    {
+        $traits = [];
+        foreach ($this->section($definition, 'uses') as $use) {
+            if (($use['type'] ?? '') !== 'use-trait') {
+                continue;
+            }
+
+            foreach ($this->section($use, 'traits') as $trait) {
+                if (is_string($trait['value'] ?? null)) {
+                    $traits[] = $trait['value'];
+                }
+            }
+        }
+
+        return $traits;
     }
 
     /**
