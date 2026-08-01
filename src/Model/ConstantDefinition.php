@@ -17,7 +17,7 @@ namespace Phalcon\Quill\Model;
  * One class constant. `$varType` comes from the `@var` tag when present, and
  * otherwise from the default value's type.
  */
-final class ConstantDefinition implements Definition
+final class ConstantDefinition implements NamedDefinition
 {
     public function __construct(
         public readonly string $name,

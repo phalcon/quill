@@ -160,17 +160,6 @@ final class Registry
     }
 
     /**
-     * The classes that pull this trait in - the inverse of ClassDefinition's
-     * `traits`. Empty for anything that is not a used trait.
-     *
-     * @return list<string>
-     */
-    public function usedBy(ClassDefinition $class): array
-    {
-        return $this->usedBy[$class->location->fqcn] ?? [];
-    }
-
-    /**
      * @return list<array<string, mixed>>
      */
     public function toArray(): array
@@ -179,5 +168,16 @@ final class Registry
             static fn (ClassDefinition $definition): array => $definition->toArray(),
             array_values($this->definitions)
         );
+    }
+
+    /**
+     * The classes that pull this trait in - the inverse of ClassDefinition's
+     * `traits`. Empty for anything that is not a used trait.
+     *
+     * @return list<string>
+     */
+    public function usedBy(ClassDefinition $class): array
+    {
+        return $this->usedBy[$class->location->fqcn] ?? [];
     }
 }

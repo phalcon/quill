@@ -33,7 +33,7 @@ use function usort;
  * Subclasses must not widen the constructor - filter() and sorted() rebuild
  * through `new static()` to preserve the concrete type.
  *
- * @template TDefinition of Definition
+ * @template TDefinition of NamedDefinition
  *
  * @implements IteratorAggregate<int, TDefinition>
  *
@@ -99,6 +99,16 @@ abstract class AbstractDefinitionCollection implements Countable, IteratorAggreg
         usort($items, $comparator);
 
         return new static($items);
+    }
+
+    /**
+     * @return static
+     */
+    public function sortedByName(): static
+    {
+        return $this->sorted(
+            static fn (NamedDefinition $a, NamedDefinition $b): int => $a->name <=> $b->name
+        );
     }
 
     /**

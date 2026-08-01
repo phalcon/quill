@@ -18,10 +18,4 @@ namespace Phalcon\Quill\Model;
  */
 final class ConstantDefinitionCollection extends AbstractDefinitionCollection
 {
-    public function sortedByName(): self
-    {
-        return $this->sorted(
-            static fn (ConstantDefinition $a, ConstantDefinition $b): int => $a->name <=> $b->name
-        );
-    }
 }

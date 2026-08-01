@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Parity;
 
+use Phalcon\Quill\Model\Document;
+use Phalcon\Quill\Model\Members;
+
 use function array_intersect;
 use function array_keys;
 use function is_array;
@@ -28,12 +31,6 @@ use function usort;
  */
 final class Descriptions
 {
-    private const SECTIONS = [
-        'constants'  => 'constant',
-        'properties' => 'property',
-        'methods'    => 'method',
-    ];
-
     /**
      * One row per disagreement, ordered so the result is stable between runs.
      *
@@ -54,8 +51,8 @@ final class Descriptions
                 continue;
             }
 
-            $leftText  = $this->text($leftClass, 'description');
-            $rightText = $this->text($rightClass, 'description');
+            $leftText  = $this->text($leftClass, Document::DESCRIPTION);
+            $rightText = $this->text($rightClass, Document::DESCRIPTION);
 
             if ($leftText !== $rightText) {
                 $rows[] = [
@@ -67,7 +64,7 @@ final class Descriptions
                 ];
             }
 
-            foreach (self::SECTIONS as $section => $kind) {
+            foreach (Members::SECTIONS as $section => $kind) {
                 $leftMembers  = $this->members($leftClass, $section);
                 $rightMembers = $this->members($rightClass, $section);
 
@@ -103,22 +100,9 @@ final class Descriptions
      */
     private function members(array $class, string $section): array
     {
-        if (!is_array($class['members'] ?? null)) {
-            return [];
-        }
-
-        $members = $class['members'][$section] ?? null;
-        if (!is_array($members)) {
-            return [];
-        }
-
         $named = [];
-        foreach ($members as $member) {
-            if (!is_array($member) || !is_string($member['name'] ?? null)) {
-                continue;
-            }
-
-            $named[$member['name']] = $this->text($member, 'description');
+        foreach (MemberIndex::of($class, $section) as $name => $member) {
+            $named[$name] = $this->text($member, Document::DESCRIPTION);
         }
 
         return $named;

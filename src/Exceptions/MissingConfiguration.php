@@ -13,6 +13,15 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Exceptions;
 
-class InvalidConfiguration extends Exception
+/**
+ * The configuration file a run was pointed at does not exist.
+ */
+class MissingConfiguration extends Exception
 {
+    public function __construct(string $path)
+    {
+        parent::__construct(
+            "quill configuration: no such file '" . $path . "'"
+        );
+    }
 }

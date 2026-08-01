@@ -15,7 +15,7 @@ namespace Phalcon\Quill\Formatter;
 
 use Phalcon\Quill\Config;
 use Phalcon\Quill\Contracts\Formatter;
-use Phalcon\Quill\Model\ClassDefinition;
+use Phalcon\Quill\Model\Document;
 use Phalcon\Quill\Model\Registry;
 
 use function json_encode;
@@ -62,11 +62,11 @@ final class JsonFormatter implements Formatter
 
         ksort($definitions);
 
-        $document = [
-            'language'    => $config->language(),
-            'repository'  => $config->repository(),
-            'definitions' => $definitions,
-        ];
+        $document = Document::envelope(
+            $config->language(),
+            $config->repository(),
+            $definitions
+        );
 
         return [
             self::DOCUMENT => json_encode(

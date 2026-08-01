@@ -36,22 +36,22 @@ final class MethodDefinitionCollection extends AbstractDefinitionCollection
     }
 
     /**
-     * @param 'public'|'protected'|'private' $visibility
-     */
-    public function withVisibility(string $visibility): self
-    {
-        return $this->filter(
-            static fn (MethodDefinition $method): bool => $method->visibility === $visibility
-        );
-    }
-
-    /**
      * The model keeps private members; hiding them is a formatter decision.
      */
     public function withoutPrivate(): self
     {
         return $this->filter(
             static fn (MethodDefinition $method): bool => $method->visibility !== 'private'
+        );
+    }
+
+    /**
+     * @param 'public'|'protected'|'private' $visibility
+     */
+    public function withVisibility(string $visibility): self
+    {
+        return $this->filter(
+            static fn (MethodDefinition $method): bool => $method->visibility === $visibility
         );
     }
 }

@@ -18,13 +18,6 @@ namespace Phalcon\Quill\Model;
  */
 final class PropertyDefinitionCollection extends AbstractDefinitionCollection
 {
-    public function sortedByName(): self
-    {
-        return $this->sorted(
-            static fn (PropertyDefinition $a, PropertyDefinition $b): int => $a->name <=> $b->name
-        );
-    }
-
     /**
      * The model keeps private members; hiding them is a formatter decision.
      */

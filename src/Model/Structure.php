@@ -48,6 +48,11 @@ final class Structure
         return new self(Keyword::Interface, null, null);
     }
 
+    public static function trait(): self
+    {
+        return new self(Keyword::Trait, null, null);
+    }
+
     /**
      * @return array{keyword: string, isAbstract: bool|null, isFinal: bool|null}
      */
@@ -58,10 +63,5 @@ final class Structure
             'isAbstract' => $this->isAbstract,
             'isFinal'    => $this->isFinal,
         ];
-    }
-
-    public static function trait(): self
-    {
-        return new self(Keyword::Trait, null, null);
     }
 }

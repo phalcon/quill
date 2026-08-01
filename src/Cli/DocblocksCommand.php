@@ -13,26 +13,17 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Cli;
 
-use Phalcon\Quill\Exceptions\InvalidConfiguration;
 use Phalcon\Quill\Exceptions\WriteFailed;
 use Phalcon\Quill\Parity\Descriptions;
+use Phalcon\Quill\Parity\ModelDocument;
 
 use function count;
 use function fclose;
-use function file_get_contents;
 use function fopen;
 use function fputcsv;
 use function fwrite;
-use function is_array;
-use function is_file;
-use function is_string;
-use function json_decode;
 use function sprintf;
-use function str_contains;
-use function strrchr;
-use function substr;
 
-use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const STDOUT;
 
@@ -55,13 +46,13 @@ final class DocblocksCommand
 
     public function execute(string $leftPath, string $rightPath, string $csvPath): int
     {
-        $left  = $this->load($leftPath);
-        $right = $this->load($rightPath);
+        $left  = ModelDocument::fromFile($leftPath);
+        $right = ModelDocument::fromFile($rightPath);
 
-        $leftLabel  = $this->label($left['repository']);
-        $rightLabel = $this->label($right['repository']);
+        $leftLabel  = $left->label();
+        $rightLabel = $right->label();
 
-        $rows = (new Descriptions())->compare($left['definitions'], $right['definitions']);
+        $rows = (new Descriptions())->compare($left->definitions, $right->definitions);
 
         $handle = @fopen($csvPath, 'wb');
         if ($handle === false) {
@@ -119,44 +110,5 @@ final class DocblocksCommand
         ));
 
         return 0;
-    }
-
-    /**
-     * The short repository name, which gives the column heading and - by its
-     * first letter - the value that selects it.
-     */
-    private function label(string $repository): string
-    {
-        if (!str_contains($repository, '/')) {
-            return $repository;
-        }
-
-        return substr((string) strrchr($repository, '/'), 1);
-    }
-
-    /**
-     * @return array{repository: string, definitions: array<string, mixed>}
-     */
-    private function load(string $path): array
-    {
-        if (!is_file($path)) {
-            throw new InvalidConfiguration("docblocks: no such model document '{$path}'");
-        }
-
-        /** @var mixed $decoded */
-        $decoded = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
-        if (!is_array($decoded) || !is_array($decoded['definitions'] ?? null)) {
-            throw new InvalidConfiguration("docblocks: '{$path}' is not a model document");
-        }
-
-        $repository = $decoded['repository'] ?? null;
-
-        /** @var array<string, mixed> $definitions */
-        $definitions = $decoded['definitions'];
-
-        return [
-            'repository'  => is_string($repository) ? $repository : 'unknown',
-            'definitions' => $definitions,
-        ];
     }
 }

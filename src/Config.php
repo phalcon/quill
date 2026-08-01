@@ -13,7 +13,9 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill;
 
-use Phalcon\Quill\Exceptions\InvalidConfiguration;
+use Phalcon\Quill\Exceptions\MalformedConfiguration;
+use Phalcon\Quill\Exceptions\MissingConfiguration;
+use Phalcon\Quill\Exceptions\MissingConfigurationKey;
 
 use function dirname;
 use function is_array;
@@ -69,9 +71,7 @@ final class Config
             /** @var mixed $value */
             $value = $config[$key] ?? null;
             if (!is_string($value) || $value === '') {
-                throw new InvalidConfiguration(
-                    "quill configuration key '{$key}' is required and must be a non-empty string"
-                );
+                throw new MissingConfigurationKey($key);
             }
 
             $values[$key] = $value;
@@ -91,17 +91,26 @@ final class Config
     public static function fromFile(string $path): self
     {
         if (!is_file($path)) {
-            throw new InvalidConfiguration("quill configuration: no such file '{$path}'");
+            throw new MissingConfiguration($path);
         }
 
         /** @var mixed $config */
         $config = require $path;
         if (!is_array($config)) {
-            throw new InvalidConfiguration("'{$path}' must return an array");
+            throw new MalformedConfiguration($path);
         }
 
         /** @var array<string, mixed> $config */
         return self::fromArray($config, dirname($path));
+    }
+
+    /**
+     * Mirrors Talon\Cli\SuiteMap::absolute() - a leading slash wins, anything
+     * else is relative to the configuration file's directory.
+     */
+    private static function absolute(string $path, string $root): string
+    {
+        return str_starts_with($path, '/') ? $path : rtrim($root, '/') . '/' . $path;
     }
 
     public function branch(): string
@@ -162,14 +171,5 @@ final class Config
             $this->sourcePrefix,
             $this->extension,
         );
-    }
-
-    /**
-     * Mirrors Talon\Cli\SuiteMap::absolute() - a leading slash wins, anything
-     * else is relative to the configuration file's directory.
-     */
-    private static function absolute(string $path, string $root): string
-    {
-        return str_starts_with($path, '/') ? $path : rtrim($root, '/') . '/' . $path;
     }
 }

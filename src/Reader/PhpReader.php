@@ -80,77 +80,6 @@ final class PhpReader implements Reader
         return new Registry($definitions);
     }
 
-    /**
-     * Everything the body declares.
-     */
-    private function readMembers(Stmt\ClassLike $node): Members
-    {
-        $constants  = [];
-        $properties = [];
-        $methods    = [];
-
-        foreach ($node->stmts as $member) {
-            if ($member instanceof Stmt\ClassConst) {
-                foreach ($member->consts as $const) {
-                    $doc          = new Docblock($this->docComment($member));
-                    $constants[]  = new ConstantDefinition(
-                        $const->name->toString(),
-                        $this->values->render($const->value),
-                        $doc->varType() ?? $this->scalarType($const->value),
-                        $doc->description()
-                    );
-                }
-
-                continue;
-            }
-
-            // An enum case is a named value on the declaration - constant
-            // shaped, and the formatter renders enums as classes anyway.
-            if ($member instanceof Stmt\EnumCase) {
-                $doc         = new Docblock($this->docComment($member));
-                $constants[] = new ConstantDefinition(
-                    $member->name->toString(),
-                    $this->values->render($member->expr),
-                    $doc->varType() ?? $this->scalarType($member->expr),
-                    $doc->description()
-                );
-
-                continue;
-            }
-
-            if ($member instanceof Stmt\Property) {
-                $doc = new Docblock($this->docComment($member));
-                foreach ($member->props as $prop) {
-                    $properties[] = new PropertyDefinition(
-                        $prop->name->toString(),
-                        $this->visibility($member->isPrivate(), $member->isProtected()),
-                        $member->isReadonly(),
-                        $this->values->render($prop->default),
-                        $doc->varType() ?? $this->types->render($member->type) ?? 'mixed',
-                        $doc->description(),
-                        []
-                    );
-                }
-
-                continue;
-            }
-
-            if ($member instanceof Stmt\ClassMethod) {
-                $methods[] = $this->readMethod($member);
-
-                foreach ($this->promoted($member) as $property) {
-                    $properties[] = $property;
-                }
-            }
-        }
-
-        return new Members(
-            (new ConstantDefinitionCollection($constants))->sortedByName(),
-            (new PropertyDefinitionCollection($properties))->sortedByName(),
-            new MethodDefinitionCollection($methods)
-        );
-    }
-
     private function docComment(Node $node): ?string
     {
         return $node->getDocComment()?->getText();
@@ -167,6 +96,64 @@ final class PhpReader implements Reader
         }
 
         return is_string($param->var->name) ? $param->var->name : null;
+    }
+
+    /**
+     * Promoted constructor parameters are properties, so the model records
+     * them as both. Without this, every promoted class would look
+     * property-less beside its Zephir twin, which declares them explicitly.
+     *
+     * @return list<PropertyDefinition>
+     */
+    private function promoted(Stmt\ClassMethod $method): array
+    {
+        if ($method->name->toString() !== '__construct') {
+            return [];
+        }
+
+        $properties = [];
+        foreach ($method->params as $param) {
+            $name = $this->paramName($param);
+            if ($param->flags === 0 || $name === null) {
+                continue;
+            }
+
+            $properties[] = new PropertyDefinition(
+                $name,
+                $this->visibility(
+                    ($param->flags & Stmt\Class_::MODIFIER_PRIVATE) !== 0,
+                    ($param->flags & Stmt\Class_::MODIFIER_PROTECTED) !== 0
+                ),
+                ($param->flags & Stmt\Class_::MODIFIER_READONLY) !== 0,
+                $this->values->render($param->default),
+                $this->types->render($param->type) ?? 'mixed',
+                '',
+                []
+            );
+        }
+
+        return $properties;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function readExtends(Stmt\ClassLike $node): array
+    {
+        if ($node instanceof Stmt\Class_) {
+            return $node->extends === null ? [] : [$node->extends->toString()];
+        }
+
+        if ($node instanceof Stmt\Interface_) {
+            $names = [];
+            foreach ($node->extends as $name) {
+                $names[] = $name->toString();
+            }
+
+            return $names;
+        }
+
+        return [];
     }
 
     /**
@@ -197,27 +184,6 @@ final class PhpReader implements Reader
             ),
             $this->readMembers($node)
         );
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function readExtends(Stmt\ClassLike $node): array
-    {
-        if ($node instanceof Stmt\Class_) {
-            return $node->extends === null ? [] : [$node->extends->toString()];
-        }
-
-        if ($node instanceof Stmt\Interface_) {
-            $names = [];
-            foreach ($node->extends as $name) {
-                $names[] = $name->toString();
-            }
-
-            return $names;
-        }
-
-        return [];
     }
 
     /**
@@ -300,6 +266,77 @@ final class PhpReader implements Reader
         return $names;
     }
 
+    /**
+     * Everything the body declares.
+     */
+    private function readMembers(Stmt\ClassLike $node): Members
+    {
+        $constants  = [];
+        $properties = [];
+        $methods    = [];
+
+        foreach ($node->stmts as $member) {
+            if ($member instanceof Stmt\ClassConst) {
+                foreach ($member->consts as $const) {
+                    $doc          = new Docblock($this->docComment($member));
+                    $constants[]  = new ConstantDefinition(
+                        $const->name->toString(),
+                        $this->values->render($const->value),
+                        $doc->varType() ?? $this->scalarType($const->value),
+                        $doc->description()
+                    );
+                }
+
+                continue;
+            }
+
+            // An enum case is a named value on the declaration - constant
+            // shaped, and the formatter renders enums as classes anyway.
+            if ($member instanceof Stmt\EnumCase) {
+                $doc         = new Docblock($this->docComment($member));
+                $constants[] = new ConstantDefinition(
+                    $member->name->toString(),
+                    $this->values->render($member->expr),
+                    $doc->varType() ?? $this->scalarType($member->expr),
+                    $doc->description()
+                );
+
+                continue;
+            }
+
+            if ($member instanceof Stmt\Property) {
+                $doc = new Docblock($this->docComment($member));
+                foreach ($member->props as $prop) {
+                    $properties[] = new PropertyDefinition(
+                        $prop->name->toString(),
+                        $this->visibility($member->isPrivate(), $member->isProtected()),
+                        $member->isReadonly(),
+                        $this->values->render($prop->default),
+                        $doc->varType() ?? $this->types->render($member->type) ?? 'mixed',
+                        $doc->description(),
+                        []
+                    );
+                }
+
+                continue;
+            }
+
+            if ($member instanceof Stmt\ClassMethod) {
+                $methods[] = $this->readMethod($member);
+
+                foreach ($this->promoted($member) as $property) {
+                    $properties[] = $property;
+                }
+            }
+        }
+
+        return new Members(
+            (new ConstantDefinitionCollection($constants))->sortedByName(),
+            (new PropertyDefinitionCollection($properties))->sortedByName(),
+            new MethodDefinitionCollection($methods)
+        );
+    }
+
     private function readMethod(Stmt\ClassMethod $method): MethodDefinition
     {
         $visibility = $this->visibility($method->isPrivate(), $method->isProtected());
@@ -350,43 +387,6 @@ final class PhpReader implements Reader
         }
 
         return $traits;
-    }
-
-    /**
-     * Promoted constructor parameters are properties, so the model records
-     * them as both. Without this, every promoted class would look
-     * property-less beside its Zephir twin, which declares them explicitly.
-     *
-     * @return list<PropertyDefinition>
-     */
-    private function promoted(Stmt\ClassMethod $method): array
-    {
-        if ($method->name->toString() !== '__construct') {
-            return [];
-        }
-
-        $properties = [];
-        foreach ($method->params as $param) {
-            $name = $this->paramName($param);
-            if ($param->flags === 0 || $name === null) {
-                continue;
-            }
-
-            $properties[] = new PropertyDefinition(
-                $name,
-                $this->visibility(
-                    ($param->flags & Stmt\Class_::MODIFIER_PRIVATE) !== 0,
-                    ($param->flags & Stmt\Class_::MODIFIER_PROTECTED) !== 0
-                ),
-                ($param->flags & Stmt\Class_::MODIFIER_READONLY) !== 0,
-                $this->values->render($param->default),
-                $this->types->render($param->type) ?? 'mixed',
-                '',
-                []
-            );
-        }
-
-        return $properties;
     }
 
     /**

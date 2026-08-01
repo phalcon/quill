@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Reader;
 
-use FilesystemIterator;
 use Phalcon\Quill\Config;
 use Phalcon\Quill\Contracts\Reader;
 use Phalcon\Quill\Model\ClassDefinition;
@@ -32,15 +31,10 @@ use Phalcon\Quill\Model\Registry;
 use Phalcon\Quill\Model\Relations;
 use Phalcon\Quill\Model\Structure;
 use Phalcon\Quill\Reader\Zephir\AstNode;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use SplFileInfo;
 use Zephir\Parser\Parser;
 
 use function implode;
 use function in_array;
-use function sort;
-use function str_replace;
 use function strrchr;
 use function substr;
 
@@ -51,7 +45,7 @@ use const DIRECTORY_SEPARATOR;
  *
  * Ported from cphalcon's bin/generate-api-docs.php. Two things differ on
  * purpose: private members are captured rather than skipped - filtering is the
- * formatter's call - and return types and default values are normalised to
+ * formatter's call - and return types and default values are normalized to
  * strings here, so no parser AST leaks into the model.
  */
 final class ZephirReader implements Reader
@@ -62,7 +56,7 @@ final class ZephirReader implements Reader
         $prefix      = $config->sourceRoot() . DIRECTORY_SEPARATOR;
         $definitions = [];
 
-        foreach ($this->collectFiles($config) as $relPath) {
+        foreach (SourceFiles::collect($config) as $relPath) {
             /** @var array<int, mixed> $ast */
             $ast   = $parser->parse($prefix . $relPath);
             $class = $this->readFile(AstNode::listFrom($ast), $relPath);
@@ -73,36 +67,6 @@ final class ZephirReader implements Reader
         }
 
         return new Registry($definitions);
-    }
-
-    /**
-     * @return list<string> relative paths of every source file
-     */
-    private function collectFiles(Config $config): array
-    {
-        $prefix   = $config->sourceRoot() . DIRECTORY_SEPARATOR;
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator(
-                $config->sourceRoot(),
-                FilesystemIterator::SKIP_DOTS
-            ),
-            RecursiveIteratorIterator::CHILD_FIRST
-        );
-
-        $files = [];
-        foreach ($iterator as $file) {
-            if (!$file instanceof SplFileInfo) {
-                continue;
-            }
-
-            if ($file->isFile() && $file->getExtension() === $config->extension()) {
-                $files[] = str_replace($prefix, '', $file->getPathname());
-            }
-        }
-
-        sort($files);
-
-        return $files;
     }
 
     /**

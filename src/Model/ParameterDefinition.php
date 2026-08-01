@@ -17,7 +17,7 @@ namespace Phalcon\Quill\Model;
  * One method parameter. `$default` is an already-rendered expression such as
  * `"[]"` or `"self::FOO"` - no source AST reaches the model.
  */
-final class ParameterDefinition implements Definition
+final class ParameterDefinition implements NamedDefinition
 {
     public function __construct(
         public readonly string $name,

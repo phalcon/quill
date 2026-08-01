@@ -20,6 +20,21 @@ namespace Phalcon\Quill\Model;
  */
 final class Members
 {
+    /**
+     * The serialized section names, and the singular noun each member of that
+     * section is called. Anything reading a model document should take the
+     * names from here rather than spelling them again - a section added to
+     * toArray() but missed elsewhere produces an empty comparison, not an
+     * error.
+     *
+     * @var array<string, string>
+     */
+    public const SECTIONS = [
+        'constants'  => 'constant',
+        'properties' => 'property',
+        'methods'    => 'method',
+    ];
+
     public function __construct(
         public readonly ConstantDefinitionCollection $constants,
         public readonly PropertyDefinitionCollection $properties,

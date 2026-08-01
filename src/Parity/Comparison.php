@@ -13,12 +13,12 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Parity;
 
+use Phalcon\Quill\Model\Members;
+
 use function array_diff;
 use function array_intersect;
 use function array_keys;
 use function array_values;
-use function is_array;
-use function is_string;
 use function sort;
 
 /**
@@ -30,8 +30,6 @@ use function sort;
  */
 final class Comparison
 {
-    private const MEMBERS = ['constants', 'properties', 'methods'];
-
     /**
      * @param array<string, mixed> $left
      * @param array<string, mixed> $right
@@ -83,9 +81,9 @@ final class Comparison
     {
         $sections = [];
 
-        foreach (self::MEMBERS as $section) {
-            $leftNames  = $this->names($left, $section);
-            $rightNames = $this->names($right, $section);
+        foreach (array_keys(Members::SECTIONS) as $section) {
+            $leftNames  = array_keys(MemberIndex::of($left, $section));
+            $rightNames = array_keys(MemberIndex::of($right, $section));
 
             $missing = array_values(array_diff($leftNames, $rightNames));
             $extra   = array_values(array_diff($rightNames, $leftNames));
@@ -101,29 +99,5 @@ final class Comparison
         }
 
         return $sections;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function names(mixed $definition, string $section): array
-    {
-        if (!is_array($definition) || !is_array($definition['members'] ?? null)) {
-            return [];
-        }
-
-        $members = $definition['members'][$section] ?? null;
-        if (!is_array($members)) {
-            return [];
-        }
-
-        $names = [];
-        foreach ($members as $member) {
-            if (is_array($member) && is_string($member['name'] ?? null)) {
-                $names[] = $member['name'];
-            }
-        }
-
-        return $names;
     }
 }

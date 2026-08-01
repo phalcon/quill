@@ -13,19 +13,14 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Cli;
 
-use Phalcon\Quill\Exceptions\InvalidConfiguration;
 use Phalcon\Quill\Parity\Comparison;
+use Phalcon\Quill\Parity\ModelDocument;
 
 use function array_slice;
 use function count;
-use function file_get_contents;
 use function fwrite;
-use function is_array;
-use function is_file;
-use function json_decode;
 use function sprintf;
 
-use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const STDOUT;
 
@@ -47,9 +42,9 @@ final class ParityCommand
 
     public function execute(string $leftPath, string $rightPath, int $limit = 25): int
     {
-        $left   = $this->load($leftPath);
-        $right  = $this->load($rightPath);
-        $report = (new Comparison())->compare($left, $right);
+        $left   = ModelDocument::fromFile($leftPath);
+        $right  = ModelDocument::fromFile($rightPath);
+        $report = (new Comparison())->compare($left->definitions, $right->definitions);
 
         fwrite($this->stdout, sprintf(
             "left:   %s (%d)%sright:  %s (%d)%scommon: %d%s%s",
@@ -78,7 +73,7 @@ final class ParityCommand
         $shown = 0;
         foreach ($differing as $fqcn => $sections) {
             if ($shown++ >= $limit) {
-                fwrite($this->stdout, sprintf('  ... and %d more%s', count($differing) - $limit, PHP_EOL));
+                $this->remainder(count($differing), $limit);
 
                 break;
             }
@@ -101,24 +96,16 @@ final class ParityCommand
     }
 
     /**
-     * @return array<string, mixed>
+     * Says how many entries the limit held back. Silent when it held back
+     * nothing, so a short list reads cleanly.
      */
-    private function load(string $path): array
+    private function remainder(int $total, int $limit): void
     {
-        if (!is_file($path)) {
-            throw new InvalidConfiguration("parity: no such model document '{$path}'");
+        if ($total <= $limit) {
+            return;
         }
 
-        /** @var mixed $decoded */
-        $decoded = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
-        if (!is_array($decoded) || !is_array($decoded['definitions'] ?? null)) {
-            throw new InvalidConfiguration("parity: '{$path}' is not a model document");
-        }
-
-        /** @var array<string, mixed> $definitions */
-        $definitions = $decoded['definitions'];
-
-        return $definitions;
+        fwrite($this->stdout, sprintf('  ... and %d more%s', $total - $limit, PHP_EOL));
     }
 
     /**
@@ -132,9 +119,7 @@ final class ParityCommand
             fwrite($this->stdout, '  ' . $name . PHP_EOL);
         }
 
-        if (count($names) > $limit) {
-            fwrite($this->stdout, sprintf('  ... and %d more%s', count($names) - $limit, PHP_EOL));
-        }
+        $this->remainder(count($names), $limit);
 
         fwrite($this->stdout, PHP_EOL);
     }
