@@ -31,26 +31,19 @@ use Phalcon\Scribe\Model\PropertyDefinitionCollection;
 use Phalcon\Scribe\Model\Registry;
 use Phalcon\Scribe\Model\Relations;
 use Phalcon\Scribe\Model\Structure;
+use Phalcon\Scribe\Reader\Zephir\AstNode;
+use Phalcon\Scribe\Reader\Zephir\Docblock;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 use Zephir\Parser\Parser;
 
-use function explode;
 use function implode;
 use function in_array;
-use function is_array;
-use function is_scalar;
-use function is_string;
-use function ltrim;
-use function preg_match;
-use function preg_replace;
 use function sort;
 use function str_replace;
-use function str_starts_with;
 use function strrchr;
 use function substr;
-use function trim;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -73,7 +66,7 @@ final class ZephirReader implements Reader
         foreach ($this->collectFiles($config) as $relPath) {
             /** @var array<int, mixed> $ast */
             $ast   = $parser->parse($prefix . $relPath);
-            $class = $this->readFile($ast, $relPath);
+            $class = $this->readFile(AstNode::listFrom($ast), $relPath);
 
             if ($class !== null) {
                 $definitions[$class->location->fqcn] = $class;
@@ -81,40 +74,6 @@ final class ZephirReader implements Reader
         }
 
         return new Registry($definitions);
-    }
-
-    /**
-     * Strips the comment decoration, returning clean text lines.
-     */
-    private function cleanDocblock(?string $raw): string
-    {
-        if ($raw === null || $raw === '') {
-            return '';
-        }
-
-        $output = [];
-        foreach (explode("\n", $raw) as $line) {
-            $line = trim($line);
-            if ($line === '**' || $line === '*' || $line === '*/') {
-                $output[] = '';
-
-                continue;
-            }
-            if (str_starts_with($line, '* ')) {
-                $output[] = substr($line, 2);
-
-                continue;
-            }
-            if (str_starts_with($line, '*')) {
-                $output[] = ltrim(substr($line, 1));
-
-                continue;
-            }
-
-            $output[] = $line;
-        }
-
-        return trim(implode("\n", $output), "\n");
     }
 
     /**
@@ -148,41 +107,7 @@ final class ZephirReader implements Reader
     }
 
     /**
-     * Removes the tag block from a cleaned docblock, keeping prose, examples
-     * and informational tags such as `@todo`.
-     */
-    private function describe(string $cleanDocblock): string
-    {
-        $output   = [];
-        $skipping = false;
-        foreach (explode("\n", $cleanDocblock) as $line) {
-            $trimmed = trim($line);
-
-            // Multi-line tags are swallowed up to the next blank line.
-            if ($skipping) {
-                if ($trimmed === '') {
-                    $skipping = false;
-                }
-
-                continue;
-            }
-
-            if (preg_match('/^@(param|return|throws|var|deprecated|phpstan-\S+|psalm-\S+)\b/', $trimmed) === 1) {
-                $skipping = true;
-
-                continue;
-            }
-
-            $output[] = $line;
-        }
-
-        $text = (string) preg_replace("/\n{3,}/", "\n\n", implode("\n", $output));
-
-        return trim($text, "\n");
-    }
-
-    /**
-     * @param array<array-key, mixed> $modifiers
+     * @param list<string> $modifiers
      *
      * @return 'public'|'protected'|'private'
      */
@@ -195,39 +120,20 @@ final class ZephirReader implements Reader
         return in_array('protected', $modifiers, true) ? 'protected' : 'public';
     }
 
-    /**
-     * @param array<array-key, mixed> $node
-     *
-     * @return array<string, mixed>|null
-     */
-    private function node(array $node, string $key): ?array
+    private function parameterType(AstNode $parameter): string
     {
-        $value = $node[$key] ?? null;
-        if (!is_array($value) || $value === []) {
-            return null;
+        $cast = $parameter->node('cast')?->text('value');
+        if ($cast !== null) {
+            return $cast;
         }
 
-        /** @var array<string, mixed> $value */
-        return $value;
+        $type = $parameter->text('data-type') ?? 'variable';
+
+        return $type === 'variable' ? 'mixed' : $type;
     }
 
     /**
-     * @param array<string, mixed> $parameter
-     */
-    private function parameterType(array $parameter): string
-    {
-        $cast = $this->node($parameter, 'cast');
-        if ($cast !== null && is_string($cast['value'] ?? null)) {
-            return $cast['value'];
-        }
-
-        $type = $parameter['data-type'] ?? 'variable';
-
-        return !is_string($type) || $type === 'variable' ? 'mixed' : $type;
-    }
-
-    /**
-     * @param array<array-key, mixed> $modifiers
+     * @param list<string> $modifiers
      *
      * @return 'public'|'protected'|'private'
      */
@@ -242,25 +148,49 @@ final class ZephirReader implements Reader
     }
 
     /**
-     * @param array<string, mixed> $definition
+     * One `use` statement, which may carry several aliases.
+     *
+     * @return array{uses: list<string>, aliases: array<string, string>}
      */
-    private function readConstants(array $definition): ConstantDefinitionCollection
+    private function readAliases(AstNode $item): array
     {
-        $constants = [];
-        foreach ($this->section($definition, 'constants') as $constant) {
-            $name = $constant['name'] ?? null;
-            if (($constant['type'] ?? '') !== 'const' || !is_string($name)) {
+        $uses    = [];
+        $aliases = [];
+
+        foreach ($item->section('aliases') as $alias) {
+            $name = $alias->text('name');
+            if ($name === null) {
                 continue;
             }
 
-            $clean   = $this->cleanDocblock($this->text($constant, 'docblock'));
-            $default = $this->node($constant, 'default');
+            $uses[] = $name;
+
+            // Without an explicit alias the short name is the last segment.
+            $short           = $alias->text('alias')
+                ?? substr((string) strrchr('\\' . $name, '\\'), 1);
+            $aliases[$short] = $name;
+        }
+
+        return ['uses' => $uses, 'aliases' => $aliases];
+    }
+
+    private function readConstants(AstNode $definition): ConstantDefinitionCollection
+    {
+        $constants = [];
+        foreach ($definition->section('constants') as $constant) {
+            $name = $constant->text('name');
+            if (!$constant->is('type', 'const') || $name === null) {
+                continue;
+            }
+
+            $doc     = new Docblock($constant->text('docblock'));
+            $default = $constant->node('default');
 
             $constants[] = new ConstantDefinition(
                 $name,
                 $this->renderDefault($default),
-                $this->varType($clean, $default),
-                $this->describe($clean)
+                $this->varType($doc, $default),
+                $doc->description()
             );
         }
 
@@ -268,81 +198,47 @@ final class ZephirReader implements Reader
     }
 
     /**
-     * Reduces one parsed file to a single definition, or null when the file
-     * declares no class, interface or trait.
+     * A class carries at most one parent; an interface may list several.
      *
-     * @param array<int, mixed> $ast
+     * @return list<string>
+     */
+    private function readExtends(AstNode $node): array
+    {
+        $single = $node->text('extends');
+        if ($single !== null && $single !== '') {
+            return [$single];
+        }
+
+        $names = [];
+        foreach ($node->section('extends') as $entry) {
+            $value = $entry->text('value');
+            if ($value !== null) {
+                $names[] = $value;
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * @param list<AstNode> $ast
      */
     private function readFile(array $ast, string $relPath): ?ClassDefinition
     {
-        $namespace = '';
-        $uses      = [];
-        $usesMap   = [];
-        $comment   = '';
-        $node      = null;
-        $structure = Structure::classType(false, false);
-
-        foreach ($ast as $item) {
-            if (!is_array($item)) {
-                continue;
-            }
-
-            /** @var array<string, mixed> $item */
-            $type = $item['type'] ?? '';
-
-            if ($type === 'namespace') {
-                $namespace = $this->text($item, 'name') ?? '';
-                $comment   = '';
-            } elseif ($type === 'comment') {
-                $comment = $this->text($item, 'value') ?? '';
-            } elseif ($type === 'use') {
-                $comment = '';
-                foreach ($this->section($item, 'aliases') as $alias) {
-                    $name = $alias['name'] ?? null;
-                    if (!is_string($name)) {
-                        continue;
-                    }
-
-                    $uses[] = $name;
-
-                    $short = $alias['alias'] ?? null;
-                    if (!is_string($short)) {
-                        $short = substr((string) strrchr('\\' . $name, '\\'), 1);
-                    }
-
-                    $usesMap[$short] = $name;
-                }
-            } elseif ($type === 'class' || $type === 'interface' || $type === 'trait') {
-                $node = $item;
-
-                // Zephir has no enum declaration, so Keyword::Enum is
-                // unreachable here; it arrives with the PHP reader.
-                $structure = match ($type) {
-                    'interface' => Structure::interface(),
-                    'trait'     => Structure::trait(),
-                    default     => Structure::classType(
-                        ($item['abstract'] ?? 0) === 1,
-                        ($item['final'] ?? 0) === 1
-                    ),
-                };
-
-                break;
-            }
-        }
-
-        if ($node === null) {
+        $header = $this->readHeader($ast);
+        if ($header === null) {
             return null;
         }
 
-        $fqcn = $namespace . '\\' . ($this->text($node, 'name') ?? '');
-
-        $definition = $this->node($node, 'definition') ?? [];
+        $node       = $header['node'];
+        $fqcn       = $header['namespace'] . '\\' . ($node->text('name') ?? '');
+        $definition = $node->node('definition') ?? new AstNode([]);
 
         return new ClassDefinition(
-            new Location($fqcn, $namespace, $relPath),
-            $structure,
-            $this->describe($this->cleanDocblock($comment)),
-            new Imports($uses, $usesMap),
+            new Location($fqcn, $header['namespace'], $relPath),
+            $header['structure'],
+            (new Docblock($header['comment']))->description(),
+            new Imports($header['uses'], $header['aliases']),
             new Relations(
                 $this->readExtends($node),
                 $this->readImplements($node),
@@ -357,45 +253,86 @@ final class ZephirReader implements Reader
     }
 
     /**
-     * A class carries at most one parent; an interface may list several.
+     * Walks the top level until the declaration, gathering what precedes it.
+     * Null when the file declares no class, interface or trait.
      *
-     * @param array<string, mixed> $node
+     * @param list<AstNode> $ast
      *
-     * @return list<string>
+     * @return array{
+     *     namespace: string,
+     *     uses: list<string>,
+     *     aliases: array<string, string>,
+     *     comment: string,
+     *     node: AstNode,
+     *     structure: Structure
+     * }|null
      */
-    private function readExtends(array $node): array
+    private function readHeader(array $ast): ?array
     {
-        $extends = $node['extends'] ?? null;
+        $namespace = '';
+        $uses      = [];
+        $aliases   = [];
+        $comment   = '';
 
-        if (is_string($extends) && $extends !== '') {
-            return [$extends];
-        }
+        foreach ($ast as $item) {
+            $type = $item->text('type') ?? '';
 
-        if (!is_array($extends)) {
-            return [];
-        }
+            if ($type === 'namespace') {
+                $namespace = $item->text('name') ?? '';
+                $comment   = '';
 
-        $names = [];
-        foreach ($extends as $entry) {
-            if (is_array($entry) && is_string($entry['value'] ?? null)) {
-                $names[] = $entry['value'];
+                continue;
+            }
+
+            if ($type === 'comment') {
+                $comment = $item->text('value') ?? '';
+
+                continue;
+            }
+
+            if ($type === 'use') {
+                $comment   = '';
+                $collected = $this->readAliases($item);
+                $uses      = [...$uses, ...$collected['uses']];
+                $aliases   = [...$aliases, ...$collected['aliases']];
+
+                continue;
+            }
+
+            if ($type === 'class' || $type === 'interface' || $type === 'trait') {
+                return [
+                    'namespace' => $namespace,
+                    'uses'      => $uses,
+                    'aliases'   => $aliases,
+                    'comment'   => $comment,
+                    'node'      => $item,
+                    // Zephir has no enum declaration; Keyword::Enum arrives
+                    // with the PHP reader.
+                    'structure' => match ($type) {
+                        'interface' => Structure::interface(),
+                        'trait'     => Structure::trait(),
+                        default     => Structure::classType(
+                            $item->flag('abstract'),
+                            $item->flag('final')
+                        ),
+                    },
+                ];
             }
         }
 
-        return $names;
+        return null;
     }
 
     /**
-     * @param array<string, mixed> $node
-     *
      * @return list<string>
      */
-    private function readImplements(array $node): array
+    private function readImplements(AstNode $node): array
     {
         $names = [];
-        foreach ($this->section($node, 'implements') as $entry) {
-            if (is_string($entry['value'] ?? null)) {
-                $names[] = $entry['value'];
+        foreach ($node->section('implements') as $entry) {
+            $value = $entry->text('value');
+            if ($value !== null) {
+                $names[] = $value;
             }
         }
 
@@ -404,32 +341,28 @@ final class ZephirReader implements Reader
 
     /**
      * Source order is preserved - the formatter's ordering depends on it.
-     *
-     * @param array<string, mixed> $definition
      */
-    private function readMethods(array $definition): MethodDefinitionCollection
+    private function readMethods(AstNode $definition): MethodDefinitionCollection
     {
         $methods = [];
-        foreach ($this->section($definition, 'methods') as $method) {
-            $name = $method['name'] ?? null;
-            if (!is_string($name)) {
+        foreach ($definition->section('methods') as $method) {
+            $name = $method->text('name');
+            if ($name === null) {
                 continue;
             }
 
-            $modifiers  = $this->strings($method, 'visibility');
+            $modifiers  = $method->strings('visibility');
             $parameters = [];
-            foreach ($this->section($method, 'parameters') as $parameter) {
-                if (
-                    ($parameter['type'] ?? '') !== 'parameter'
-                    || !is_string($parameter['name'] ?? null)
-                ) {
+            foreach ($method->section('parameters') as $parameter) {
+                $parameterName = $parameter->text('name');
+                if (!$parameter->is('type', 'parameter') || $parameterName === null) {
                     continue;
                 }
 
                 $parameters[] = new ParameterDefinition(
-                    $parameter['name'],
+                    $parameterName,
                     $this->parameterType($parameter),
-                    $this->renderDefault($this->node($parameter, 'default'))
+                    $this->renderDefault($parameter->node('default'))
                 );
             }
 
@@ -438,44 +371,40 @@ final class ZephirReader implements Reader
                 $modifiers,
                 $this->methodVisibility($modifiers),
                 new ParameterDefinitionCollection($parameters),
-                $this->renderReturnType($this->node($method, 'return-type')),
-                $this->describe($this->cleanDocblock($this->text($method, 'docblock')))
+                $this->renderReturnType($method->node('return-type')),
+                (new Docblock($method->text('docblock')))->description()
             );
         }
 
         return new MethodDefinitionCollection($methods);
     }
 
-    /**
-     * @param array<string, mixed> $definition
-     */
-    private function readProperties(array $definition): PropertyDefinitionCollection
+    private function readProperties(AstNode $definition): PropertyDefinitionCollection
     {
         $properties = [];
-        foreach ($this->section($definition, 'properties') as $property) {
-            $name = $property['name'] ?? null;
-            if (!is_string($name)) {
+        foreach ($definition->section('properties') as $property) {
+            $name = $property->text('name');
+            if ($name === null) {
                 continue;
             }
 
-            $modifiers = $this->strings($property, 'visibility');
-
             $shortcuts = [];
-            foreach ($this->section($property, 'shortcuts') as $shortcut) {
-                if (is_string($shortcut['name'] ?? null)) {
-                    $shortcuts[] = $shortcut['name'];
+            foreach ($property->section('shortcuts') as $shortcut) {
+                $shortcutName = $shortcut->text('name');
+                if ($shortcutName !== null) {
+                    $shortcuts[] = $shortcutName;
                 }
             }
 
-            $clean   = $this->cleanDocblock($this->text($property, 'docblock'));
-            $default = $this->node($property, 'default');
+            $doc     = new Docblock($property->text('docblock'));
+            $default = $property->node('default');
 
             $properties[] = new PropertyDefinition(
                 $name,
-                $this->propertyVisibility($modifiers),
+                $this->propertyVisibility($property->strings('visibility')),
                 $this->renderDefault($default),
-                $this->varType($clean, $default),
-                $this->describe($clean),
+                $this->varType($doc, $default),
+                $doc->description(),
                 $shortcuts
             );
         }
@@ -488,21 +417,20 @@ final class ZephirReader implements Reader
      * `definition.uses` as `use-trait` nodes - not to be confused with the
      * file's top-level namespace imports, which are a different relation.
      *
-     * @param array<string, mixed> $definition
-     *
      * @return list<string>
      */
-    private function readTraits(array $definition): array
+    private function readTraits(AstNode $definition): array
     {
         $traits = [];
-        foreach ($this->section($definition, 'uses') as $use) {
-            if (($use['type'] ?? '') !== 'use-trait') {
+        foreach ($definition->section('uses') as $use) {
+            if (!$use->is('type', 'use-trait')) {
                 continue;
             }
 
-            foreach ($this->section($use, 'traits') as $trait) {
-                if (is_string($trait['value'] ?? null)) {
-                    $traits[] = $trait['value'];
+            foreach ($use->section('traits') as $trait) {
+                $value = $trait->text('value');
+                if ($value !== null) {
+                    $traits[] = $value;
                 }
             }
         }
@@ -511,148 +439,69 @@ final class ZephirReader implements Reader
     }
 
     /**
-     * Renders a default-value expression from the AST into the string the
-     * model carries.
-     *
-     * @param array<string, mixed>|null $expr
+     * Renders a default-value expression into the string the model carries.
      */
-    private function renderDefault(?array $expr): ?string
+    private function renderDefault(?AstNode $expr): ?string
     {
         if ($expr === null) {
             return null;
         }
 
-        /** @var mixed $value */
-        $value = $expr['value'] ?? null;
-        $type  = $expr['type'] ?? '';
+        $type = $expr->text('type') ?? '';
 
         return match ($type) {
-            'string'                 => '"' . $this->scalar($value) . '"',
-            'char'                   => "'" . $this->scalar($value) . "'",
+            'string'                 => '"' . $expr->stringValue('value') . '"',
+            'char'                   => "'" . $expr->stringValue('value') . "'",
             'int', 'uint', 'long',
-            'double', 'bool'         => $this->scalar($value),
+            'double', 'bool'         => $expr->stringValue('value'),
             'null'                   => 'null',
             'empty-array'            => '[]',
             'array'                  => '[...]',
-            'static-constant-access' => $this->scalar($this->node($expr, 'left')['value'] ?? 'self')
-                . '::' . $this->scalar($this->node($expr, 'right')['value'] ?? ''),
-            'constant'               => $this->scalar($value),
-            'minus'                  => '-' . ($this->renderDefault($this->node($expr, 'left')) ?? ''),
-            default                  => $this->scalar($value ?? $type),
+            'static-constant-access' => ($expr->node('left')?->text('value') ?? 'self')
+                . '::' . ($expr->node('right')?->text('value') ?? ''),
+            'constant'               => $expr->stringValue('value'),
+            'minus'                  => '-' . ($this->renderDefault($expr->node('left')) ?? ''),
+            default                  => $expr->has('value') ? $expr->stringValue('value') : $type,
         };
     }
 
-    /**
-     * @param array<string, mixed>|null $returnType
-     */
-    private function renderReturnType(?array $returnType): ?string
+    private function renderReturnType(?AstNode $returnType): ?string
     {
         if ($returnType === null) {
             return null;
         }
 
-        if (($returnType['void'] ?? 0) === 1) {
+        if ($returnType->flag('void')) {
             return 'void';
         }
 
         $types = [];
-        foreach ($this->section($returnType, 'list') as $entry) {
-            $cast = $this->node($entry, 'cast');
-            if ($cast !== null && is_string($cast['value'] ?? null)) {
-                $type = $cast['value'];
-                if (($entry['collection'] ?? 0) === 1) {
-                    $type .= '[]';
-                }
-            } else {
-                $type = $entry['data-type'] ?? 'mixed';
-                if (!is_string($type) || $type === 'variable') {
-                    $type = 'mixed';
-                }
+        foreach ($returnType->section('list') as $entry) {
+            $cast = $entry->node('cast')?->text('value');
+            if ($cast !== null) {
+                $types[] = $entry->flag('collection') ? $cast . '[]' : $cast;
+
+                continue;
             }
 
-            $types[] = $type;
+            $dataType = $entry->text('data-type') ?? 'mixed';
+            $types[]  = $dataType === 'variable' ? 'mixed' : $dataType;
         }
 
         return $types === [] ? null : implode('|', $types);
     }
 
-    private function scalar(mixed $value): string
-    {
-        return is_scalar($value) ? (string) $value : '';
-    }
-
     /**
-     * A list-shaped sub-node, filtered to the array entries it holds.
-     *
-     * @param array<array-key, mixed> $node
-     *
-     * @return list<array<string, mixed>>
+     * The declared `@var` type, falling back to the default value's type.
      */
-    private function section(array $node, string $key): array
+    private function varType(Docblock $doc, ?AstNode $default): string
     {
-        $value = $node[$key] ?? null;
-        if (!is_array($value)) {
-            return [];
+        $declared = $doc->varType();
+        if ($declared !== null) {
+            return $declared;
         }
 
-        $items = [];
-        foreach ($value as $item) {
-            if (is_array($item)) {
-                /** @var array<string, mixed> $item */
-                $items[] = $item;
-            }
-        }
-
-        return $items;
-    }
-
-    /**
-     * A list-shaped sub-node of plain strings, such as a visibility list.
-     *
-     * @param array<array-key, mixed> $node
-     *
-     * @return list<string>
-     */
-    private function strings(array $node, string $key): array
-    {
-        $value = $node[$key] ?? null;
-        if (!is_array($value)) {
-            return [];
-        }
-
-        $items = [];
-        foreach ($value as $item) {
-            if (is_string($item)) {
-                $items[] = $item;
-            }
-        }
-
-        return $items;
-    }
-
-    private function text(mixed $node, string $key): ?string
-    {
-        if (!is_array($node)) {
-            return null;
-        }
-
-        $value = $node[$key] ?? null;
-
-        return is_string($value) ? $value : null;
-    }
-
-    /**
-     * Type from the `@var` tag, falling back to the default value's type.
-     *
-     * @param array<string, mixed>|null $default
-     */
-    private function varType(string $cleanDocblock, ?array $default): string
-    {
-        if (preg_match('/^@var\s+(.+)$/m', $cleanDocblock, $matches) === 1) {
-            return trim($matches[1]);
-        }
-
-        return match ($default['type'] ?? '') {
+        return match ($default?->text('type') ?? '') {
             'string', 'char'       => 'string',
             'int', 'uint', 'long'  => 'int',
             'double'               => 'float',
