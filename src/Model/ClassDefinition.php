@@ -30,8 +30,10 @@ final class ClassDefinition
      *
      * 2 - added `traits`.
      * 3 - `kind` renamed to `structure`; backing values unchanged.
+     * 4 - `structure` nests keyword/isAbstract/isFinal, replacing the flat
+     *     `structure`, `abstract` and `final` keys.
      */
-    public const MODEL_VERSION = 3;
+    public const MODEL_VERSION = 4;
 
     /**
      * `$uses` are namespace imports; `$traits` are the traits the body pulls
@@ -55,8 +57,6 @@ final class ClassDefinition
         public readonly string $relPath,
         public readonly string $namespace,
         public readonly Structure $structure,
-        public readonly bool $abstract,
-        public readonly bool $final,
         public readonly string $description,
         public readonly array $uses,
         public readonly array $usesMap,
@@ -82,9 +82,7 @@ final class ClassDefinition
      *     anchor: string,
      *     relPath: string,
      *     namespace: string,
-     *     structure: string,
-     *     abstract: bool,
-     *     final: bool,
+     *     structure: array{keyword: string, isAbstract: bool|null, isFinal: bool|null},
      *     description: string,
      *     uses: list<string>,
      *     usesMap: array<string, string>,
@@ -125,9 +123,7 @@ final class ClassDefinition
             'anchor'      => $this->anchor,
             'relPath'     => $this->relPath,
             'namespace'   => $this->namespace,
-            'structure'   => $this->structure->value,
-            'abstract'    => $this->abstract,
-            'final'       => $this->final,
+            'structure'   => $this->structure->toArray(),
             'description' => $this->description,
             'uses'        => $this->uses,
             'usesMap'     => $this->usesMap,

@@ -27,8 +27,11 @@ final class ModelTest extends TestCase
     {
         $array = $this->classDefinition()->toArray();
 
-        $this->assertSame(3, $array['version']);
-        $this->assertSame('trait', $array['structure']);
+        $this->assertSame(4, $array['version']);
+        $this->assertSame(
+            ['keyword' => 'trait', 'isAbstract' => null, 'isFinal' => null],
+            $array['structure']
+        );
         $this->assertSame(['AbstractStr'], $array['traits']);
         $this->assertSame('Phalcon\\Support\\Helper\\Str\\Lower', $array['fqcn']);
         $this->assertSame('count', $array['constants'][0]['name']);
@@ -70,9 +73,7 @@ final class ModelTest extends TestCase
             'supporthelperstrlower',
             'Support/Helper/Str/Lower.zep',
             'Phalcon\\Support\\Helper\\Str',
-            Structure::Trait,
-            false,
-            false,
+            Structure::trait(),
             'Lowercase helper.',
             ['Phalcon\\Support\\Helper\\Str\\AbstractStr'],
             ['AbstractStr' => 'Phalcon\\Support\\Helper\\Str\\AbstractStr'],

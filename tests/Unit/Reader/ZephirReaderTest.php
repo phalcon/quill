@@ -15,7 +15,7 @@ namespace Phalcon\Scribe\Tests\Unit\Reader;
 
 use Phalcon\Scribe\Config;
 use Phalcon\Scribe\Model\ClassDefinition;
-use Phalcon\Scribe\Model\Structure;
+use Phalcon\Scribe\Model\Keyword;
 use Phalcon\Scribe\Model\Registry;
 use Phalcon\Scribe\Reader\ZephirReader;
 use PHPUnit\Framework\TestCase;
@@ -54,7 +54,13 @@ final class ZephirReaderTest extends TestCase
 
     public function testStructureIsTrait(): void
     {
-        $this->assertSame(Structure::Trait, $this->sample()->structure);
+        $structure = $this->sample()->structure;
+
+        $this->assertSame(Keyword::Trait, $structure->keyword);
+
+        // Null rather than false: the modifiers do not apply to a trait.
+        $this->assertNull($structure->isAbstract);
+        $this->assertNull($structure->isFinal);
     }
 
     public function testMethodModifiersKeepSourceOrder(): void

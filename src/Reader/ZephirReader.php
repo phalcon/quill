@@ -287,7 +287,7 @@ final class ZephirReader implements Reader
         $usesMap   = [];
         $comment   = '';
         $node      = null;
-        $structure = Structure::ClassType;
+        $structure = Structure::classType(false, false);
 
         foreach ($ast as $item) {
             if (!is_array($item)) {
@@ -320,11 +320,17 @@ final class ZephirReader implements Reader
                     $usesMap[$short] = $name;
                 }
             } elseif ($type === 'class' || $type === 'interface' || $type === 'trait') {
-                $node      = $item;
+                $node = $item;
+
+                // Zephir has no enum declaration, so Keyword::Enum is
+                // unreachable here; it arrives with the PHP reader.
                 $structure = match ($type) {
-                    'interface' => Structure::Interface,
-                    'trait'     => Structure::Trait,
-                    default     => Structure::ClassType,
+                    'interface' => Structure::interface(),
+                    'trait'     => Structure::trait(),
+                    default     => Structure::classType(
+                        ($item['abstract'] ?? 0) === 1,
+                        ($item['final'] ?? 0) === 1
+                    ),
                 };
 
                 break;
@@ -348,8 +354,6 @@ final class ZephirReader implements Reader
             $relPath,
             $namespace,
             $structure,
-            ($node['abstract'] ?? 0) === 1,
-            ($node['final'] ?? 0) === 1,
             $this->describe($this->cleanDocblock($comment)),
             $uses,
             $usesMap,

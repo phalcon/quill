@@ -14,19 +14,54 @@ declare(strict_types=1);
 namespace Phalcon\Scribe\Model;
 
 /**
- * Which of PHP's four class-like declarations a definition is.
+ * How a definition was declared: the keyword, plus the modifiers that qualify
+ * it.
  *
- * Not a "type": a trait is never an object and an interface cannot be
- * instantiated, and the model already uses `type` for parameter, return and
- * property types.
+ * `isAbstract` and `isFinal` are null for anything but a class, because the
+ * concept does not apply - an interface is not "not abstract", the question is
+ * meaningless. Storing false there would assert something untrue.
  *
- * `ClassType` carries a suffix because PHP reserves `Class` as a constant name
- * for `::class` fetching. The other three need no such workaround.
+ * Built only through the named constructors, so an abstract interface is
+ * unrepresentable rather than merely rejected.
  */
-enum Structure: string
+final class Structure
 {
-    case ClassType = 'class';
-    case Enum      = 'enum';
-    case Interface = 'interface';
-    case Trait     = 'trait';
+    private function __construct(
+        public readonly Keyword $keyword,
+        public readonly ?bool $isAbstract,
+        public readonly ?bool $isFinal,
+    ) {
+    }
+
+    public static function classType(bool $isAbstract, bool $isFinal): self
+    {
+        return new self(Keyword::ClassType, $isAbstract, $isFinal);
+    }
+
+    public static function enum(): self
+    {
+        return new self(Keyword::Enum, null, null);
+    }
+
+    public static function interface(): self
+    {
+        return new self(Keyword::Interface, null, null);
+    }
+
+    /**
+     * @return array{keyword: string, isAbstract: bool|null, isFinal: bool|null}
+     */
+    public function toArray(): array
+    {
+        return [
+            'keyword'    => $this->keyword->value,
+            'isAbstract' => $this->isAbstract,
+            'isFinal'    => $this->isFinal,
+        ];
+    }
+
+    public static function trait(): self
+    {
+        return new self(Keyword::Trait, null, null);
+    }
 }
