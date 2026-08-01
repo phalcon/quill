@@ -43,6 +43,13 @@ final class ComparisonTest extends TestCase
         $this->assertSame([], $report['differing']);
     }
 
+    public function testMalformedDefinitionsAreTreatedAsEmpty(): void
+    {
+        $report = (new Comparison())->compare(['A' => 'nonsense'], ['A' => null]);
+
+        $this->assertSame([], $report['differing']);
+    }
+
     public function testMemberDifferencesAreReportedPerSection(): void
     {
         $report = (new Comparison())->compare(
@@ -54,13 +61,6 @@ final class ComparisonTest extends TestCase
             ['methods' => ['left' => ['one'], 'right' => ['three']]],
             $report['differing']['A']
         );
-    }
-
-    public function testMalformedDefinitionsAreTreatedAsEmpty(): void
-    {
-        $report = (new Comparison())->compare(['A' => 'nonsense'], ['A' => null]);
-
-        $this->assertSame([], $report['differing']);
     }
 
     /**

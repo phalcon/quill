@@ -75,10 +75,10 @@ final class MarkdownFormatterTest extends TestCase
         );
     }
 
-    public function testUsedByListsTheClassesPullingTheTraitIn(): void
+    public function testTreeLinksResolvedAncestors(): void
     {
         $this->assertStringContainsString(
-            "\n__Used by__ [`Phalcon\\Sample\\Base`](#samplebase)\n{ .api-used-by }\n",
+            '- [`Phalcon\\Sample\\Base`](#samplebase)',
             $this->page()
         );
     }
@@ -89,10 +89,10 @@ final class MarkdownFormatterTest extends TestCase
         $this->assertSame(1, substr_count($this->page(), '__Used by__'));
     }
 
-    public function testTreeLinksResolvedAncestors(): void
+    public function testUsedByListsTheClassesPullingTheTraitIn(): void
     {
         $this->assertStringContainsString(
-            '- [`Phalcon\\Sample\\Base`](#samplebase)',
+            "\n__Used by__ [`Phalcon\\Sample\\Base`](#samplebase)\n{ .api-used-by }\n",
             $this->page()
         );
     }

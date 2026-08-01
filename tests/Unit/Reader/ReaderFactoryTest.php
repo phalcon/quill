@@ -21,14 +21,14 @@ use PHPUnit\Framework\TestCase;
 
 final class ReaderFactoryTest extends TestCase
 {
-    public function testCreatesTheZephirReader(): void
-    {
-        $this->assertInstanceOf(ZephirReader::class, (new ReaderFactory())->create('zephir'));
-    }
-
     public function testCreatesThePhpReader(): void
     {
         $this->assertInstanceOf(PhpReader::class, (new ReaderFactory())->create('php'));
+    }
+
+    public function testCreatesTheZephirReader(): void
+    {
+        $this->assertInstanceOf(ZephirReader::class, (new ReaderFactory())->create('zephir'));
     }
 
     public function testUnknownLanguageThrows(): void

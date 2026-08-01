@@ -19,6 +19,28 @@ use PHPUnit\Framework\TestCase;
 final class DocblockTest extends TestCase
 {
     /**
+     * Not every author puts a space after the asterisk, and the text is still
+     * the text.
+     */
+    public function testAnAsteriskWithNoSpaceAfterItStillYieldsTheLine(): void
+    {
+        $doc = new Docblock("/**\n *No space here.\n *And none here either.\n */");
+
+        $this->assertSame("No space here.\nAnd none here either.", $doc->description());
+    }
+
+    public function testEmptyInputStaysEmpty(): void
+    {
+        $this->assertSame('', (new Docblock(null))->description());
+        $this->assertSame('', (new Docblock(''))->description());
+    }
+
+    public function testHandlesASingleLineComment(): void
+    {
+        $this->assertSame('Short one.', (new Docblock('/** Short one. */'))->description());
+    }
+
+    /**
      * php-parser returns the comment with its opening delimiter; without
      * stripping it, `/**` becomes the first prose line and ends up rendered
      * as the description.
@@ -46,16 +68,5 @@ final class DocblockTest extends TestCase
 
         $this->assertSame('', $doc->description());
         $this->assertSame('array', $doc->varType());
-    }
-
-    public function testHandlesASingleLineComment(): void
-    {
-        $this->assertSame('Short one.', (new Docblock('/** Short one. */'))->description());
-    }
-
-    public function testEmptyInputStaysEmpty(): void
-    {
-        $this->assertSame('', (new Docblock(null))->description());
-        $this->assertSame('', (new Docblock(''))->description());
     }
 }

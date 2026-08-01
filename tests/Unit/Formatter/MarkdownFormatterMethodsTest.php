@@ -127,6 +127,28 @@ final class MarkdownFormatterMethodsTest extends TestCase
         return (new MarkdownFormatter())->format($this->registry(), $this->config());
     }
 
+    /**
+     * @param list<string>              $modifiers
+     * @param list<ParameterDefinition> $parameters
+     */
+    private function method(
+        string $name,
+        array $modifiers,
+        string $visibility,
+        array $parameters,
+        ?string $returnType
+    ): MethodDefinition {
+        /** @var 'public'|'protected'|'private' $visibility */
+        return new MethodDefinition(
+            $name,
+            $modifiers,
+            $visibility,
+            new ParameterDefinitionCollection($parameters),
+            $returnType,
+            'Does a thing.'
+        );
+    }
+
     private function page(): string
     {
         return $this->format($this->registry());
@@ -173,27 +195,5 @@ final class MarkdownFormatterMethodsTest extends TestCase
         );
 
         return new Registry(['Phalcon\\Sample\\Child' => $child]);
-    }
-
-    /**
-     * @param list<string>              $modifiers
-     * @param list<ParameterDefinition> $parameters
-     */
-    private function method(
-        string $name,
-        array $modifiers,
-        string $visibility,
-        array $parameters,
-        ?string $returnType
-    ): MethodDefinition {
-        /** @var 'public'|'protected'|'private' $visibility */
-        return new MethodDefinition(
-            $name,
-            $modifiers,
-            $visibility,
-            new ParameterDefinitionCollection($parameters),
-            $returnType,
-            'Does a thing.'
-        );
     }
 }

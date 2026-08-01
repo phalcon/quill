@@ -25,18 +25,10 @@ use Phalcon\Quill\Model\Relations;
 use Phalcon\Quill\Model\Structure;
 use PHPUnit\Framework\TestCase;
 
+use function array_keys;
+
 final class RegistryTest extends TestCase
 {
-    public function testAncestorsWalkUpwardAndAreRootFirst(): void
-    {
-        $registry = $this->registry();
-
-        $this->assertSame(
-            [['display' => 'Phalcon\\Base', 'fqcn' => 'Phalcon\\Base']],
-            $registry->ancestorsOf($this->definition($registry, 'Phalcon\\Child'))
-        );
-    }
-
     public function testAncestorsOfARootAreEmpty(): void
     {
         $registry = $this->registry();
@@ -44,6 +36,16 @@ final class RegistryTest extends TestCase
         $this->assertSame(
             [],
             $registry->ancestorsOf($this->definition($registry, 'Phalcon\\Base'))
+        );
+    }
+
+    public function testAncestorsWalkUpwardAndAreRootFirst(): void
+    {
+        $registry = $this->registry();
+
+        $this->assertSame(
+            [['display' => 'Phalcon\\Base', 'fqcn' => 'Phalcon\\Base']],
+            $registry->ancestorsOf($this->definition($registry, 'Phalcon\\Child'))
         );
     }
 
@@ -65,20 +67,6 @@ final class RegistryTest extends TestCase
         $this->assertFalse($registry->has('Phalcon\\Nope'));
         $this->assertNull($registry->get('Phalcon\\Nope'));
         $this->assertCount(3, $registry->all());
-    }
-
-    public function testUsedByIsTheInverseOfTraitUsage(): void
-    {
-        $registry = $this->registry();
-
-        $this->assertSame(
-            ['Phalcon\\Child'],
-            $registry->usedBy($this->definition($registry, 'Phalcon\\Thing'))
-        );
-        $this->assertSame(
-            [],
-            $registry->usedBy($this->definition($registry, 'Phalcon\\Base'))
-        );
     }
 
     public function testResolveHandlesLeadingBackslash(): void
@@ -104,6 +92,39 @@ final class RegistryTest extends TestCase
         $child    = $this->definition($registry, 'Phalcon\\Child');
 
         $this->assertNull($registry->resolve('NoSuchThing', $child));
+    }
+
+    public function testToArraySerializesEveryDefinitionInOrder(): void
+    {
+        $array = $this->registry()->toArray();
+
+        $this->assertCount(3, $array);
+
+        $fqcns = [];
+        foreach ($array as $definition) {
+            $location = $definition['location'];
+            $this->assertIsArray($location);
+            $fqcns[] = $location['fqcn'];
+        }
+
+        $this->assertSame('Phalcon\\Base', $fqcns[0]);
+        $this->assertSame('Phalcon\\Child', $fqcns[1]);
+        // Keys are dropped: a document is a list here, keyed higher up.
+        $this->assertSame([0, 1, 2], array_keys($array));
+    }
+
+    public function testUsedByIsTheInverseOfTraitUsage(): void
+    {
+        $registry = $this->registry();
+
+        $this->assertSame(
+            ['Phalcon\\Child'],
+            $registry->usedBy($this->definition($registry, 'Phalcon\\Thing'))
+        );
+        $this->assertSame(
+            [],
+            $registry->usedBy($this->definition($registry, 'Phalcon\\Base'))
+        );
     }
 
     /**

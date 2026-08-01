@@ -14,7 +14,9 @@ declare(strict_types=1);
 namespace Phalcon\Quill\Tests\Unit;
 
 use Phalcon\Quill\Config;
-use Phalcon\Quill\Exceptions\InvalidConfiguration;
+use Phalcon\Quill\Exceptions\MalformedConfiguration;
+use Phalcon\Quill\Exceptions\MissingConfiguration;
+use Phalcon\Quill\Exceptions\MissingConfigurationKey;
 use PHPUnit\Framework\TestCase;
 
 use function dirname;
@@ -40,9 +42,20 @@ final class ConfigTest extends TestCase
         $this->assertSame('/out', $config->outputDir());
     }
 
+    public function testEveryConfiguredValueIsReadableBack(): void
+    {
+        $config = $this->config();
+
+        $this->assertSame('zephir', $config->language());
+        $this->assertSame('5.0.x', $config->branch());
+        $this->assertSame('phalcon', $config->sourcePrefix());
+        $this->assertSame('phalcon/cphalcon', $config->repository());
+        $this->assertSame('zep', $config->extension());
+    }
+
     public function testFromFileRejectsAFileThatDoesNotReturnAnArray(): void
     {
-        $this->expectException(InvalidConfiguration::class);
+        $this->expectException(MalformedConfiguration::class);
         $this->expectExceptionMessage('must return an array');
 
         Config::fromFile(dirname(__DIR__) . '/Fixtures/config/not-an-array.php');
@@ -50,7 +63,7 @@ final class ConfigTest extends TestCase
 
     public function testFromFileRejectsAMissingFile(): void
     {
-        $this->expectException(InvalidConfiguration::class);
+        $this->expectException(MissingConfiguration::class);
         $this->expectExceptionMessage('no such file');
 
         Config::fromFile('/nowhere/quill.php');
@@ -58,7 +71,7 @@ final class ConfigTest extends TestCase
 
     public function testFromFileRejectsAMissingKey(): void
     {
-        $this->expectException(InvalidConfiguration::class);
+        $this->expectException(MissingConfigurationKey::class);
         $this->expectExceptionMessage("'branch'");
 
         Config::fromArray(
@@ -92,7 +105,7 @@ final class ConfigTest extends TestCase
         );
     }
 
-    public function testSourceUrlNormalisesBackslashes(): void
+    public function testSourceUrlNormalizesBackslashes(): void
     {
         $this->assertSame(
             'https://github.com/phalcon/cphalcon/blob/5.0.x/phalcon/Acl/Adapter/Memory.zep',
@@ -100,7 +113,7 @@ final class ConfigTest extends TestCase
         );
     }
 
-    public function testTrailingSeparatorsAreNormalised(): void
+    public function testTrailingSeparatorsAreNormalized(): void
     {
         $config = new Config(
             'zephir',
@@ -114,6 +127,29 @@ final class ConfigTest extends TestCase
 
         $this->assertSame('/src', $config->sourceRoot());
         $this->assertSame('/out', $config->outputDir());
+    }
+
+    /**
+     * The copy redirects output and changes nothing else, so a one-off run
+     * cannot disturb the configured destination.
+     */
+    public function testWithOutputDirChangesOnlyTheDestination(): void
+    {
+        $config = $this->config();
+        $copy   = $config->withOutputDir('/elsewhere');
+
+        $this->assertSame('/elsewhere', $copy->outputDir());
+        $this->assertNotSame($config, $copy);
+
+        $this->assertSame($config->language(), $copy->language());
+        $this->assertSame($config->sourceRoot(), $copy->sourceRoot());
+        $this->assertSame($config->repository(), $copy->repository());
+        $this->assertSame($config->branch(), $copy->branch());
+        $this->assertSame($config->sourcePrefix(), $copy->sourcePrefix());
+        $this->assertSame($config->extension(), $copy->extension());
+
+        // The original still writes where it was told to.
+        $this->assertSame('/unused', $config->outputDir());
     }
 
     private function config(): Config

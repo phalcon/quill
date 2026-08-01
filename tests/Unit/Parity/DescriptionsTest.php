@@ -20,6 +20,42 @@ use function array_column;
 
 final class DescriptionsTest extends TestCase
 {
+    public function testABlankSideIsStillADifference(): void
+    {
+        $rows = (new Descriptions())->compare(
+            ['A' => $this->definition('', [], [], ['run' => ''])],
+            ['A' => $this->definition('', [], [], ['run' => 'Documented.'])]
+        );
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('', $rows[0]['left']);
+        $this->assertSame('Documented.', $rows[0]['right']);
+    }
+
+    /**
+     * A section that is not a list, and members that are not shaped like
+     * members, are dropped rather than reported: a file that cannot be read
+     * this far is broken, not a difference between implementations.
+     */
+    public function testAMalformedSectionOrMemberIsDropped(): void
+    {
+        $wrongSection = [
+            'description' => 'Same.',
+            'members'     => ['constants' => [], 'properties' => [], 'methods' => 'not a list'],
+        ];
+
+        $wrongMembers = [
+            'description' => 'Same.',
+            'members'     => [
+                'constants'  => [],
+                'properties' => [],
+                'methods'    => ['not an array', ['name' => 42], ['noName' => 'x']],
+            ],
+        ];
+
+        $this->assertSame([], (new Descriptions())->compare(['A' => $wrongSection], ['A' => $wrongMembers]));
+    }
+
     public function testClassDescriptionsAreReportedWithNoMemberName(): void
     {
         $rows = (new Descriptions())->compare(
@@ -37,6 +73,16 @@ final class DescriptionsTest extends TestCase
             ]],
             $rows
         );
+    }
+
+    public function testDefinitionsOnOneSideOnlyAreIgnored(): void
+    {
+        $rows = (new Descriptions())->compare(
+            ['A' => $this->definition('a')],
+            ['B' => $this->definition('b')]
+        );
+
+        $this->assertSame([], $rows);
     }
 
     public function testEachSectionReportsItsOwnKind(): void
@@ -60,6 +106,11 @@ final class DescriptionsTest extends TestCase
         $this->assertSame([], $rows);
     }
 
+    public function testMalformedInputIsSkipped(): void
+    {
+        $this->assertSame([], (new Descriptions())->compare(['A' => 'nonsense'], ['A' => null]));
+    }
+
     public function testMembersOnOneSideOnlyAreIgnored(): void
     {
         // Presence differences are structural, and reported elsewhere.
@@ -69,28 +120,6 @@ final class DescriptionsTest extends TestCase
         );
 
         $this->assertSame([], $rows);
-    }
-
-    public function testDefinitionsOnOneSideOnlyAreIgnored(): void
-    {
-        $rows = (new Descriptions())->compare(
-            ['A' => $this->definition('a')],
-            ['B' => $this->definition('b')]
-        );
-
-        $this->assertSame([], $rows);
-    }
-
-    public function testABlankSideIsStillADifference(): void
-    {
-        $rows = (new Descriptions())->compare(
-            ['A' => $this->definition('', [], [], ['run' => ''])],
-            ['A' => $this->definition('', [], [], ['run' => 'Documented.'])]
-        );
-
-        $this->assertCount(1, $rows);
-        $this->assertSame('', $rows[0]['left']);
-        $this->assertSame('Documented.', $rows[0]['right']);
     }
 
     public function testRowsAreOrderedForStableOutput(): void
@@ -107,11 +136,6 @@ final class DescriptionsTest extends TestCase
         );
 
         $this->assertSame(['Alpha', 'Zulu'], array_column($rows, 'fqcn'));
-    }
-
-    public function testMalformedInputIsSkipped(): void
-    {
-        $this->assertSame([], (new Descriptions())->compare(['A' => 'nonsense'], ['A' => null]));
     }
 
     /**

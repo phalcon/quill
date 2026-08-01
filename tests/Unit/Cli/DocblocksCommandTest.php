@@ -14,7 +14,10 @@ declare(strict_types=1);
 namespace Phalcon\Quill\Tests\Unit\Cli;
 
 use Phalcon\Quill\Cli\DocblocksCommand;
-use Phalcon\Quill\Exceptions\InvalidConfiguration;
+use Phalcon\Quill\Exceptions\IncompatibleDocument;
+use Phalcon\Quill\Exceptions\MissingDocument;
+use Phalcon\Quill\Exceptions\WriteFailed;
+use Phalcon\Quill\Model\ClassDefinition;
 use PHPUnit\Framework\TestCase;
 
 use function dirname;
@@ -55,16 +58,6 @@ final class DocblocksCommandTest extends TestCase
         parent::tearDown();
     }
 
-    public function testHeadersComeFromTheRepositoryNames(): void
-    {
-        $rows = $this->rows();
-
-        $this->assertSame(
-            ['fqcn', 'kind', 'member', 'cphalcon', 'phalcon', 'winner'],
-            $rows[0]
-        );
-    }
-
     public function testABlankSideIsDecidedAlready(): void
     {
         $rows = $this->rows();
@@ -75,14 +68,108 @@ final class DocblocksCommandTest extends TestCase
         $this->assertSame('p', $rows[1][5]);
     }
 
-    public function testTwoTextsAreLeftForAHumanToDecide(): void
+    public function testACsvThatCannotBeOpenedIsReported(): void
+    {
+        $this->write();
+
+        $this->expectException(WriteFailed::class);
+        $this->expectExceptionMessage('writable');
+
+        (new DocblocksCommand())->execute(
+            $this->dir . '/left.json',
+            $this->dir . '/right.json',
+            $this->dir . '/no/such/directory/out.csv'
+        );
+    }
+
+    /**
+     * A document from another version describes the same facts in a different
+     * shape. Comparing anyway reports those moves as disagreements between the
+     * two implementations, so it has to stop at the door.
+     */
+    public function testADocumentFromAnotherVersionIsRejected(): void
+    {
+        $this->write();
+        file_put_contents($this->dir . '/left.json', json_encode([
+            'version'     => ClassDefinition::MODEL_VERSION - 1,
+            'repository'  => 'phalcon/cphalcon',
+            'definitions' => [],
+        ]));
+
+        $this->expectException(IncompatibleDocument::class);
+        $this->expectExceptionMessage('is version ' . (ClassDefinition::MODEL_VERSION - 1));
+
+        (new DocblocksCommand())->execute(
+            $this->dir . '/left.json',
+            $this->dir . '/right.json',
+            $this->dir . '/out.csv'
+        );
+    }
+
+    public function testADocumentWithNoVersionIsRejected(): void
+    {
+        $this->write();
+        file_put_contents($this->dir . '/left.json', json_encode([
+            'repository'  => 'phalcon/cphalcon',
+            'definitions' => [],
+        ]));
+
+        $this->expectException(IncompatibleDocument::class);
+        $this->expectExceptionMessage('declares no version');
+
+        (new DocblocksCommand())->execute(
+            $this->dir . '/left.json',
+            $this->dir . '/right.json',
+            $this->dir . '/out.csv'
+        );
+    }
+
+    public function testAMissingDocumentIsRejected(): void
+    {
+        $this->expectException(MissingDocument::class);
+        $this->expectExceptionMessage('no such model document');
+
+        (new DocblocksCommand())->execute('/nowhere/a.json', '/nowhere/b.json', $this->dir . '/out.csv');
+    }
+
+    /**
+     * A repository name with no owner is still a usable column heading, and
+     * its first letter still selects that side.
+     */
+    public function testARepositoryWithNoOwnerIsItsOwnLabel(): void
+    {
+        file_put_contents($this->dir . '/left.json', json_encode([
+            'version'     => ClassDefinition::MODEL_VERSION,
+            'repository'  => 'standalone',
+            'definitions' => ['A' => $this->definition('Documented.', 'One wording.')],
+        ]));
+        file_put_contents($this->dir . '/right.json', json_encode([
+            'version'     => ClassDefinition::MODEL_VERSION,
+            'repository'  => 'phalcon/phalcon',
+            'definitions' => ['A' => $this->definition('Documented.', 'Another wording.')],
+        ]));
+
+        $stdout = fopen('php://memory', 'rb+');
+        $this->assertIsResource($stdout);
+
+        (new DocblocksCommand($stdout))->execute(
+            $this->dir . '/left.json',
+            $this->dir . '/right.json',
+            $this->dir . '/out.csv'
+        );
+
+        rewind($stdout);
+        $this->assertStringContainsString('Put s or p', (string) stream_get_contents($stdout));
+    }
+
+    public function testHeadersComeFromTheRepositoryNames(): void
     {
         $rows = $this->rows();
 
-        $this->assertSame('worded', $rows[2][2]);
-        $this->assertSame('One wording.', $rows[2][3]);
-        $this->assertSame('Another wording.', $rows[2][4]);
-        $this->assertSame('', $rows[2][5]);
+        $this->assertSame(
+            ['fqcn', 'kind', 'member', 'cphalcon', 'phalcon', 'winner'],
+            $rows[0]
+        );
     }
 
     public function testReportsTheSplitBetweenDecidedAndUndecided(): void
@@ -106,12 +193,32 @@ final class DocblocksCommandTest extends TestCase
         $this->assertStringContainsString('Put c or p', $output);
     }
 
-    public function testAMissingDocumentIsRejected(): void
+    public function testTwoTextsAreLeftForAHumanToDecide(): void
     {
-        $this->expectException(InvalidConfiguration::class);
-        $this->expectExceptionMessage('no such model document');
+        $rows = $this->rows();
 
-        (new DocblocksCommand())->execute('/nowhere/a.json', '/nowhere/b.json', $this->dir . '/out.csv');
+        $this->assertSame('worded', $rows[2][2]);
+        $this->assertSame('One wording.', $rows[2][3]);
+        $this->assertSame('Another wording.', $rows[2][4]);
+        $this->assertSame('', $rows[2][5]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function definition(string $documented, string $worded): array
+    {
+        return [
+            'description' => 'Same class text.',
+            'members'     => [
+                'constants'  => [],
+                'properties' => [],
+                'methods'    => [
+                    ['name' => 'documented', 'description' => $documented],
+                    ['name' => 'worded', 'description' => $worded],
+                ],
+            ],
+        ];
     }
 
     /**
@@ -147,31 +254,17 @@ final class DocblocksCommandTest extends TestCase
     private function write(): void
     {
         file_put_contents($this->dir . '/left.json', json_encode([
+            'version'     => ClassDefinition::MODEL_VERSION,
+            'language'    => 'zephir',
             'repository'  => 'phalcon/cphalcon',
             'definitions' => ['A' => $this->definition('', 'One wording.')],
         ]));
 
         file_put_contents($this->dir . '/right.json', json_encode([
+            'version'     => ClassDefinition::MODEL_VERSION,
+            'language'    => 'php',
             'repository'  => 'phalcon/phalcon',
             'definitions' => ['A' => $this->definition('Documented.', 'Another wording.')],
         ]));
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function definition(string $documented, string $worded): array
-    {
-        return [
-            'description' => 'Same class text.',
-            'members'     => [
-                'constants'  => [],
-                'properties' => [],
-                'methods'    => [
-                    ['name' => 'documented', 'description' => $documented],
-                    ['name' => 'worded', 'description' => $worded],
-                ],
-            ],
-        ];
     }
 }

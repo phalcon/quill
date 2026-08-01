@@ -50,16 +50,9 @@ final class JsonFormatterTest extends TestCase
     {
         $decoded = $this->decode();
 
+        $this->assertSame(ClassDefinition::MODEL_VERSION, $decoded['version']);
         $this->assertSame('zephir', $decoded['language']);
         $this->assertSame('phalcon/cphalcon', $decoded['repository']);
-    }
-
-    public function testFactoryResolvesBothFormats(): void
-    {
-        $factory = new FormatterFactory();
-
-        $this->assertInstanceOf(JsonFormatter::class, $factory->create('json'));
-        $this->assertInstanceOf(MarkdownFormatter::class, $factory->create('markdown'));
     }
 
     public function testFactoryRejectsAnUnknownFormat(): void
@@ -68,6 +61,14 @@ final class JsonFormatterTest extends TestCase
         $this->expectExceptionMessage("Unknown format 'yaml'; known formats are: json, markdown");
 
         (new FormatterFactory())->create('yaml');
+    }
+
+    public function testFactoryResolvesBothFormats(): void
+    {
+        $factory = new FormatterFactory();
+
+        $this->assertInstanceOf(JsonFormatter::class, $factory->create('json'));
+        $this->assertInstanceOf(MarkdownFormatter::class, $factory->create('markdown'));
     }
 
     public function testFilterNarrowsByFqcn(): void
@@ -117,15 +118,6 @@ final class JsonFormatterTest extends TestCase
         return $decoded;
     }
 
-    private function registry(): Registry
-    {
-        // Inserted out of order, so a sorted result proves the formatter sorts.
-        return new Registry([
-            'Phalcon\\Sample\\Zulu'  => $this->definition('Phalcon\\Sample\\Zulu'),
-            'Phalcon\\Sample\\Alpha' => $this->definition('Phalcon\\Sample\\Alpha'),
-        ]);
-    }
-
     private function definition(string $fqcn): ClassDefinition
     {
         return new ClassDefinition(
@@ -140,5 +132,14 @@ final class JsonFormatterTest extends TestCase
                 new MethodDefinitionCollection()
             )
         );
+    }
+
+    private function registry(): Registry
+    {
+        // Inserted out of order, so a sorted result proves the formatter sorts.
+        return new Registry([
+            'Phalcon\\Sample\\Zulu'  => $this->definition('Phalcon\\Sample\\Zulu'),
+            'Phalcon\\Sample\\Alpha' => $this->definition('Phalcon\\Sample\\Alpha'),
+        ]);
     }
 }

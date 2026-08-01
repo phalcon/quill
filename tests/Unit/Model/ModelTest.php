@@ -16,6 +16,7 @@ namespace Phalcon\Quill\Tests\Unit\Model;
 use Phalcon\Quill\Model\ClassDefinition;
 use Phalcon\Quill\Model\ConstantDefinition;
 use Phalcon\Quill\Model\ConstantDefinitionCollection;
+use Phalcon\Quill\Model\Document;
 use Phalcon\Quill\Model\Imports;
 use Phalcon\Quill\Model\Location;
 use Phalcon\Quill\Model\Members;
@@ -28,6 +29,8 @@ use Phalcon\Quill\Model\PropertyDefinitionCollection;
 use Phalcon\Quill\Model\Relations;
 use Phalcon\Quill\Model\Structure;
 use PHPUnit\Framework\TestCase;
+
+use function array_keys;
 
 final class ModelTest extends TestCase
 {
@@ -52,6 +55,28 @@ final class ModelTest extends TestCase
         $this->assertSame('text', $method->toArray()['parameters'][0]['name']);
     }
 
+    /**
+     * Document is the contract readers of a model document trust. It only
+     * holds if the producer still emits those keys, so the two are pinned
+     * together rather than left to drift.
+     */
+    public function testDocumentNamesTheKeysThatAreActuallyEmitted(): void
+    {
+        $array = $this->classDefinition()->toArray();
+
+        $this->assertArrayHasKey(Document::VERSION, $array);
+        $this->assertArrayHasKey(Document::DESCRIPTION, $array);
+        $this->assertArrayHasKey(Document::MEMBERS, $array);
+
+        // Every section, not a chosen one: the keys are what readers index by.
+        foreach (array_keys(Members::SECTIONS) as $section) {
+            $member = $array[Document::MEMBERS][$section][0];
+
+            $this->assertArrayHasKey(Document::NAME, $member);
+            $this->assertArrayHasKey(Document::DESCRIPTION, $member);
+        }
+    }
+
     public function testMethodKeepsModifierOrderAndDerivedVisibility(): void
     {
         $method = new MethodDefinition(
@@ -74,6 +99,22 @@ final class ModelTest extends TestCase
 
         $this->assertSame('[]', $parameter->default);
         $this->assertSame('[]', $parameter->toArray()['default']);
+    }
+
+    /**
+     * Members::SECTIONS is what every reader of a model document trusts to
+     * know which sections exist. If a section is ever added to toArray()
+     * without being added there, comparisons quietly skip it instead of
+     * failing, so the two are pinned together here.
+     */
+    public function testSectionsConstantMatchesTheSerializedSections(): void
+    {
+        $members = $this->classDefinition()->toArray()['members'];
+
+        $this->assertSame(
+            array_keys(Members::SECTIONS),
+            array_keys($members)
+        );
     }
 
     private function classDefinition(): ClassDefinition

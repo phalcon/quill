@@ -55,42 +55,6 @@ final class GenerateCommandTest extends TestCase
         parent::tearDown();
     }
 
-    public function testFilterRestrictsWhichPagesAreWritten(): void
-    {
-        $this->assertSame(0, $this->command()->execute($this->config(), 'nothingmatches'));
-
-        // The index is always written; no page files survive the filter.
-        $this->assertFileExists($this->outputDir . '/index.md');
-        $this->assertSame([], glob($this->outputDir . '/phalcon_*.md') ?: []);
-    }
-
-    public function testWritesTheIndexAndEveryPage(): void
-    {
-        $this->assertSame(0, $this->command()->execute($this->config()));
-
-        $this->assertFileExists($this->outputDir . '/index.md');
-        $this->assertFileExists($this->outputDir . '/phalcon_sample.md');
-
-        $this->assertStringContainsString(
-            '- [Phalcon Sample](phalcon_sample.md)',
-            (string) file_get_contents($this->outputDir . '/index.md')
-        );
-    }
-
-    public function testStaleDocumentsArePruned(): void
-    {
-        $this->command()->execute($this->config());
-
-        // A page whose source namespace has since been deleted.
-        $orphan = $this->outputDir . '/phalcon_gone.md';
-        file_put_contents($orphan, 'stale');
-
-        $this->command()->execute($this->config());
-
-        $this->assertFileDoesNotExist($orphan);
-        $this->assertFileExists($this->outputDir . '/phalcon_sample.md');
-    }
-
     public function testAFilteredRunPrunesNothing(): void
     {
         $this->command()->execute($this->config());
@@ -102,19 +66,6 @@ final class GenerateCommandTest extends TestCase
         $this->command()->execute($this->config(), 'nothingmatches');
 
         $this->assertFileExists($kept);
-    }
-
-    public function testOtherFileTypesAreLeftAlone(): void
-    {
-        $this->command()->execute($this->config());
-
-        $foreign = $this->outputDir . '/notes.txt';
-        file_put_contents($foreign, 'not ours');
-
-        $this->command()->execute($this->config());
-
-        $this->assertFileExists($foreign);
-        unlink($foreign);
     }
 
     public function testAnUnwritableDestinationFailsLoudly(): void
@@ -142,6 +93,55 @@ final class GenerateCommandTest extends TestCase
         $this->command()->execute($this->config());
 
         $this->assertDirectoryExists($this->outputDir);
+    }
+
+    public function testFilterRestrictsWhichPagesAreWritten(): void
+    {
+        $this->assertSame(0, $this->command()->execute($this->config(), 'nothingmatches'));
+
+        // The index is always written; no page files survive the filter.
+        $this->assertFileExists($this->outputDir . '/index.md');
+        $this->assertSame([], glob($this->outputDir . '/phalcon_*.md') ?: []);
+    }
+
+    public function testOtherFileTypesAreLeftAlone(): void
+    {
+        $this->command()->execute($this->config());
+
+        $foreign = $this->outputDir . '/notes.txt';
+        file_put_contents($foreign, 'not ours');
+
+        $this->command()->execute($this->config());
+
+        $this->assertFileExists($foreign);
+        unlink($foreign);
+    }
+
+    public function testStaleDocumentsArePruned(): void
+    {
+        $this->command()->execute($this->config());
+
+        // A page whose source namespace has since been deleted.
+        $orphan = $this->outputDir . '/phalcon_gone.md';
+        file_put_contents($orphan, 'stale');
+
+        $this->command()->execute($this->config());
+
+        $this->assertFileDoesNotExist($orphan);
+        $this->assertFileExists($this->outputDir . '/phalcon_sample.md');
+    }
+
+    public function testWritesTheIndexAndEveryPage(): void
+    {
+        $this->assertSame(0, $this->command()->execute($this->config()));
+
+        $this->assertFileExists($this->outputDir . '/index.md');
+        $this->assertFileExists($this->outputDir . '/phalcon_sample.md');
+
+        $this->assertStringContainsString(
+            '- [Phalcon Sample](phalcon_sample.md)',
+            (string) file_get_contents($this->outputDir . '/index.md')
+        );
     }
 
     private function command(): GenerateCommand

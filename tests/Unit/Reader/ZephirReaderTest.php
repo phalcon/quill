@@ -25,6 +25,34 @@ use function dirname;
 
 final class ZephirReaderTest extends TestCase
 {
+    public function testAClassCarriesOneParentAndSeveralInterfaces(): void
+    {
+        $class = $this->shapes();
+
+        $this->assertSame(Keyword::ClassType, $class->structure->keyword);
+        $this->assertTrue($class->structure->isAbstract);
+        $this->assertFalse($class->structure->isFinal);
+        $this->assertSame(['Consumer'], $class->relations->extends);
+        $this->assertSame(['Countable', 'Stringable'], $class->relations->implements);
+    }
+
+    public function testAliasesFallBackToTheLastSegment(): void
+    {
+        $imports = $this->shapes()->imports;
+
+        $this->assertSame(['Phalcon\\Sample\\Support\\Helper'], $imports->uses);
+        $this->assertSame(['Aliased' => 'Phalcon\\Sample\\Support\\Helper'], $imports->aliases);
+    }
+
+    public function testAnInterfaceExtendsAList(): void
+    {
+        $contract = $this->registry()->get('Phalcon\\Sample\\Contract')
+            ?? self::fail('Phalcon\\Sample\\Contract was not read');
+
+        $this->assertSame(Keyword::Interface, $contract->structure->keyword);
+        $this->assertSame(['Countable', 'Stringable'], $contract->relations->extends);
+    }
+
     public function testCapturesPrivateMembers(): void
     {
         $class = $this->sample();
@@ -43,6 +71,21 @@ final class ZephirReaderTest extends TestCase
         $this->assertSame('private', $class->members->methods->all()[1]->visibility);
     }
 
+    public function testCastsAndCollectionsRenderInReturnsAndParameters(): void
+    {
+        $methods = [];
+        foreach ($this->shapes()->members->methods->all() as $method) {
+            $methods[$method->name] = $method;
+        }
+
+        $this->assertSame('Consumer', $methods['withCast']->returnType);
+        $this->assertSame('Consumer', $methods['withCast']->parameters->all()[0]->type);
+        $this->assertSame('Consumer[]', $methods['collection']->returnType);
+        // `var` is the Zephir spelling of no particular type.
+        $this->assertSame('mixed', $methods['untyped']->returnType);
+        $this->assertSame('mixed', $methods['untyped']->parameters->all()[0]->type);
+    }
+
     public function testDefaultsAreRenderedStrings(): void
     {
         $class = $this->sample();
@@ -52,15 +95,32 @@ final class ZephirReaderTest extends TestCase
         $this->assertSame('"strict"', $class->members->constants->all()[0]->default);
     }
 
-    public function testStructureIsTrait(): void
+    public function testEveryDefaultKindIsRendered(): void
     {
-        $structure = $this->sample()->structure;
+        $defaults = [];
+        foreach ($this->shapes()->members->constants->all() as $constant) {
+            $defaults[$constant->name] = $constant->default;
+        }
 
-        $this->assertSame(Keyword::Trait, $structure->keyword);
+        $this->assertSame('"text"', $defaults['A_STRING']);
+        $this->assertSame("'a'", $defaults['A_CHAR']);
+        $this->assertSame('1', $defaults['AN_INT']);
+        $this->assertSame('1.5', $defaults['A_DOUBLE']);
+        $this->assertSame('true', $defaults['A_BOOL']);
+        $this->assertSame('null', $defaults['A_NULL']);
+        $this->assertSame('[]', $defaults['AN_EMPTY_ARRAY']);
+        $this->assertSame('[...]', $defaults['A_FILLED_ARRAY']);
+        $this->assertSame('self::AN_INT', $defaults['A_STATIC']);
+        $this->assertSame('-3', $defaults['A_NEGATIVE']);
+    }
 
-        // Null rather than false: the modifiers do not apply to a trait.
-        $this->assertNull($structure->isAbstract);
-        $this->assertNull($structure->isFinal);
+    public function testIdentityAndPathAreCarried(): void
+    {
+        $class = $this->sample();
+
+        $this->assertSame('Phalcon\\Sample\\Sample', $class->location->fqcn);
+        $this->assertSame('Phalcon\\Sample', $class->location->namespace);
+        $this->assertSame('Sample.zep', $class->location->relPath);
     }
 
     public function testMethodModifiersKeepSourceOrder(): void
@@ -75,13 +135,30 @@ final class ZephirReaderTest extends TestCase
         $this->assertNull($method->parameters->all()[0]->default);
     }
 
-    public function testIdentityAndPathAreCarried(): void
+    public function testPropertyShortcutsAreRecorded(): void
     {
-        $class = $this->sample();
+        $properties = [];
+        foreach ($this->shapes()->members->properties->all() as $property) {
+            $properties[$property->name] = $property;
+        }
 
-        $this->assertSame('Phalcon\\Sample\\Sample', $class->location->fqcn);
-        $this->assertSame('Phalcon\\Sample', $class->location->namespace);
-        $this->assertSame('Sample.zep', $class->location->relPath);
+        $this->assertSame(['get', 'set'], $properties['label']->shortcuts);
+        $this->assertSame([], $properties['counter']->shortcuts);
+        // No keyword at all would be protected; these say so explicitly.
+        $this->assertSame('protected', $properties['label']->visibility);
+        $this->assertSame('public', $properties['counter']->visibility);
+        $this->assertSame('private', $properties['flag']->visibility);
+    }
+
+    public function testStructureIsTrait(): void
+    {
+        $structure = $this->sample()->structure;
+
+        $this->assertSame(Keyword::Trait, $structure->keyword);
+
+        // Null rather than false: the modifiers do not apply to a trait.
+        $this->assertNull($structure->isAbstract);
+        $this->assertNull($structure->isFinal);
     }
 
     public function testTraitUsageIsReadAndInverted(): void
@@ -100,6 +177,23 @@ final class ZephirReaderTest extends TestCase
 
         // Namespace imports are a different relation and stay empty here.
         $this->assertSame([], $consumer->imports->uses);
+    }
+
+    public function testTypesAreInferredFromTheDefaultWhenNoVarTagSaysOtherwise(): void
+    {
+        $types = [];
+        foreach ($this->shapes()->members->constants->all() as $constant) {
+            $types[$constant->name] = $constant->varType;
+        }
+
+        $this->assertSame('string', $types['A_STRING']);
+        $this->assertSame('string', $types['A_CHAR']);
+        $this->assertSame('int', $types['AN_INT']);
+        $this->assertSame('float', $types['A_DOUBLE']);
+        $this->assertSame('bool', $types['A_BOOL']);
+        $this->assertSame('array', $types['AN_EMPTY_ARRAY']);
+        $this->assertSame('array', $types['A_FILLED_ARRAY']);
+        $this->assertSame('mixed', $types['A_NULL']);
     }
 
     public function testUsesAreMapped(): void
@@ -137,5 +231,11 @@ final class ZephirReaderTest extends TestCase
     {
         return $this->registry()->get('Phalcon\\Sample\\Sample')
             ?? self::fail('Phalcon\\Sample\\Sample was not read');
+    }
+
+    private function shapes(): ClassDefinition
+    {
+        return $this->registry()->get('Phalcon\\Sample\\Shapes')
+            ?? self::fail('Phalcon\\Sample\\Shapes was not read');
     }
 }
