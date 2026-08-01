@@ -51,37 +51,11 @@ final class Descriptions
                 continue;
             }
 
-            $leftText  = $this->text($leftClass, Document::DESCRIPTION);
-            $rightText = $this->text($rightClass, Document::DESCRIPTION);
-
-            if ($leftText !== $rightText) {
-                $rows[] = [
-                    'fqcn'   => $fqcn,
-                    'kind'   => 'class',
-                    'member' => '',
-                    'left'   => $leftText,
-                    'right'  => $rightText,
-                ];
-            }
-
-            foreach (Members::SECTIONS as $section => $kind) {
-                $leftMembers  = $this->members($leftClass, $section);
-                $rightMembers = $this->members($rightClass, $section);
-
-                foreach ($leftMembers as $name => $text) {
-                    if (!isset($rightMembers[$name]) || $rightMembers[$name] === $text) {
-                        continue;
-                    }
-
-                    $rows[] = [
-                        'fqcn'   => $fqcn,
-                        'kind'   => $kind,
-                        'member' => $name,
-                        'left'   => $text,
-                        'right'  => $rightMembers[$name],
-                    ];
-                }
-            }
+            $rows = [
+                ...$rows,
+                ...$this->classRows($fqcn, $leftClass, $rightClass),
+                ...$this->memberRows($fqcn, $leftClass, $rightClass),
+            ];
         }
 
         usort(
@@ -89,6 +63,66 @@ final class Descriptions
             static fn (array $a, array $b): int => [$a['fqcn'], $a['kind'], $a['member']]
                 <=> [$b['fqcn'], $b['kind'], $b['member']]
         );
+
+        return $rows;
+    }
+
+    /**
+     * The class's own description, as nought or one row.
+     *
+     * @param array<array-key, mixed> $leftClass
+     * @param array<array-key, mixed> $rightClass
+     *
+     * @return list<array{fqcn: string, kind: string, member: string, left: string, right: string}>
+     */
+    private function classRows(string $fqcn, array $leftClass, array $rightClass): array
+    {
+        $leftText  = $this->text($leftClass, Document::DESCRIPTION);
+        $rightText = $this->text($rightClass, Document::DESCRIPTION);
+
+        if ($leftText === $rightText) {
+            return [];
+        }
+
+        return [[
+            'fqcn'   => $fqcn,
+            'kind'   => 'class',
+            'member' => '',
+            'left'   => $leftText,
+            'right'  => $rightText,
+        ]];
+    }
+
+    /**
+     * One row per member the two sides word differently. A member missing
+     * from either side is a structural difference, not a wording one.
+     *
+     * @param array<array-key, mixed> $leftClass
+     * @param array<array-key, mixed> $rightClass
+     *
+     * @return list<array{fqcn: string, kind: string, member: string, left: string, right: string}>
+     */
+    private function memberRows(string $fqcn, array $leftClass, array $rightClass): array
+    {
+        $rows = [];
+
+        foreach (Members::SECTIONS as $section => $kind) {
+            $rightMembers = $this->members($rightClass, $section);
+
+            foreach ($this->members($leftClass, $section) as $name => $text) {
+                if (!isset($rightMembers[$name]) || $rightMembers[$name] === $text) {
+                    continue;
+                }
+
+                $rows[] = [
+                    'fqcn'   => $fqcn,
+                    'kind'   => $kind,
+                    'member' => $name,
+                    'left'   => $text,
+                    'right'  => $rightMembers[$name],
+                ];
+            }
+        }
 
         return $rows;
     }

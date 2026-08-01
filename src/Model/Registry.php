@@ -68,25 +68,22 @@ final class Registry
         $fqcn  = $name === null ? null : $this->resolve($name, $class);
 
         while ($name !== null) {
-            $entry = [
+            // One lookup answers both questions: whether the parent is in this
+            // registry at all, and what to walk to next if it is.
+            $parent = $fqcn === null ? null : $this->definitions->get($fqcn);
+
+            array_unshift($chain, [
                 'display' => $fqcn ?? $name,
-                'fqcn'    => $fqcn !== null && $this->definitions->has($fqcn) ? $fqcn : null,
-            ];
-            array_unshift($chain, $entry);
+                'fqcn'    => $parent === null ? null : $fqcn,
+            ]);
 
-            if ($entry['fqcn'] === null || isset($seen[$entry['fqcn']])) {
+            if ($parent === null || isset($seen[$fqcn])) {
                 break;
             }
 
-            $seen[$entry['fqcn']] = true;
-
-            $parent = $this->definitions->get($entry['fqcn']);
-            if ($parent === null) {
-                break;
-            }
-
-            $name = $parent->relations->extends[0] ?? null;
-            $fqcn = $name === null ? null : $this->resolve($name, $parent);
+            $seen[$fqcn] = true;
+            $name        = $parent->relations->extends[0] ?? null;
+            $fqcn        = $name === null ? null : $this->resolve($name, $parent);
         }
 
         return $chain;

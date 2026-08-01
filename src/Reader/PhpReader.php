@@ -137,6 +137,41 @@ final class PhpReader implements Reader
     }
 
     /**
+     * One `const` statement, which may declare several at once. They share
+     * the statement's docblock, because that is where it hangs.
+     *
+     * @return list<ConstantDefinition>
+     */
+    private function readConstants(Stmt\ClassConst $member): array
+    {
+        $doc       = new Docblock($this->docComment($member));
+        $constants = [];
+
+        foreach ($member->consts as $const) {
+            $constants[] = new ConstantDefinition(
+                $const->name->toString(),
+                $this->values->render($const->value),
+                $doc->varType() ?? $this->scalarType($const->value),
+                $doc->description()
+            );
+        }
+
+        return $constants;
+    }
+
+    private function readEnumCase(Stmt\EnumCase $member): ConstantDefinition
+    {
+        $doc = new Docblock($this->docComment($member));
+
+        return new ConstantDefinition(
+            $member->name->toString(),
+            $this->values->render($member->expr),
+            $doc->varType() ?? $this->scalarType($member->expr),
+            $doc->description()
+        );
+    }
+
+    /**
      * @return list<string>
      */
     private function readExtends(Stmt\ClassLike $node): array
@@ -202,6 +237,8 @@ final class PhpReader implements Reader
     private function readHeader(array $ast): ?array
     {
         foreach ($ast as $statement) {
+            // A declaration at the top level belongs to the global namespace
+            // and has nothing before it to gather.
             if ($statement instanceof Stmt\ClassLike) {
                 return [
                     'namespace' => '',
@@ -215,35 +252,9 @@ final class PhpReader implements Reader
                 continue;
             }
 
-            $namespace = $statement->name === null ? '' : $statement->name->toString();
-            $uses      = [];
-            $aliases   = [];
-
-            foreach ($statement->stmts as $inner) {
-                if ($inner instanceof Stmt\Use_) {
-                    // Only class imports; `use function` and `use const` are
-                    // a different relation and would corrupt the Uses list.
-                    if ($inner->type !== Stmt\Use_::TYPE_NORMAL) {
-                        continue;
-                    }
-
-                    foreach ($inner->uses as $use) {
-                        $name            = $use->name->toString();
-                        $uses[]          = $name;
-                        $aliases[$use->getAlias()->toString()] = $name;
-                    }
-
-                    continue;
-                }
-
-                if ($inner instanceof Stmt\ClassLike) {
-                    return [
-                        'namespace' => $namespace,
-                        'uses'      => $uses,
-                        'aliases'   => $aliases,
-                        'node'      => $inner,
-                    ];
-                }
+            $header = $this->readNamespace($statement);
+            if ($header !== null) {
+                return $header;
             }
         }
 
@@ -278,15 +289,7 @@ final class PhpReader implements Reader
 
         foreach ($node->stmts as $member) {
             if ($member instanceof Stmt\ClassConst) {
-                foreach ($member->consts as $const) {
-                    $doc          = new Docblock($this->docComment($member));
-                    $constants[]  = new ConstantDefinition(
-                        $const->name->toString(),
-                        $this->values->render($const->value),
-                        $doc->varType() ?? $this->scalarType($const->value),
-                        $doc->description()
-                    );
-                }
+                $constants = [...$constants, ...$this->readConstants($member)];
 
                 continue;
             }
@@ -294,40 +297,20 @@ final class PhpReader implements Reader
             // An enum case is a named value on the declaration - constant
             // shaped, and the formatter renders enums as classes anyway.
             if ($member instanceof Stmt\EnumCase) {
-                $doc         = new Docblock($this->docComment($member));
-                $constants[] = new ConstantDefinition(
-                    $member->name->toString(),
-                    $this->values->render($member->expr),
-                    $doc->varType() ?? $this->scalarType($member->expr),
-                    $doc->description()
-                );
+                $constants[] = $this->readEnumCase($member);
 
                 continue;
             }
 
             if ($member instanceof Stmt\Property) {
-                $doc = new Docblock($this->docComment($member));
-                foreach ($member->props as $prop) {
-                    $properties[] = new PropertyDefinition(
-                        $prop->name->toString(),
-                        $this->visibility($member->isPrivate(), $member->isProtected()),
-                        $member->isReadonly(),
-                        $this->values->render($prop->default),
-                        $doc->varType() ?? $this->types->render($member->type) ?? 'mixed',
-                        $doc->description(),
-                        []
-                    );
-                }
+                $properties = [...$properties, ...$this->readProperties($member)];
 
                 continue;
             }
 
             if ($member instanceof Stmt\ClassMethod) {
-                $methods[] = $this->readMethod($member);
-
-                foreach ($this->promoted($member) as $property) {
-                    $properties[] = $property;
-                }
+                $methods[]  = $this->readMethod($member);
+                $properties = [...$properties, ...$this->promoted($member)];
             }
         }
 
@@ -369,6 +352,77 @@ final class PhpReader implements Reader
             $method->returnType === null ? null : $this->types->render($method->returnType),
             (new Docblock($this->docComment($method)))->description()
         );
+    }
+
+    /**
+     * The declaration inside one namespace block, with the imports that
+     * precede it, or null when the block holds no declaration.
+     *
+     * @return array{
+     *     namespace: string,
+     *     uses: list<string>,
+     *     aliases: array<string, string>,
+     *     node: Stmt\ClassLike
+     * }|null
+     */
+    private function readNamespace(Stmt\Namespace_ $namespace): ?array
+    {
+        $name    = $namespace->name === null ? '' : $namespace->name->toString();
+        $uses    = [];
+        $aliases = [];
+
+        foreach ($namespace->stmts as $inner) {
+            if ($inner instanceof Stmt\ClassLike) {
+                return [
+                    'namespace' => $name,
+                    'uses'      => $uses,
+                    'aliases'   => $aliases,
+                    'node'      => $inner,
+                ];
+            }
+
+            // Only class imports; `use function` and `use const` are a
+            // different relation and would corrupt the Uses list.
+            if (!$inner instanceof Stmt\Use_ || $inner->type !== Stmt\Use_::TYPE_NORMAL) {
+                continue;
+            }
+
+            foreach ($inner->uses as $use) {
+                $imported                              = $use->name->toString();
+                $uses[]                                = $imported;
+                $aliases[$use->getAlias()->toString()] = $imported;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * One property statement, which may declare several names at once, all
+     * sharing the statement's visibility, type and docblock.
+     *
+     * @return list<PropertyDefinition>
+     */
+    private function readProperties(Stmt\Property $member): array
+    {
+        $doc        = new Docblock($this->docComment($member));
+        $visibility = $this->visibility($member->isPrivate(), $member->isProtected());
+        $varType    = $doc->varType() ?? $this->types->render($member->type) ?? 'mixed';
+        $properties = [];
+
+        foreach ($member->props as $prop) {
+            $properties[] = new PropertyDefinition(
+                $prop->name->toString(),
+                $visibility,
+                $member->isReadonly(),
+                $this->values->render($prop->default),
+                $varType,
+                $doc->description(),
+                []
+            );
+        }
+
+        return $properties;
     }
 
     /**
