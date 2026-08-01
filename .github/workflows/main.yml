@@ -1,0 +1,78 @@
+name: Phalcon Scribe CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php:
+          # The floor is forced: cphalcon and phalcon dev-require scribe, and
+          # both support 8.1. The newest release covers deprecations. The
+          # versions in between add no signal for a package with no extensions
+          # and no database.
+          - '8.1'
+          - '8.5'
+    name: PHP ${{ matrix.php }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Tests
+        run: composer test
+
+      # Runtime-independent, so run once - on the floor, which is where a
+      # syntax slip past 8.1 would surface.
+      - name: Static analysis and coding standard
+        if: matrix.php == '8.1'
+        run: |
+          composer analyze
+          composer cs
+
+  sonarqube:
+    name: Coverage & SonarQube
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: pcov
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Tests with coverage
+        run: composer test-coverage
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=phalcon
+            -Dsonar.projectKey=phalcon_scribe
+            -Dsonar.sources=src
+            -Dsonar.tests=tests
+            -Dsonar.exclusions=resources/**
+            -Dsonar.php.coverage.reportPaths=tests/_output/coverage.xml
+
+      - name: octocov
+        uses: k1LoW/octocov-action@b3b6ee60482a667950f87553abf1df63217235d9 # v1.5.1
+        with:
+          config: ${{ github.event_name == 'pull_request' && 'resources/octocov.pr.yml' || 'resources/octocov.yml' }}

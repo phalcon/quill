@@ -15,7 +15,11 @@ set -eux
 groupadd -g "${GID}" "${GROUP}"
 useradd -l -m -u "${UID}" -g "${GID}" -s /bin/bash "${USER}"
 apt-get update -y
-apt-get install -yq --no-install-recommends curl git unzip zip
+apt-get install -yq --no-install-recommends curl git unzip zip ${PHPIZE_DEPS}
+# pcov only - composer test-coverage needs a driver, and CI installs the same
+# one through setup-php.
+pecl install pcov
+docker-php-ext-enable pcov
 apt-get clean -y
 rm -rf /var/lib/apt/lists/*
 EOT
