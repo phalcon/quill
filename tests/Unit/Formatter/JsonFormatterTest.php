@@ -71,6 +71,36 @@ final class JsonFormatterTest extends TestCase
         $this->assertInstanceOf(MarkdownFormatter::class, $factory->create('markdown'));
     }
 
+    public function testFilterIsCaseInsensitive(): void
+    {
+        $pages = (new JsonFormatter())->format($this->registry(), $this->config(), 'ZuLu');
+
+        /** @var array<string, mixed> $decoded */
+        $decoded = json_decode($pages[JsonFormatter::DOCUMENT], true);
+
+        /** @var array<string, mixed> $definitions */
+        $definitions = $decoded['definitions'];
+        $this->assertSame(['Phalcon\\Sample\\Zulu'], array_keys($definitions));
+    }
+
+    /**
+     * The filter skips what does not match rather than stopping at it, so a
+     * match after a miss is still found.
+     */
+    public function testFilterKeepsLookingPastANonMatch(): void
+    {
+        // The registry hands Zulu over first, so Alpha is only reachable if
+        // the loop carries on past the miss.
+        $pages = (new JsonFormatter())->format($this->registry(), $this->config(), 'alpha');
+
+        /** @var array<string, mixed> $decoded */
+        $decoded = json_decode($pages[JsonFormatter::DOCUMENT], true);
+
+        /** @var array<string, mixed> $definitions */
+        $definitions = $decoded['definitions'];
+        $this->assertSame(['Phalcon\\Sample\\Alpha'], array_keys($definitions));
+    }
+
     public function testFilterNarrowsByFqcn(): void
     {
         $pages = (new JsonFormatter())->format($this->registry(), $this->config(), 'zulu');
@@ -81,6 +111,21 @@ final class JsonFormatterTest extends TestCase
         /** @var array<string, mixed> $definitions */
         $definitions = $decoded['definitions'];
         $this->assertSame(['Phalcon\\Sample\\Zulu'], array_keys($definitions));
+    }
+
+    /**
+     * The document is written to be diffed and to be read back, so the exact
+     * encoding matters: indented, slashes left alone, and one trailing
+     * newline so the file ends the way a text file should.
+     */
+    public function testTheDocumentIsPrettyPrintedWithUnescapedSlashes(): void
+    {
+        $json = (new JsonFormatter())->format($this->registry(), $this->config())[JsonFormatter::DOCUMENT];
+
+        $this->assertStringContainsString("{\n    \"version\"", $json);
+        $this->assertStringContainsString('"phalcon/cphalcon"', $json);
+        $this->assertStringNotContainsString('phalcon\\/cphalcon', $json);
+        $this->assertStringEndsWith("}\n", $json);
     }
 
     public function testWritesOneDocumentWithAJsonExtension(): void

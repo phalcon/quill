@@ -18,7 +18,6 @@ use Phalcon\Quill\Model\Members;
 use function array_diff;
 use function array_intersect;
 use function array_keys;
-use function array_values;
 use function sort;
 
 /**
@@ -48,9 +47,10 @@ final class Comparison
         $leftKeys  = array_keys($left);
         $rightKeys = array_keys($right);
 
-        $leftOnly  = array_values(array_diff($leftKeys, $rightKeys));
-        $rightOnly = array_values(array_diff($rightKeys, $leftKeys));
-        $common    = array_values(array_intersect($leftKeys, $rightKeys));
+        // sort() reindexes as well as orders, so the diffs need no array_values.
+        $leftOnly  = array_diff($leftKeys, $rightKeys);
+        $rightOnly = array_diff($rightKeys, $leftKeys);
+        $common    = array_intersect($leftKeys, $rightKeys);
 
         sort($leftOnly);
         sort($rightOnly);
@@ -85,8 +85,8 @@ final class Comparison
             $leftNames  = array_keys(MemberIndex::of($left, $section));
             $rightNames = array_keys(MemberIndex::of($right, $section));
 
-            $missing = array_values(array_diff($leftNames, $rightNames));
-            $extra   = array_values(array_diff($rightNames, $leftNames));
+            $missing = array_diff($leftNames, $rightNames);
+            $extra   = array_diff($rightNames, $leftNames);
 
             if ($missing === [] && $extra === []) {
                 continue;

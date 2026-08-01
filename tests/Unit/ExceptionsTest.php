@@ -38,32 +38,40 @@ final class ExceptionsTest extends TestCase
     {
         $exception = new MalformedConfiguration('/project/quill.php');
 
-        $this->assertStringContainsString("'/project/quill.php'", $exception->getMessage());
-        $this->assertStringContainsString('must return an array', $exception->getMessage());
+        $this->assertSame(
+            "quill configuration: '/project/quill.php' must return an array",
+            $exception->getMessage()
+        );
     }
 
     public function testAMalformedDocumentNamesTheFile(): void
     {
         $exception = new MalformedDocument('/project/model.json');
 
-        $this->assertStringContainsString("'/project/model.json'", $exception->getMessage());
-        $this->assertStringContainsString('is not a model document', $exception->getMessage());
+        $this->assertSame(
+            "'/project/model.json' is not a model document",
+            $exception->getMessage()
+        );
     }
 
     public function testAMissingConfigurationKeyNamesTheKey(): void
     {
         $exception = new MissingConfigurationKey('branch');
 
-        $this->assertStringContainsString("'branch'", $exception->getMessage());
-        $this->assertStringContainsString('non-empty string', $exception->getMessage());
+        $this->assertSame(
+            "quill configuration key 'branch' is required and must be a non-empty string",
+            $exception->getMessage()
+        );
     }
 
     public function testAMissingConfigurationNamesTheFile(): void
     {
         $exception = new MissingConfiguration('/project/quill.php');
 
-        $this->assertStringContainsString("'/project/quill.php'", $exception->getMessage());
-        $this->assertStringContainsString('no such file', $exception->getMessage());
+        $this->assertSame(
+            "quill configuration: no such file '/project/quill.php'",
+            $exception->getMessage()
+        );
     }
 
     public function testAMissingDependencyNamesThePackageAndHowToInstallIt(): void
@@ -81,47 +89,65 @@ final class ExceptionsTest extends TestCase
     {
         $exception = new MissingDocument('/project/model.json');
 
-        $this->assertStringContainsString("'/project/model.json'", $exception->getMessage());
-        $this->assertStringContainsString('no such model document', $exception->getMessage());
+        $this->assertSame(
+            "no such model document '/project/model.json'",
+            $exception->getMessage()
+        );
     }
 
     public function testAnIncompatibleDocumentReportsBothVersions(): void
     {
         $exception = new IncompatibleDocument('/project/model.json', 6, 7);
 
-        $this->assertStringContainsString('is version 6', $exception->getMessage());
-        $this->assertStringContainsString('version 7', $exception->getMessage());
+        $this->assertSame(
+            "'/project/model.json' is version 6, but this copy of quill reads version 7."
+            . ' Comparing across versions reports shape changes as differences between'
+            . ' implementations, so regenerate the document with the quill that reads it.',
+            $exception->getMessage()
+        );
     }
 
     public function testAnIncompatibleDocumentSaysWhenThereIsNoVersionAtAll(): void
     {
         $exception = new IncompatibleDocument('/project/model.json', null, 7);
 
-        $this->assertStringContainsString('declares no version', $exception->getMessage());
+        $this->assertSame(
+            "'/project/model.json' declares no version, but this copy of quill reads version 7."
+            . ' Comparing across versions reports shape changes as differences between'
+            . ' implementations, so regenerate the document with the quill that reads it.',
+            $exception->getMessage()
+        );
     }
 
     public function testAnUnknownFormatListsTheOnesThatWork(): void
     {
         $exception = new UnknownFormat('pdf', ['json', 'markdown']);
 
-        $this->assertStringContainsString("'pdf'", $exception->getMessage());
-        $this->assertStringContainsString('json, markdown', $exception->getMessage());
+        $this->assertSame(
+            "Unknown format 'pdf'; known formats are: json, markdown",
+            $exception->getMessage()
+        );
     }
 
     public function testAnUnknownLanguageListsTheOnesThatWork(): void
     {
         $exception = new UnknownLanguage('cobol', ['php', 'zephir']);
 
-        $this->assertStringContainsString("Unknown language 'cobol'", $exception->getMessage());
-        $this->assertStringContainsString('php, zephir', $exception->getMessage());
+        $this->assertSame(
+            "Unknown language 'cobol'; known languages are: php, zephir",
+            $exception->getMessage()
+        );
     }
 
     public function testAWriteFailureBlamesThePermissionsRatherThanTheUser(): void
     {
         $exception = new WriteFailed('/root/out.md');
 
-        $this->assertStringContainsString("'/root/out.md'", $exception->getMessage());
-        $this->assertStringContainsString('writable', $exception->getMessage());
+        $this->assertSame(
+            "Could not write '/root/out.md'. Check the destination is writable"
+            . ' by the user running quill.',
+            $exception->getMessage()
+        );
     }
 
     /**

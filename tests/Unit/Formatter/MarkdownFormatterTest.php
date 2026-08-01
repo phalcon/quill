@@ -33,6 +33,18 @@ use function substr_count;
 
 final class MarkdownFormatterTest extends TestCase
 {
+    /**
+     * A constant's description is wrapped, in that order - the wrapper first,
+     * then the text, then the close.
+     */
+    public function testAConstantDescriptionIsWrappedInItsOwnSpan(): void
+    {
+        $this->assertStringContainsString(
+            '<span class="desc">How many.</span>',
+            $this->page()
+        );
+    }
+
     public function testConstantsSectionRendersTheApiList(): void
     {
         $markdown = $this->page();

@@ -42,6 +42,28 @@ final class ConfigTest extends TestCase
         $this->assertSame('/out', $config->outputDir());
     }
 
+    /**
+     * A root that already ends in a separator must not produce a doubled one.
+     */
+    public function testARootWithATrailingSeparatorIsNotDoubled(): void
+    {
+        $config = Config::fromArray(
+            [
+                'language'   => 'zephir',
+                'source'     => 'phalcon',
+                'output'     => 'nikos/api',
+                'repository' => 'phalcon/cphalcon',
+                'branch'     => '5.0.x',
+                'prefix'     => 'phalcon',
+                'extension'  => 'zep',
+            ],
+            '/project/'
+        );
+
+        $this->assertSame('/project/phalcon', $config->sourceRoot());
+        $this->assertSame('/project/nikos/api', $config->outputDir());
+    }
+
     public function testEveryConfiguredValueIsReadableBack(): void
     {
         $config = $this->config();

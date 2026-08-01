@@ -77,6 +77,80 @@ final class ModelTest extends TestCase
         }
     }
 
+    /**
+     * Each serialized shape is asserted whole rather than key by key. The keys
+     * are a published contract, so a renamed key, a dropped one or a pair
+     * swapped round has to fail here.
+     */
+    public function testEverySerializedShapeIsExact(): void
+    {
+        $this->assertSame(
+            [
+                'fqcn'      => 'Phalcon\\Sample\\Lower',
+                'namespace' => 'Phalcon\\Sample',
+                'relPath'   => 'Sample/Lower.zep',
+            ],
+            (new Location('Phalcon\\Sample\\Lower', 'Phalcon\\Sample', 'Sample/Lower.zep'))->toArray()
+        );
+
+        $this->assertSame(
+            ['uses' => ['Phalcon\\Sample\\Base'], 'aliases' => ['Base' => 'Phalcon\\Sample\\Base']],
+            (new Imports(['Phalcon\\Sample\\Base'], ['Base' => 'Phalcon\\Sample\\Base']))->toArray()
+        );
+
+        $this->assertSame(
+            ['extends' => ['Base'], 'implements' => ['Countable'], 'traits' => ['Marker']],
+            (new Relations(['Base'], ['Countable'], ['Marker']))->toArray()
+        );
+
+        $this->assertSame(
+            ['keyword' => 'class', 'isAbstract' => true, 'isFinal' => false],
+            Structure::classType(true, false)->toArray()
+        );
+
+        $this->assertSame(
+            ['name' => 'count', 'default' => '1', 'varType' => 'int', 'description' => 'How many.'],
+            (new ConstantDefinition('count', '1', 'int', 'How many.'))->toArray()
+        );
+
+        $this->assertSame(
+            [
+                'name'        => 'store',
+                'visibility'  => 'protected',
+                'isReadonly'  => true,
+                'default'     => '[]',
+                'varType'     => 'array',
+                'description' => 'The store.',
+                'shortcuts'   => ['get'],
+            ],
+            (new PropertyDefinition('store', 'protected', true, '[]', 'array', 'The store.', ['get']))->toArray()
+        );
+
+        $this->assertSame(
+            ['name' => 'text', 'type' => 'string', 'default' => '""'],
+            (new ParameterDefinition('text', 'string', '""'))->toArray()
+        );
+
+        $this->assertSame(
+            [
+                'name'        => 'toLower',
+                'modifiers'   => ['public', 'static'],
+                'visibility'  => 'public',
+                'parameters'  => [['name' => 'text', 'type' => 'string', 'default' => null]],
+                'returnType'  => 'string',
+                'description' => 'Lowercases.',
+            ],
+            (new MethodDefinition(
+                'toLower',
+                ['public', 'static'],
+                'public',
+                new ParameterDefinitionCollection([new ParameterDefinition('text', 'string', null)]),
+                'string',
+                'Lowercases.'
+            ))->toArray()
+        );
+    }
+
     public function testMethodKeepsModifierOrderAndDerivedVisibility(): void
     {
         $method = new MethodDefinition(

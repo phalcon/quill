@@ -28,6 +28,7 @@ use function file_put_contents;
 use function fopen;
 use function glob;
 use function is_dir;
+use function is_file;
 use function rmdir;
 use function unlink;
 
@@ -40,17 +41,15 @@ final class GenerateCommandTest extends TestCase
         parent::setUp();
 
         $this->outputDir = dirname(__DIR__, 2) . '/_output/generate';
+
+        // Mutation runs share this directory and can leave it behind, so the
+        // test starts from nothing rather than from whatever survived.
+        $this->clean();
     }
 
     protected function tearDown(): void
     {
-        foreach (glob($this->outputDir . '/*.md') ?: [] as $file) {
-            unlink($file);
-        }
-
-        if (is_dir($this->outputDir)) {
-            rmdir($this->outputDir);
-        }
+        $this->clean();
 
         parent::tearDown();
     }
@@ -142,6 +141,19 @@ final class GenerateCommandTest extends TestCase
             '- [Phalcon Sample](phalcon_sample.md)',
             (string) file_get_contents($this->outputDir . '/index.md')
         );
+    }
+
+    private function clean(): void
+    {
+        foreach (glob($this->outputDir . '/*') ?: [] as $file) {
+            if (is_file($file)) {
+                unlink($file);
+            }
+        }
+
+        if (is_dir($this->outputDir)) {
+            rmdir($this->outputDir);
+        }
     }
 
     private function command(): GenerateCommand

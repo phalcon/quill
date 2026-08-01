@@ -1,0 +1,14 @@
+{
+    "$schema": "../vendor/infection/infection/resources/schema.json",
+    "source": { "directories": ["src"] },
+    "tmpDir": "../tests/_output/infection",
+    "logs": {
+        "text": "../tests/_output/infection/infection.log",
+        "summary": "../tests/_output/infection/summary.log"
+    },
+    "mutators": { "@default": true },
+    "testFramework": "phpunit",
+    // Relative to this file, not the project root - phpunit.xml.dist sits
+    // beside it in resources/.
+    "phpUnit": { "configDir": "." }
+}

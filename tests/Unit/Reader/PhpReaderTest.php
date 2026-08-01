@@ -20,6 +20,7 @@ use Phalcon\Quill\Model\Registry;
 use Phalcon\Quill\Reader\PhpReader;
 use PHPUnit\Framework\TestCase;
 
+use function array_keys;
 use function array_map;
 use function dirname;
 
@@ -179,6 +180,55 @@ final class PhpReaderTest extends TestCase
         $this->assertSame(
             ['id', 'label'],
             array_map(static fn ($p): string => $p->name, $constructor->parameters->all())
+        );
+    }
+
+    /**
+     * A promoted parameter is a property as well, carrying its own
+     * visibility, its readonly flag and its type. A plain parameter is not,
+     * and must not appear among them.
+     */
+    public function testPromotedParametersCarryVisibilityReadonlyAndType(): void
+    {
+        $properties = [];
+        foreach ($this->definition('Phalcon\\Sample\\Shapes')->members->properties->all() as $property) {
+            $properties[$property->name] = $property;
+        }
+
+        // Declared first in the constructor, and deliberately not promoted.
+        $this->assertArrayNotHasKey('plain', $properties);
+
+        // ...while everything promoted after it is still found.
+        $this->assertSame(
+            ['guarded', 'hidden', 'open', 'untypedPromoted'],
+            array_keys($properties)
+        );
+
+        $this->assertSame('public', $properties['open']->visibility);
+        $this->assertTrue($properties['open']->isReadonly);
+        $this->assertSame('int', $properties['open']->varType);
+
+        $this->assertSame('protected', $properties['guarded']->visibility);
+        $this->assertFalse($properties['guarded']->isReadonly);
+        $this->assertSame('string', $properties['guarded']->varType);
+        $this->assertSame('"none"', $properties['guarded']->default);
+
+        $this->assertSame('private', $properties['hidden']->visibility);
+        $this->assertFalse($properties['hidden']->isReadonly);
+        $this->assertSame('int|null', $properties['hidden']->varType);
+
+        // No declared type falls back rather than being left empty.
+        $this->assertSame('mixed', $properties['untypedPromoted']->varType);
+
+        // They remain parameters of the constructor too.
+        $methods = [];
+        foreach ($this->definition('Phalcon\\Sample\\Shapes')->members->methods->all() as $method) {
+            $methods[$method->name] = $method;
+        }
+
+        $this->assertSame(
+            ['plain', 'open', 'guarded', 'hidden', 'untypedPromoted'],
+            array_map(static fn ($p): string => $p->name, $methods['__construct']->parameters->all())
         );
     }
 

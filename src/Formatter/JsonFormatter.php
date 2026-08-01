@@ -21,7 +21,6 @@ use Phalcon\Quill\Model\Registry;
 use function json_encode;
 use function ksort;
 use function stripos;
-use function strtolower;
 
 use const JSON_PRETTY_PRINT;
 use const JSON_THROW_ON_ERROR;
@@ -53,7 +52,7 @@ final class JsonFormatter implements Formatter
     {
         $definitions = [];
         foreach ($registry->all() as $fqcn => $class) {
-            if ($filter !== '' && stripos($fqcn, strtolower($filter)) === false) {
+            if ($filter !== '' && stripos($fqcn, $filter) === false) {
                 continue;
             }
 

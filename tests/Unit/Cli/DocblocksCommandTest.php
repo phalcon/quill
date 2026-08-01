@@ -162,6 +162,65 @@ final class DocblocksCommandTest extends TestCase
         $this->assertStringContainsString('Put s or p', (string) stream_get_contents($stdout));
     }
 
+    public function testASuccessfulRunReturnsZero(): void
+    {
+        $this->write();
+
+        $status = (new DocblocksCommand($this->silent()))->execute(
+            $this->dir . '/left.json',
+            $this->dir . '/right.json',
+            $this->dir . '/out.csv'
+        );
+
+        $this->assertSame(0, $status);
+    }
+
+    /**
+     * Blankness decides a row whichever side is blank, and only a row with
+     * text on both sides is left for a human.
+     */
+    public function testEitherBlankSideDecidesItsOwnRow(): void
+    {
+        file_put_contents($this->dir . '/left.json', json_encode([
+            'version'     => ClassDefinition::MODEL_VERSION,
+            'repository'  => 'phalcon/cphalcon',
+            'definitions' => ['A' => $this->definition('Only on the left.', 'One wording.')],
+        ]));
+        file_put_contents($this->dir . '/right.json', json_encode([
+            'version'     => ClassDefinition::MODEL_VERSION,
+            'repository'  => 'phalcon/phalcon',
+            'definitions' => ['A' => $this->definition('', 'Another wording.')],
+        ]));
+
+        $stdout = fopen('php://memory', 'rb+');
+        $this->assertIsResource($stdout);
+
+        $status = (new DocblocksCommand($stdout))->execute(
+            $this->dir . '/left.json',
+            $this->dir . '/right.json',
+            $this->dir . '/out.csv'
+        );
+
+        $this->assertSame(0, $status);
+
+        $handle = fopen($this->dir . '/out.csv', 'rb');
+        $this->assertIsResource($handle);
+        fgetcsv($handle, 0, ',', '"', '');
+        $row = fgetcsv($handle, 0, ',', '"', '');
+        fclose($handle);
+
+        $this->assertIsArray($row);
+
+        // Right side blank, so the left label wins.
+        $this->assertSame('documented', $row[2]);
+        $this->assertSame('c', $row[5]);
+
+        rewind($stdout);
+        $output = (string) stream_get_contents($stdout);
+        $this->assertStringContainsString('1 pre-filled', $output);
+        $this->assertStringContainsString('1 to decide', $output);
+    }
+
     public function testHeadersComeFromTheRepositoryNames(): void
     {
         $rows = $this->rows();
@@ -249,6 +308,17 @@ final class DocblocksCommandTest extends TestCase
         fclose($handle);
 
         return $rows;
+    }
+
+    /**
+     * @return resource
+     */
+    private function silent()
+    {
+        $stdout = fopen('php://memory', 'rb+');
+        $this->assertIsResource($stdout);
+
+        return $stdout;
     }
 
     private function write(): void

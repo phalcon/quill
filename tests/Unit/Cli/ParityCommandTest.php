@@ -28,6 +28,7 @@ use function is_dir;
 use function json_encode;
 use function mkdir;
 use function rewind;
+use function sprintf;
 use function stream_get_contents;
 use function substr_count;
 use function unlink;
@@ -96,6 +97,31 @@ final class ParityCommandTest extends TestCase
         $this->assertStringContainsString('  OnlyRight', $output);
     }
 
+    /**
+     * Any one of the three kinds of difference is enough to fail the run;
+     * they are not weighed against each other.
+     */
+    public function testEachKindOfDifferenceOnItsOwnFailsTheRun(): void
+    {
+        [$leftOnly] = $this->compare(
+            ['A' => $this->definition([]), 'OnlyLeft' => $this->definition([])],
+            ['A' => $this->definition([])]
+        );
+        $this->assertSame(1, $leftOnly);
+
+        [$rightOnly] = $this->compare(
+            ['A' => $this->definition([])],
+            ['A' => $this->definition([]), 'OnlyRight' => $this->definition([])]
+        );
+        $this->assertSame(1, $rightOnly);
+
+        [$members] = $this->compare(
+            ['A' => $this->definition(['gone'])],
+            ['A' => $this->definition([])]
+        );
+        $this->assertSame(1, $members);
+    }
+
     public function testJsonThatIsNotEvenAnArrayIsRejected(): void
     {
         file_put_contents($this->dir . '/left.json', json_encode('a bare string'));
@@ -117,6 +143,34 @@ final class ParityCommandTest extends TestCase
         $this->assertStringContainsString('Differing members: 1 of 1 shared definitions', $output);
         $this->assertStringContainsString('  A', $output);
         $this->assertStringContainsString('methods     -1 +1', $output);
+    }
+
+    /**
+     * Twenty-five is the default the command promises when no limit is given.
+     */
+    public function testTheDefaultLimitIsTwentyFive(): void
+    {
+        $left = [];
+        for ($i = 1; $i <= 27; $i++) {
+            $left['Left' . sprintf('%02d', $i)] = $this->definition([]);
+        }
+
+        $this->write('left.json', $left);
+        $this->write('right.json', []);
+
+        $stdout = fopen('php://memory', 'rb+');
+        $this->assertIsResource($stdout);
+
+        // No limit argument, so the default decides.
+        (new ParityCommand($stdout))->execute($this->dir . '/left.json', $this->dir . '/right.json');
+
+        rewind($stdout);
+        $output = (string) stream_get_contents($stdout);
+
+        $this->assertStringContainsString('Only on the left: 27', $output);
+        $this->assertStringContainsString('... and 2 more', $output);
+        $this->assertStringContainsString('  Left25' . PHP_EOL, $output);
+        $this->assertStringNotContainsString('  Left26', $output);
     }
 
     /**
@@ -143,6 +197,27 @@ final class ParityCommandTest extends TestCase
         $this->assertStringContainsString('... and 2 more', $output);
         // Three differing classes, one shown, so the notice appears twice.
         $this->assertSame(2, substr_count($output, '... and 2 more'));
+    }
+
+    /**
+     * The limit counts what is shown, so exactly that many appear before the
+     * notice - one fewer or one more would be off by one.
+     */
+    public function testTheLimitShowsExactlyThatMany(): void
+    {
+        $left  = [];
+        $right = [];
+        foreach (['A', 'B', 'C'] as $fqcn) {
+            $left[$fqcn]  = $this->definition(['gone']);
+            $right[$fqcn] = $this->definition([]);
+        }
+
+        [, $output] = $this->compare($left, $right, 2);
+
+        $this->assertStringContainsString('  A' . PHP_EOL, $output);
+        $this->assertStringContainsString('  B' . PHP_EOL, $output);
+        $this->assertStringNotContainsString('  C' . PHP_EOL, $output);
+        $this->assertStringContainsString('... and 1 more', $output);
     }
 
     public function testTwoIdenticalDocumentsAreClean(): void

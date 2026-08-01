@@ -34,7 +34,6 @@ use function str_repeat;
 use function str_replace;
 use function str_starts_with;
 use function stripos;
-use function strtolower;
 use function trim;
 use function ucfirst;
 
@@ -78,7 +77,7 @@ final class MarkdownFormatter implements Formatter
         $output = [];
 
         foreach (array_keys($pages) as $page) {
-            if ($filter !== '' && stripos($page, strtolower($filter)) === false) {
+            if ($filter !== '' && stripos($page, $filter) === false) {
                 unset($pages[$page]);
             }
         }

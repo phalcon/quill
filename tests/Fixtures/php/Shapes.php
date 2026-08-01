@@ -22,11 +22,17 @@ class Shapes
     public const AN_EXPRESSION = 1 + 2;
 
     /**
-     * `$plain` is not promoted, so it is a parameter and nothing more, while
-     * `$kept` is both a parameter and a property.
+     * `$plain` is not promoted, so it is a parameter and nothing more. The
+     * rest are both parameters and properties, one of each visibility, with
+     * and without readonly, and one with no declared type at all.
      */
-    public function __construct(string $plain, protected int $kept = 0)
-    {
+    public function __construct(
+        string $plain,
+        public readonly int $open,
+        protected string $guarded = 'none',
+        private ?int $hidden = null,
+        public $untypedPromoted = null
+    ) {
     }
 
     public function unionAndNullable(

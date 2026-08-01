@@ -54,6 +54,10 @@ final class DescriptionsTest extends TestCase
         ];
 
         $this->assertSame([], (new Descriptions())->compare(['A' => $wrongSection], ['A' => $wrongMembers]));
+
+        // `members` itself not being a list is caught before it is indexed.
+        $notEvenMembers = ['description' => 'Same.', 'members' => 'not an array'];
+        $this->assertSame([], (new Descriptions())->compare(['A' => $notEvenMembers], ['A' => $notEvenMembers]));
     }
 
     public function testClassDescriptionsAreReportedWithNoMemberName(): void
