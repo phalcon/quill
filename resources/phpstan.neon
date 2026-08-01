@@ -7,7 +7,11 @@ parameters:
     # gitignored, so listing them fails a fresh checkout, and they hold only
     # generated .md/.sql which phpstan does not read anyway.
     excludePaths:
+        # Fixtures are parse targets, not code. The PHP one deliberately
+        # references undefined parents and traits so the reader has something
+        # to resolve; analysing it reports on the fixture, not on scribe.
         - %currentWorkingDirectory%/tests/Fixtures/config
+        - %currentWorkingDirectory%/tests/Fixtures/php
     bootstrapFiles:
         - %currentWorkingDirectory%/vendor/autoload.php
     treatPhpDocTypesAsCertain: false

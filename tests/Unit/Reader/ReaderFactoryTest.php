@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Phalcon\Scribe\Tests\Unit\Reader;
 
 use Phalcon\Scribe\Exceptions\UnknownLanguage;
+use Phalcon\Scribe\Reader\PhpReader;
 use Phalcon\Scribe\Reader\ReaderFactory;
 use Phalcon\Scribe\Reader\ZephirReader;
 use PHPUnit\Framework\TestCase;
@@ -25,11 +26,16 @@ final class ReaderFactoryTest extends TestCase
         $this->assertInstanceOf(ZephirReader::class, (new ReaderFactory())->create('zephir'));
     }
 
-    public function testPhpIsNotAvailableYet(): void
+    public function testCreatesThePhpReader(): void
+    {
+        $this->assertInstanceOf(PhpReader::class, (new ReaderFactory())->create('php'));
+    }
+
+    public function testUnknownLanguageThrows(): void
     {
         $this->expectException(UnknownLanguage::class);
-        $this->expectExceptionMessage("Unknown language 'php'; known languages are: zephir");
+        $this->expectExceptionMessage("Unknown language 'ruby'; known languages are: php, zephir");
 
-        (new ReaderFactory())->create('php');
+        (new ReaderFactory())->create('ruby');
     }
 }

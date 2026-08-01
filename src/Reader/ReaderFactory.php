@@ -21,16 +21,16 @@ use Zephir\Parser\Parser;
 use function class_exists;
 
 /**
- * Resolves a configured `language` to its reader. `php` arrives with the PHP
- * reader; until then it is simply unknown.
+ * Resolves a configured `language` to its reader.
  */
 final class ReaderFactory
 {
-    private const KNOWN = ['zephir'];
+    private const KNOWN = ['php', 'zephir'];
 
     public function create(string $language): Reader
     {
         return match ($language) {
+            'php'    => new PhpReader(),
             'zephir' => $this->zephir(),
             default  => throw new UnknownLanguage($language, self::KNOWN),
         };
