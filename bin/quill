@@ -12,6 +12,7 @@
 
 declare(strict_types=1);
 
+use Composer\InstalledVersions;
 use Phalcon\Quill\Cli\DocblocksCommand;
 use Phalcon\Quill\Cli\GenerateCommand;
 use Phalcon\Quill\Cli\ParityCommand;
@@ -28,8 +29,24 @@ foreach ([__DIR__ . '/../vendor/autoload.php', __DIR__ . '/../../../autoload.php
     }
 }
 
-$usage = <<<'USAGE'
-    Quill API documentation generator
+/**
+ * The identity line a run opens with: the nib mark, the tool name and its
+ * version, then what the tool is. The mark carries no escapes of its own when
+ * the output is piped or NO_COLOR is set, so only the glyph survives.
+ */
+$mark    = '///';
+$version = class_exists(InstalledVersions::class)
+    && InstalledVersions::isInstalled('phalcon/quill')
+    ? InstalledVersions::getPrettyVersion('phalcon/quill') ?? 'dev'
+    : 'dev';
+$logo    = getenv('NO_COLOR') === false && stream_isatty(STDOUT)
+    ? "\033[38;5;62m" . $mark . "\033[0m"
+    : $mark;
+
+$banner = $logo . ' quill ' . $version . PHP_EOL
+    . 'API Documentation Generator' . PHP_EOL;
+
+$usage = $banner . <<<'USAGE'
 
     Usage:
       quill generate [filter] [--config=<path>] [--output=<dir>] [--format=<name>]
