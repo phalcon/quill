@@ -99,8 +99,8 @@ final class Registry
     }
 
     /**
-     * Direct subclasses, in registry order - callers that render them sort
-     * first, matching the legacy emitTree().
+     * Direct subclasses, in registry order. Callers that present them sort
+     * first.
      *
      * @return list<string>
      */

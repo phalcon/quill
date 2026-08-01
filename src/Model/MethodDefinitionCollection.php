@@ -21,7 +21,7 @@ use function str_starts_with;
 final class MethodDefinitionCollection extends AbstractDefinitionCollection
 {
     /**
-     * Reserved (`__*`) methods first, then alphabetical - the legacy ordering.
+     * Reserved (`__*`) methods first, then alphabetical.
      */
     public function ordered(): self
     {

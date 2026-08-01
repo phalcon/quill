@@ -43,9 +43,10 @@ use const PHP_EOL;
 /**
  * Emits the mkdocs Markdown the documentation repositories consume.
  *
- * A direct port of the emit and render half of cphalcon's
- * bin/generate-api-docs.php. Rendering quirks are reproduced rather than
- * cleaned up - the byte-for-byte comparison against that script depends on it.
+ * The exact whitespace and markup here is load-bearing. These documents are
+ * diffed between the two Phalcon implementations, so an incidental formatting
+ * change reads as an API change. Alter the rendering deliberately, never for
+ * tidiness.
  *
  * Naming, escaping and signature rendering live in the Markdown namespace;
  * what stays here is page assembly and the section layout.
@@ -258,10 +259,9 @@ final class MarkdownFormatter implements Formatter
      * Private methods dropped, reserved (__*) first, then alphabetical, split
      * by visibility.
      *
-     * The emptiness guard lives on the result rather than on the incoming list
-     * because the model carries private members that the legacy script had
-     * already discarded - checking the raw list would emit a bare heading for
-     * a class whose methods are all private.
+     * The emptiness guard is on the result rather than the incoming list: the
+     * model keeps private members, so a class whose methods are all private
+     * would otherwise emit a heading with nothing under it.
      *
      * @return array{public: MethodDefinitionCollection, protected: MethodDefinitionCollection}
      */

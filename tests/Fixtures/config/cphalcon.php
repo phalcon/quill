@@ -1,9 +1,12 @@
 <?php
 
 /**
- * Gate configuration. Phase 1 writes nothing into cphalcon - adoption is
- * follow-on work - so the paths are absolute rather than relative to a
- * scribe.php sitting in that repository.
+ * Reads cphalcon's Zephir sources, for the test that compares generated
+ * Markdown against a known-good copy.
+ *
+ * Paths are absolute because this configuration lives here rather than in
+ * that repository, and the comparison must not depend on how it is checked
+ * out. See phalcon.php for the PHP implementation.
  */
 
 declare(strict_types=1);

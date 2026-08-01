@@ -142,7 +142,7 @@ final class ZephirReader implements Reader
             return 'private';
         }
 
-        // Mirrors the legacy rule: public when declared, protected otherwise.
+        // A Zephir property declared without an explicit keyword is protected.
         return in_array('public', $modifiers, true) ? 'public' : 'protected';
     }
 
@@ -305,8 +305,8 @@ final class ZephirReader implements Reader
                     'aliases'   => $aliases,
                     'comment'   => $comment,
                     'node'      => $item,
-                    // Zephir has no enum declaration; Keyword::Enum arrives
-                    // with the PHP reader.
+                    // Zephir has no enum declaration, so Keyword::Enum never
+                    // appears here - only PhpReader produces it.
                     'structure' => match ($type) {
                         'interface' => Structure::interface(),
                         'trait'     => Structure::trait(),

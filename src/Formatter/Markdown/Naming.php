@@ -27,8 +27,8 @@ use const DIRECTORY_SEPARATOR;
  * How a definition's identity maps onto Markdown identity: heading text,
  * heading anchor, and which file it lands in.
  *
- * These were carried on the model during the port. They are output decisions
- * - a JSON or stubs formatter wants none of them - so they live here.
+ * Deliberately absent from the model: a JSON or stubs consumer has no use for
+ * a heading anchor or an mkdocs page name.
  */
 final class Naming
 {

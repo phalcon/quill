@@ -1,9 +1,11 @@
 <?php
 
 /**
- * Parity configuration for the PHP implementation, alongside cphalcon.php.
- * Absolute paths for the same reason: Phase 2 writes nothing into phalcon
- * until parity is clean.
+ * Reads the PHP implementation's sources, for comparing its API surface
+ * against cphalcon's.
+ *
+ * Paths are absolute for the same reason as cphalcon.php: this configuration
+ * lives here, not in that repository.
  */
 
 declare(strict_types=1);

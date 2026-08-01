@@ -24,8 +24,8 @@ use function str_replace;
 use function str_starts_with;
 
 /**
- * Everything the readers and formatters need that is project-specific, so no
- * repository, branch or path is hardcoded the way the legacy script did it.
+ * Everything the readers and formatters need that is project-specific.
+ * Nothing about a particular repository is compiled into scribe.
  *
  * Projects declare it in a `scribe.php` at their root, the same shape talon
  * uses for `talon.php`.
@@ -148,8 +148,8 @@ final class Config
     }
 
     /**
-     * A copy writing somewhere else. Exists for ad-hoc runs such as the
-     * byte-for-byte gate; normal use never needs it.
+     * A copy writing somewhere else, for one-off runs that must not touch the
+     * configured destination. Normal use never needs it.
      */
     public function withOutputDir(string $outputDir): self
     {
