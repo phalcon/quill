@@ -16,7 +16,7 @@ namespace Phalcon\Scribe\Formatter;
 use Phalcon\Scribe\Config;
 use Phalcon\Scribe\Contracts\Formatter;
 use Phalcon\Scribe\Model\ClassDefinition;
-use Phalcon\Scribe\Model\Kind;
+use Phalcon\Scribe\Model\Structure;
 use Phalcon\Scribe\Model\MethodDefinition;
 use Phalcon\Scribe\Model\ParameterDefinition;
 use Phalcon\Scribe\Model\PropertyDefinition;
@@ -117,10 +117,10 @@ final class MarkdownFormatter implements Formatter
         $badge = 'Class';
         $css   = 'class';
 
-        if ($class->kind === Kind::InterfaceKind) {
+        if ($class->structure === Structure::Interface) {
             $badge = 'Interface';
             $css   = 'interface';
-        } elseif ($class->kind === Kind::TraitKind) {
+        } elseif ($class->structure === Structure::Trait) {
             $badge = 'Trait';
             $css   = 'trait';
         } elseif ($class->abstract) {
@@ -509,7 +509,7 @@ final class MarkdownFormatter implements Formatter
         $current = str_repeat(' ', $level * 4) . "- **`{$class->fqcn}`**";
 
         $annotations = [];
-        if ($class->kind === Kind::InterfaceKind && count($class->extends) > 1) {
+        if ($class->structure === Structure::Interface && count($class->extends) > 1) {
             $links = [];
             foreach ($class->extends as $name) {
                 $fqcn    = $registry->resolve($name, $class);

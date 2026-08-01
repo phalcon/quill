@@ -15,7 +15,7 @@ namespace Phalcon\Scribe\Tests\Unit\Model;
 
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\ConstantDefinition;
-use Phalcon\Scribe\Model\Kind;
+use Phalcon\Scribe\Model\Structure;
 use Phalcon\Scribe\Model\MethodDefinition;
 use Phalcon\Scribe\Model\ParameterDefinition;
 use Phalcon\Scribe\Model\PropertyDefinition;
@@ -27,8 +27,8 @@ final class ModelTest extends TestCase
     {
         $array = $this->classDefinition()->toArray();
 
-        $this->assertSame(2, $array['version']);
-        $this->assertSame('trait', $array['kind']);
+        $this->assertSame(3, $array['version']);
+        $this->assertSame('trait', $array['structure']);
         $this->assertSame(['AbstractStr'], $array['traits']);
         $this->assertSame('Phalcon\\Support\\Helper\\Str\\Lower', $array['fqcn']);
         $this->assertSame('count', $array['constants'][0]['name']);
@@ -70,7 +70,7 @@ final class ModelTest extends TestCase
             'supporthelperstrlower',
             'Support/Helper/Str/Lower.zep',
             'Phalcon\\Support\\Helper\\Str',
-            Kind::TraitKind,
+            Structure::Trait,
             false,
             false,
             'Lowercase helper.',

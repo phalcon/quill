@@ -18,7 +18,7 @@ use Phalcon\Scribe\Config;
 use Phalcon\Scribe\Contracts\Reader;
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\ConstantDefinition;
-use Phalcon\Scribe\Model\Kind;
+use Phalcon\Scribe\Model\Structure;
 use Phalcon\Scribe\Model\MethodDefinition;
 use Phalcon\Scribe\Model\ParameterDefinition;
 use Phalcon\Scribe\Model\PropertyDefinition;
@@ -287,7 +287,7 @@ final class ZephirReader implements Reader
         $usesMap   = [];
         $comment   = '';
         $node      = null;
-        $kind      = Kind::ClassKind;
+        $structure = Structure::ClassType;
 
         foreach ($ast as $item) {
             if (!is_array($item)) {
@@ -320,11 +320,11 @@ final class ZephirReader implements Reader
                     $usesMap[$short] = $name;
                 }
             } elseif ($type === 'class' || $type === 'interface' || $type === 'trait') {
-                $node = $item;
-                $kind = match ($type) {
-                    'interface' => Kind::InterfaceKind,
-                    'trait'     => Kind::TraitKind,
-                    default     => Kind::ClassKind,
+                $node      = $item;
+                $structure = match ($type) {
+                    'interface' => Structure::Interface,
+                    'trait'     => Structure::Trait,
+                    default     => Structure::ClassType,
                 };
 
                 break;
@@ -347,7 +347,7 @@ final class ZephirReader implements Reader
             $this->slugify($title),
             $relPath,
             $namespace,
-            $kind,
+            $structure,
             ($node['abstract'] ?? 0) === 1,
             ($node['final'] ?? 0) === 1,
             $this->describe($this->cleanDocblock($comment)),

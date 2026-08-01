@@ -29,8 +29,9 @@ final class ClassDefinition
      * moment anything downstream reads it.
      *
      * 2 - added `traits`.
+     * 3 - `kind` renamed to `structure`; backing values unchanged.
      */
-    public const MODEL_VERSION = 2;
+    public const MODEL_VERSION = 3;
 
     /**
      * `$uses` are namespace imports; `$traits` are the traits the body pulls
@@ -53,7 +54,7 @@ final class ClassDefinition
         public readonly string $anchor,
         public readonly string $relPath,
         public readonly string $namespace,
-        public readonly Kind $kind,
+        public readonly Structure $structure,
         public readonly bool $abstract,
         public readonly bool $final,
         public readonly string $description,
@@ -81,7 +82,7 @@ final class ClassDefinition
      *     anchor: string,
      *     relPath: string,
      *     namespace: string,
-     *     kind: string,
+     *     structure: string,
      *     abstract: bool,
      *     final: bool,
      *     description: string,
@@ -124,7 +125,7 @@ final class ClassDefinition
             'anchor'      => $this->anchor,
             'relPath'     => $this->relPath,
             'namespace'   => $this->namespace,
-            'kind'        => $this->kind->value,
+            'structure'   => $this->structure->value,
             'abstract'    => $this->abstract,
             'final'       => $this->final,
             'description' => $this->description,

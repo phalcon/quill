@@ -70,8 +70,8 @@ The model is deliberately complete and the formatter is deliberately opinionated
 | | Model | `MarkdownFormatter` |
 |---|---|---|
 | Private members | captured, with visibility | filtered out |
-| Enums | `kind: enum` | rendered as a class |
-| Traits | `kind: trait` | `Trait` badge, plus a `Used by` list |
+| Enums | `structure: enum` | rendered as a class |
+| Traits | `structure: trait` | `Trait` badge, plus a `Used by` list |
 
 `uses` and `traits` are different relations that share a keyword: `uses` are the
 file's namespace imports, `traits` are what the class body pulls in. `Registry`

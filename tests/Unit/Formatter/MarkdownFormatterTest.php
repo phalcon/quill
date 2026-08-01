@@ -17,7 +17,7 @@ use Phalcon\Scribe\Config;
 use Phalcon\Scribe\Formatter\MarkdownFormatter;
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\ConstantDefinition;
-use Phalcon\Scribe\Model\Kind;
+use Phalcon\Scribe\Model\Structure;
 use Phalcon\Scribe\Model\PropertyDefinition;
 use Phalcon\Scribe\Model\Registry;
 use PHPUnit\Framework\TestCase;
@@ -127,7 +127,7 @@ final class MarkdownFormatterTest extends TestCase
             'samplebase',
             'Sample/Base.zep',
             'Phalcon\\Sample',
-            Kind::ClassKind,
+            Structure::ClassType,
             false,
             false,
             'The base.',
@@ -148,7 +148,7 @@ final class MarkdownFormatterTest extends TestCase
             'samplechild',
             'Sample/Child.zep',
             'Phalcon\\Sample',
-            Kind::TraitKind,
+            Structure::Trait,
             false,
             false,
             'The child.',

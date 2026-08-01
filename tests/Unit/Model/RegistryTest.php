@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace Phalcon\Scribe\Tests\Unit\Model;
 
 use Phalcon\Scribe\Model\ClassDefinition;
-use Phalcon\Scribe\Model\Kind;
+use Phalcon\Scribe\Model\Structure;
 use Phalcon\Scribe\Model\Registry;
 use PHPUnit\Framework\TestCase;
 
@@ -129,7 +129,7 @@ final class RegistryTest extends TestCase
             'anchor',
             'rel.zep',
             'Phalcon',
-            Kind::ClassKind,
+            Structure::ClassType,
             false,
             false,
             '',

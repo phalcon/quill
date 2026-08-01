@@ -16,7 +16,7 @@ namespace Phalcon\Scribe\Tests\Unit\Formatter;
 use Phalcon\Scribe\Config;
 use Phalcon\Scribe\Formatter\MarkdownFormatter;
 use Phalcon\Scribe\Model\ClassDefinition;
-use Phalcon\Scribe\Model\Kind;
+use Phalcon\Scribe\Model\Structure;
 use Phalcon\Scribe\Model\MethodDefinition;
 use Phalcon\Scribe\Model\ParameterDefinition;
 use Phalcon\Scribe\Model\Registry;
@@ -158,7 +158,7 @@ final class MarkdownFormatterMethodsTest extends TestCase
             'samplechild',
             'Sample/Child.zep',
             'Phalcon\\Sample',
-            Kind::ClassKind,
+            Structure::ClassType,
             false,
             false,
             '',
