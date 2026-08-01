@@ -16,6 +16,7 @@ namespace Phalcon\Quill\Reader;
 use Phalcon\Quill\Config;
 use Phalcon\Quill\Contracts\Reader;
 use Phalcon\Quill\Model\ClassDefinition;
+use Phalcon\Quill\Model\ClassDefinitionCollection;
 use Phalcon\Quill\Model\ConstantDefinition;
 use Phalcon\Quill\Model\ConstantDefinitionCollection;
 use Phalcon\Quill\Model\Imports;
@@ -73,11 +74,11 @@ final class PhpReader implements Reader
             $class = $this->readFile($ast, $relPath);
 
             if ($class !== null) {
-                $definitions[$class->location->fqcn] = $class;
+                $definitions[] = $class;
             }
         }
 
-        return new Registry($definitions);
+        return new Registry(ClassDefinitionCollection::fromDefinitions($definitions));
     }
 
     private function docComment(Node $node): ?string

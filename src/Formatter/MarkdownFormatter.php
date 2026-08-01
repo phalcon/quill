@@ -285,7 +285,7 @@ final class MarkdownFormatter implements Formatter
     private function pages(Registry $registry, Config $config): array
     {
         $pages = [];
-        foreach ($registry->all() as $fqcn => $class) {
+        foreach ($registry->definitions() as $fqcn => $class) {
             $pages[$this->naming->pageKey($class, $config)][] = $fqcn;
         }
 

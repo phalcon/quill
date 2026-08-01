@@ -13,15 +13,16 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Model;
 
-use function array_map;
 use function array_unshift;
-use function array_values;
 use function ltrim;
 use function str_starts_with;
 
 /**
- * Every definition read from one source tree, keyed by FQCN, plus the
- * cross-class questions a formatter needs answered.
+ * The cross-class questions a formatter needs answered, over one source tree.
+ *
+ * Holding the definitions is ClassDefinitionCollection's job; this is the
+ * graph across them - who extends whom, who uses which trait, and what a short
+ * name refers to. Both indexes are derived once, on construction.
  *
  * Resolution lives here rather than on ClassDefinition so definitions stay
  * immutable - and because none of it is language-specific, so a second reader
@@ -35,10 +36,7 @@ final class Registry
     /** @var array<string, list<string>> trait FQCN => the FQCNs pulling it in */
     private array $usedBy = [];
 
-    /**
-     * @param array<string, ClassDefinition> $definitions
-     */
-    public function __construct(private readonly array $definitions)
+    public function __construct(private readonly ClassDefinitionCollection $definitions)
     {
         foreach ($this->definitions as $fqcn => $definition) {
             $parent = $this->parentOf($definition);
@@ -53,14 +51,6 @@ final class Registry
                 }
             }
         }
-    }
-
-    /**
-     * @return array<string, ClassDefinition>
-     */
-    public function all(): array
-    {
-        return $this->definitions;
     }
 
     /**
@@ -80,7 +70,7 @@ final class Registry
         while ($name !== null) {
             $entry = [
                 'display' => $fqcn ?? $name,
-                'fqcn'    => $fqcn !== null && isset($this->definitions[$fqcn]) ? $fqcn : null,
+                'fqcn'    => $fqcn !== null && $this->definitions->has($fqcn) ? $fqcn : null,
             ];
             array_unshift($chain, $entry);
 
@@ -90,9 +80,13 @@ final class Registry
 
             $seen[$entry['fqcn']] = true;
 
-            $parent = $this->definitions[$entry['fqcn']];
-            $name   = $parent->relations->extends[0] ?? null;
-            $fqcn   = $name === null ? null : $this->resolve($name, $parent);
+            $parent = $this->definitions->get($entry['fqcn']);
+            if ($parent === null) {
+                break;
+            }
+
+            $name = $parent->relations->extends[0] ?? null;
+            $fqcn = $name === null ? null : $this->resolve($name, $parent);
         }
 
         return $chain;
@@ -109,14 +103,19 @@ final class Registry
         return $this->children[$class->location->fqcn] ?? [];
     }
 
+    public function definitions(): ClassDefinitionCollection
+    {
+        return $this->definitions;
+    }
+
     public function get(string $fqcn): ?ClassDefinition
     {
-        return $this->definitions[$fqcn] ?? null;
+        return $this->definitions->get($fqcn);
     }
 
     public function has(string $fqcn): bool
     {
-        return isset($this->definitions[$fqcn]);
+        return $this->definitions->has($fqcn);
     }
 
     public function parentOf(ClassDefinition $class): ?string
@@ -128,7 +127,7 @@ final class Registry
 
         $parent = $this->resolve($name, $class);
 
-        return $parent !== null && isset($this->definitions[$parent]) ? $parent : null;
+        return $parent !== null && $this->definitions->has($parent) ? $parent : null;
     }
 
     /**
@@ -141,7 +140,7 @@ final class Registry
         if (str_starts_with($name, '\\')) {
             $absolute = ltrim($name, '\\');
 
-            return isset($this->definitions[$absolute]) ? $absolute : null;
+            return $this->definitions->has($absolute) ? $absolute : null;
         }
 
         $candidates = [
@@ -151,23 +150,12 @@ final class Registry
         ];
 
         foreach ($candidates as $candidate) {
-            if ($candidate !== null && isset($this->definitions[$candidate])) {
+            if ($candidate !== null && $this->definitions->has($candidate)) {
                 return $candidate;
             }
         }
 
         return null;
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    public function toArray(): array
-    {
-        return array_map(
-            static fn (ClassDefinition $definition): array => $definition->toArray(),
-            array_values($this->definitions)
-        );
     }
 
     /**

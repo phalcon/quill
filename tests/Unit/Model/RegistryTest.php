@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Phalcon\Quill\Tests\Unit\Model;
 
 use Phalcon\Quill\Model\ClassDefinition;
+use Phalcon\Quill\Model\ClassDefinitionCollection;
 use Phalcon\Quill\Model\ConstantDefinitionCollection;
 use Phalcon\Quill\Model\Imports;
 use Phalcon\Quill\Model\Location;
@@ -66,7 +67,7 @@ final class RegistryTest extends TestCase
         $this->assertTrue($registry->has('Phalcon\\Base'));
         $this->assertFalse($registry->has('Phalcon\\Nope'));
         $this->assertNull($registry->get('Phalcon\\Nope'));
-        $this->assertCount(3, $registry->all());
+        $this->assertCount(3, $registry->definitions());
     }
 
     public function testResolveHandlesLeadingBackslash(): void
@@ -96,15 +97,15 @@ final class RegistryTest extends TestCase
 
     public function testToArraySerializesEveryDefinitionInOrder(): void
     {
-        $array = $this->registry()->toArray();
+        $array = $this->registry()->definitions()->toArray();
 
         $this->assertCount(3, $array);
 
         $fqcns = [];
         foreach ($array as $definition) {
+            /** @var array<string, mixed> $location */
             $location = $definition['location'];
-            $this->assertIsArray($location);
-            $fqcns[] = $location['fqcn'];
+            $fqcns[]  = $location['fqcn'];
         }
 
         $this->assertSame('Phalcon\\Base', $fqcns[0]);
@@ -159,15 +160,15 @@ final class RegistryTest extends TestCase
 
     private function registry(): Registry
     {
-        return new Registry([
-            'Phalcon\\Base'  => $this->classDefinition('Phalcon\\Base'),
-            'Phalcon\\Child' => $this->classDefinition(
+        return new Registry(ClassDefinitionCollection::fromDefinitions([
+            $this->classDefinition('Phalcon\\Base'),
+            $this->classDefinition(
                 'Phalcon\\Child',
                 ['Base'],
                 ['Base' => 'Phalcon\\Base'],
                 ['Thing']
             ),
-            'Phalcon\\Thing' => $this->classDefinition('Phalcon\\Thing'),
-        ]);
+            $this->classDefinition('Phalcon\\Thing'),
+        ]));
     }
 }

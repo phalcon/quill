@@ -16,6 +16,7 @@ namespace Phalcon\Quill\Tests\Unit\Formatter;
 use Phalcon\Quill\Config;
 use Phalcon\Quill\Formatter\MarkdownFormatter;
 use Phalcon\Quill\Model\ClassDefinition;
+use Phalcon\Quill\Model\ClassDefinitionCollection;
 use Phalcon\Quill\Model\ConstantDefinitionCollection;
 use Phalcon\Quill\Model\Imports;
 use Phalcon\Quill\Model\Location;
@@ -194,6 +195,6 @@ final class MarkdownFormatterMethodsTest extends TestCase
             )
         );
 
-        return new Registry(['Phalcon\\Sample\\Child' => $child]);
+        return new Registry(ClassDefinitionCollection::fromDefinitions([$child]));
     }
 }

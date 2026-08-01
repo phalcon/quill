@@ -15,11 +15,11 @@ namespace Phalcon\Quill\Formatter;
 
 use Phalcon\Quill\Config;
 use Phalcon\Quill\Contracts\Formatter;
+use Phalcon\Quill\Model\ClassDefinition;
 use Phalcon\Quill\Model\Document;
 use Phalcon\Quill\Model\Registry;
 
 use function json_encode;
-use function ksort;
 use function stripos;
 
 use const JSON_PRETTY_PRINT;
@@ -50,21 +50,22 @@ final class JsonFormatter implements Formatter
      */
     public function format(Registry $registry, Config $config, string $filter = ''): array
     {
-        $definitions = [];
-        foreach ($registry->all() as $fqcn => $class) {
-            if ($filter !== '' && stripos($fqcn, $filter) === false) {
-                continue;
-            }
-
-            $definitions[$fqcn] = $class->toArray();
+        $definitions = $registry->definitions();
+        if ($filter !== '') {
+            $definitions = $definitions->filter(
+                static fn (ClassDefinition $class, string $fqcn): bool => stripos($fqcn, $filter) !== false
+            );
         }
 
-        ksort($definitions);
+        $serialized = [];
+        foreach ($definitions->sorted() as $fqcn => $class) {
+            $serialized[$fqcn] = $class->toArray();
+        }
 
         $document = Document::envelope(
             $config->language(),
             $config->repository(),
-            $definitions
+            $serialized
         );
 
         return [

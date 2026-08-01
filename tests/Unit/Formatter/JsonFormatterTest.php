@@ -19,6 +19,7 @@ use Phalcon\Quill\Formatter\FormatterFactory;
 use Phalcon\Quill\Formatter\JsonFormatter;
 use Phalcon\Quill\Formatter\MarkdownFormatter;
 use Phalcon\Quill\Model\ClassDefinition;
+use Phalcon\Quill\Model\ClassDefinitionCollection;
 use Phalcon\Quill\Model\ConstantDefinitionCollection;
 use Phalcon\Quill\Model\Imports;
 use Phalcon\Quill\Model\Location;
@@ -182,9 +183,9 @@ final class JsonFormatterTest extends TestCase
     private function registry(): Registry
     {
         // Inserted out of order, so a sorted result proves the formatter sorts.
-        return new Registry([
-            'Phalcon\\Sample\\Zulu'  => $this->definition('Phalcon\\Sample\\Zulu'),
-            'Phalcon\\Sample\\Alpha' => $this->definition('Phalcon\\Sample\\Alpha'),
-        ]);
+        return new Registry(ClassDefinitionCollection::fromDefinitions([
+            $this->definition('Phalcon\\Sample\\Zulu'),
+            $this->definition('Phalcon\\Sample\\Alpha'),
+        ]));
     }
 }
