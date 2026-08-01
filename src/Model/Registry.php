@@ -1,0 +1,186 @@
+<?php
+
+/**
+ * This file is part of the Phalcon Scribe.
+ *
+ * (c) Phalcon Team <team@phalcon.io>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+declare(strict_types=1);
+
+namespace Phalcon\Scribe\Model;
+
+use function array_map;
+use function array_unshift;
+use function array_values;
+use function ksort;
+use function ltrim;
+use function sort;
+use function str_starts_with;
+
+/**
+ * Every definition read from one source tree, keyed by FQCN, plus the
+ * cross-class questions a formatter needs answered.
+ *
+ * Resolution lives here rather than on ClassDefinition so definitions stay
+ * immutable - and because none of it is language-specific, so a second reader
+ * inherits the lot.
+ */
+final class Registry
+{
+    /** @var array<string, list<string>> */
+    private array $children = [];
+
+    /**
+     * @param array<string, ClassDefinition> $definitions
+     */
+    public function __construct(private readonly array $definitions)
+    {
+        foreach ($this->definitions as $fqcn => $definition) {
+            $parent = $this->parentOf($definition);
+            if ($parent !== null) {
+                $this->children[$parent][] = $fqcn;
+            }
+        }
+    }
+
+    /**
+     * @return array<string, ClassDefinition>
+     */
+    public function all(): array
+    {
+        return $this->definitions;
+    }
+
+    /**
+     * The extends chain, root first. `display` is the FQCN when it resolved
+     * and the raw short name when it did not; `fqcn` is null for anything
+     * outside this registry, which is what stops the walk.
+     *
+     * @return list<array{display: string, fqcn: string|null}>
+     */
+    public function ancestorsOf(ClassDefinition $class): array
+    {
+        $chain = [];
+        $seen  = [$class->fqcn => true];
+        $name  = $class->extends[0] ?? null;
+        $fqcn  = $name === null ? null : $this->resolve($name, $class);
+
+        while ($name !== null) {
+            $entry = [
+                'display' => $fqcn ?? $name,
+                'fqcn'    => $fqcn !== null && isset($this->definitions[$fqcn]) ? $fqcn : null,
+            ];
+            array_unshift($chain, $entry);
+
+            if ($entry['fqcn'] === null || isset($seen[$entry['fqcn']])) {
+                break;
+            }
+
+            $seen[$entry['fqcn']] = true;
+
+            $parent = $this->definitions[$entry['fqcn']];
+            $name   = $parent->extends[0] ?? null;
+            $fqcn   = $name === null ? null : $this->resolve($name, $parent);
+        }
+
+        return $chain;
+    }
+
+    /**
+     * Direct subclasses, in registry order - callers that render them sort
+     * first, matching the legacy emitTree().
+     *
+     * @return list<string>
+     */
+    public function childrenOf(ClassDefinition $class): array
+    {
+        return $this->children[$class->fqcn] ?? [];
+    }
+
+    public function get(string $fqcn): ?ClassDefinition
+    {
+        return $this->definitions[$fqcn] ?? null;
+    }
+
+    public function has(string $fqcn): bool
+    {
+        return isset($this->definitions[$fqcn]);
+    }
+
+    /**
+     * Page key => the FQCNs on it. Keys sorted, and the FQCNs within each.
+     *
+     * @return array<string, list<string>>
+     */
+    public function pages(): array
+    {
+        $pages = [];
+        foreach ($this->definitions as $fqcn => $definition) {
+            $pages[$definition->page][] = $fqcn;
+        }
+
+        ksort($pages);
+
+        foreach ($pages as $page => $fqcns) {
+            sort($fqcns);
+            $pages[$page] = $fqcns;
+        }
+
+        return $pages;
+    }
+
+    public function parentOf(ClassDefinition $class): ?string
+    {
+        $name = $class->extends[0] ?? null;
+        if ($name === null) {
+            return null;
+        }
+
+        $parent = $this->resolve($name, $class);
+
+        return $parent !== null && isset($this->definitions[$parent]) ? $parent : null;
+    }
+
+    /**
+     * Short name => FQCN, using the class's `use` map, then its own namespace,
+     * then the Phalcon root. A leading backslash means absolute and skips the
+     * candidate list entirely.
+     */
+    public function resolve(string $name, ClassDefinition $context): ?string
+    {
+        if (str_starts_with($name, '\\')) {
+            $absolute = ltrim($name, '\\');
+
+            return isset($this->definitions[$absolute]) ? $absolute : null;
+        }
+
+        $candidates = [
+            $context->usesMap[$name] ?? null,
+            $context->namespace . '\\' . $name,
+            'Phalcon\\' . $name,
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($candidate !== null && isset($this->definitions[$candidate])) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function toArray(): array
+    {
+        return array_map(
+            static fn (ClassDefinition $definition): array => $definition->toArray(),
+            array_values($this->definitions)
+        );
+    }
+}
