@@ -36,7 +36,6 @@ use RecursiveIteratorIterator;
 use SplFileInfo;
 use Zephir\Parser\Parser;
 
-use function array_values;
 use function explode;
 use function implode;
 use function in_array;
@@ -257,7 +256,7 @@ final class ZephirReader implements Reader
             $clean   = $this->cleanDocblock($this->text($constant, 'docblock'));
             $default = $this->node($constant, 'default');
 
-            $constants[$name] = new ConstantDefinition(
+            $constants[] = new ConstantDefinition(
                 $name,
                 $this->renderDefault($default),
                 $this->varType($clean, $default),
@@ -265,7 +264,7 @@ final class ZephirReader implements Reader
             );
         }
 
-        return (new ConstantDefinitionCollection(array_values($constants)))->sortedByName();
+        return (new ConstantDefinitionCollection($constants))->sortedByName();
     }
 
     /**
@@ -434,7 +433,7 @@ final class ZephirReader implements Reader
                 );
             }
 
-            $methods[$name] = new MethodDefinition(
+            $methods[] = new MethodDefinition(
                 $name,
                 $modifiers,
                 $this->methodVisibility($modifiers),
@@ -444,7 +443,7 @@ final class ZephirReader implements Reader
             );
         }
 
-        return new MethodDefinitionCollection(array_values($methods));
+        return new MethodDefinitionCollection($methods);
     }
 
     /**
@@ -471,7 +470,7 @@ final class ZephirReader implements Reader
             $clean   = $this->cleanDocblock($this->text($property, 'docblock'));
             $default = $this->node($property, 'default');
 
-            $properties[$name] = new PropertyDefinition(
+            $properties[] = new PropertyDefinition(
                 $name,
                 $this->propertyVisibility($modifiers),
                 $this->renderDefault($default),
@@ -481,7 +480,7 @@ final class ZephirReader implements Reader
             );
         }
 
-        return (new PropertyDefinitionCollection(array_values($properties)))->sortedByName();
+        return (new PropertyDefinitionCollection($properties))->sortedByName();
     }
 
     /**
