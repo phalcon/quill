@@ -3,9 +3,10 @@ parameters:
     paths:
         - %currentWorkingDirectory%/src
         - %currentWorkingDirectory%/tests
+    # tests/_baseline and tests/_output are deliberately not excluded: they are
+    # gitignored, so listing them fails a fresh checkout, and they hold only
+    # generated .md/.sql which phpstan does not read anyway.
     excludePaths:
-        - %currentWorkingDirectory%/tests/_baseline
-        - %currentWorkingDirectory%/tests/_output
         - %currentWorkingDirectory%/tests/Fixtures/config
     bootstrapFiles:
         - %currentWorkingDirectory%/vendor/autoload.php
