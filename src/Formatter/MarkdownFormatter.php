@@ -17,19 +17,27 @@ use Phalcon\Scribe\Config;
 use Phalcon\Scribe\Contracts\Formatter;
 use Phalcon\Scribe\Model\ClassDefinition;
 use Phalcon\Scribe\Model\Kind;
+use Phalcon\Scribe\Model\MethodDefinition;
+use Phalcon\Scribe\Model\ParameterDefinition;
 use Phalcon\Scribe\Model\PropertyDefinition;
 use Phalcon\Scribe\Model\Registry;
 
 use function array_keys;
 use function array_map;
+use function array_values;
 use function count;
+use function explode;
 use function htmlspecialchars;
 use function implode;
 use function preg_replace;
 use function sort;
 use function str_repeat;
 use function str_replace;
+use function str_starts_with;
+use function strtolower;
+use function trim;
 use function ucfirst;
+use function uksort;
 
 use const ENT_QUOTES;
 use const ENT_SUBSTITUTE;
@@ -200,6 +208,23 @@ final class MarkdownFormatter implements Formatter
         return '<span class="sm"> = ' . $this->escape($default) . '</span>';
     }
 
+    /**
+     * @param list<ParameterDefinition> $parameters
+     *
+     * @return list<string> one HTML-rendered string per parameter
+     */
+    private function htmlParams(array $parameters): array
+    {
+        $rendered = [];
+        foreach ($parameters as $parameter) {
+            $rendered[] = '<span class="st">' . $this->escape($parameter->type) . '</span>'
+                . ' <span class="sv">$' . $this->escape($parameter->name) . '</span>'
+                . $this->htmlDefault($parameter->default);
+        }
+
+        return $rendered;
+    }
+
     private function indexLine(string $page): string
     {
         return '- [Phalcon ' . ucfirst(str_replace('phalcon_', '', $page)) . ']'
@@ -214,9 +239,115 @@ final class MarkdownFormatter implements Formatter
         return (string) preg_replace('/`([^`]+)`/', '<code>$1</code>', $this->escape($text));
     }
 
+    /**
+     * Signature for the summary rows as HTML with highlight spans. With two or
+     * more parameters each is wrapped in a .prm span which the CSS renders as
+     * its own indented line; the markup stays on one line so the markdown
+     * pipeline cannot disturb it.
+     */
+    private function inlineSignature(MethodDefinition $method): string
+    {
+        $name   = '<span class="sf">' . $this->escape($method->name) . '</span>';
+        $params = $this->htmlParams($method->parameters);
+
+        if (count($method->parameters) < 2) {
+            $inline = implode(', ', $params);
+            $inline = $inline !== '' ? '( ' . $inline . ' )' : '()';
+
+            return $name . $inline;
+        }
+
+        $lines = '';
+        $last  = count($params) - 1;
+        foreach ($params as $index => $param) {
+            $comma  = $index < $last ? ',' : '';
+            $lines .= '<span class="prm">' . $param . $comma . '</span>';
+        }
+
+        return $name . '(' . $lines . ')';
+    }
+
+    private function methodAnchor(ClassDefinition $class, string $methodName): string
+    {
+        return $class->anchor . '-' . strtolower($methodName);
+    }
+
     private function methodDetails(ClassDefinition $class): string
     {
-        return '';
+        $groups = $this->orderMethods($class->methods);
+        if ($groups['public'] === [] && $groups['protected'] === []) {
+            return '';
+        }
+
+        $output = "\n### Methods\n";
+
+        foreach (['public', 'protected'] as $group) {
+            if ($groups[$group] === []) {
+                continue;
+            }
+
+            $count   = count($groups[$group]);
+            $label   = ucfirst($group);
+            $output .= "\n<div class=\"api-group\">{$label} · {$count}</div>\n";
+
+            foreach ($groups[$group] as $method) {
+                $anchor    = $this->methodAnchor($class, $method->name);
+                $signature = implode("\n", $this->signatureLines($method));
+
+                $output .= "\n#### `{$method->name}()` { #{$anchor} }\n\n"
+                    . "```php\n{$signature}\n```\n";
+
+                if ($method->description !== '') {
+                    $output .= "\n" . $method->description . "\n";
+                }
+            }
+        }
+
+        return $output;
+    }
+
+    /**
+     * Private methods dropped, reserved (__*) first, then alphabetical, split
+     * by visibility.
+     *
+     * The emptiness guard lives on the result rather than on the incoming list
+     * because the model carries private members that the legacy script had
+     * already discarded - checking the raw list would emit a bare heading for
+     * a class whose methods are all private.
+     *
+     * @param list<MethodDefinition> $methods
+     *
+     * @return array{public: list<MethodDefinition>, protected: list<MethodDefinition>}
+     */
+    private function orderMethods(array $methods): array
+    {
+        $groups = ['public' => [], 'protected' => []];
+        foreach ($methods as $method) {
+            if ($method->visibility === 'private') {
+                continue;
+            }
+
+            $key = $method->visibility === 'protected' ? 'protected' : 'public';
+
+            $groups[$key][$method->name] = $method;
+        }
+
+        $ordered = ['public' => [], 'protected' => []];
+        foreach ($groups as $key => $group) {
+            uksort(
+                $group,
+                static function (string $a, string $b): int {
+                    $ra = str_starts_with($a, '__') ? 0 : 1;
+                    $rb = str_starts_with($b, '__') ? 0 : 1;
+
+                    return [$ra, $a] <=> [$rb, $b];
+                }
+            );
+
+            $ordered[$key] = array_values($group);
+        }
+
+        return $ordered;
     }
 
     private function properties(ClassDefinition $class): string
@@ -254,8 +385,106 @@ final class MarkdownFormatter implements Formatter
         return $output . "</div>\n";
     }
 
+    /**
+     * @param list<ParameterDefinition> $parameters
+     *
+     * @return list<string> one rendered string per parameter
+     */
+    private function renderParams(array $parameters): array
+    {
+        $rendered = [];
+        foreach ($parameters as $parameter) {
+            $param = $parameter->type . ' $' . $parameter->name;
+            if ($parameter->default !== null) {
+                $param .= ' = ' . $parameter->default;
+            }
+
+            $rendered[] = $param;
+        }
+
+        return $rendered;
+    }
+
+    /**
+     * @return list<string> lines of the fenced signature block
+     */
+    private function signatureLines(MethodDefinition $method): array
+    {
+        $prefix = implode(' ', $method->modifiers) . ' function ' . $method->name;
+        $suffix = ($method->returnType !== null ? ': ' . $method->returnType : '') . ';';
+        $params = $this->renderParams($method->parameters);
+
+        if (count($params) < 2) {
+            $inline = implode(', ', $params);
+            $inline = $inline !== '' ? '( ' . $inline . ' )' : '()';
+
+            return [$prefix . $inline . $suffix];
+        }
+
+        $lines = [$prefix . '('];
+        foreach ($params as $index => $param) {
+            $comma   = $index < count($params) - 1 ? ',' : '';
+            $lines[] = '    ' . $param . $comma;
+        }
+
+        $lines[] = ')' . $suffix;
+
+        return $lines;
+    }
+
     private function summary(ClassDefinition $class): string
     {
+        $groups = $this->orderMethods($class->methods);
+        if ($groups['public'] === [] && $groups['protected'] === []) {
+            return '';
+        }
+
+        $output = "\n### Method Summary\n\n<div class=\"api-list\">\n";
+
+        foreach (['public', 'protected'] as $group) {
+            foreach ($groups[$group] as $method) {
+                $anchor = $this->methodAnchor($class, $method->name);
+                $sig    = $this->inlineSignature($method);
+
+                $output .= "<a class=\"api-item\" href=\"#{$anchor}\">\n"
+                    . "<code class=\"vis vis-{$group}\">{$group}</code>\n";
+
+                if ($method->returnType !== null) {
+                    $output .= '<code class="ret">' . $this->escape($method->returnType) . "</code>\n";
+                }
+
+                $output .= "<code class=\"sig\">{$sig}</code>\n";
+
+                $line = $this->summaryLine($method->description);
+                if ($line !== '') {
+                    $output .= '<span class="desc">'
+                        . $this->inlineCode($line) . "</span>\n";
+                }
+
+                $output .= "</a>\n";
+            }
+        }
+
+        return $output . "</div>\n";
+    }
+
+    /**
+     * First prose line of a description, used in the summary rows.
+     */
+    private function summaryLine(string $description): string
+    {
+        foreach (explode("\n", $description) as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            if (str_starts_with($line, '```')) {
+                return '';
+            }
+
+            return $line;
+        }
+
         return '';
     }
 
