@@ -53,6 +53,37 @@ final class ZephirReaderTest extends TestCase
         $this->assertSame(['Countable', 'Stringable'], $contract->relations->extends);
     }
 
+    /**
+     * Zephir cannot write a union, so a null default is how it says "or
+     * null". PHP writes the same thing as `?string`, and both must reach the
+     * model as `string|null` or the two look different when they are not.
+     */
+    public function testANullDefaultMakesTheParameterNullable(): void
+    {
+        $methods = [];
+        foreach ($this->shapes()->members->methods->all() as $method) {
+            $methods[$method->name] = $method;
+        }
+
+        $nullable = [];
+        foreach ($methods['nullables']->parameters->all() as $parameter) {
+            $nullable[$parameter->name] = $parameter->type;
+        }
+
+        $this->assertSame('string|null', $nullable['text']);
+        $this->assertSame('Consumer|null', $nullable['item']);
+        // `var` is already mixed, which admits null on its own.
+        $this->assertSame('mixed', $nullable['loose']);
+
+        $plain = [];
+        foreach ($methods['notNullable']->parameters->all() as $parameter) {
+            $plain[$parameter->name] = $parameter->type;
+        }
+
+        $this->assertSame('string', $plain['text']);
+        $this->assertSame('int', $plain['count']);
+    }
+
     public function testCapturesPrivateMembers(): void
     {
         $class = $this->sample();

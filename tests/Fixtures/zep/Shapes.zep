@@ -46,4 +46,14 @@ abstract class Shapes extends Consumer implements Countable, Stringable
     {
         return anything;
     }
+
+    public function nullables(string text = null, <Consumer> item = null, var loose = null) -> var
+    {
+        return text;
+    }
+
+    public function notNullable(string text = "none", int count = 0) -> var
+    {
+        return text;
+    }
 }

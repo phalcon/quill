@@ -26,6 +26,19 @@ use function dirname;
 
 final class PhpReaderTest extends TestCase
 {
+    /**
+     * Without the backslash a global parent reads as one in the class's own
+     * namespace, and `Phalcon\Sample\Exception extends Exception` would
+     * resolve to itself.
+     */
+    public function testAbsoluteNamesKeepTheirLeadingBackslash(): void
+    {
+        $class = $this->definition('Phalcon\\Sample\\GlobalChild');
+
+        $this->assertSame(['\\Exception'], $class->relations->extends);
+        $this->assertSame(['\\Countable'], $class->relations->implements);
+    }
+
     public function testADeclarationOutsideAnyNamespaceKeepsItsBareName(): void
     {
         $class = $this->definition('Standalone');

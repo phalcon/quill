@@ -87,6 +87,20 @@ final class PhpReader implements Reader
     }
 
     /**
+     * A referenced name as written. php-parser drops the leading backslash
+     * from a fully qualified name, which loses the one thing that says the
+     * name is global rather than relative to the current namespace - and
+     * `Phalcon\X\Exception extends \Exception` would then resolve to itself.
+     * Zephir keeps the backslash, so this keeps it too.
+     */
+    private function name(Node\Name $name): string
+    {
+        return $name instanceof Node\Name\FullyQualified
+            ? '\\' . $name->toString()
+            : $name->toString();
+    }
+
+    /**
      * A parameter's name, or null for the variable-variable form that has no
      * static name to record.
      */
@@ -177,13 +191,13 @@ final class PhpReader implements Reader
     private function readExtends(Stmt\ClassLike $node): array
     {
         if ($node instanceof Stmt\Class_) {
-            return $node->extends === null ? [] : [$node->extends->toString()];
+            return $node->extends === null ? [] : [$this->name($node->extends)];
         }
 
         if ($node instanceof Stmt\Interface_) {
             $names = [];
             foreach ($node->extends as $name) {
-                $names[] = $name->toString();
+                $names[] = $this->name($name);
             }
 
             return $names;
@@ -272,7 +286,7 @@ final class PhpReader implements Reader
 
         $names = [];
         foreach ($node->implements as $name) {
-            $names[] = $name->toString();
+            $names[] = $this->name($name);
         }
 
         return $names;

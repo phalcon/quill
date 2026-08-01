@@ -84,16 +84,29 @@ final class ZephirReader implements Reader
         return in_array('protected', $modifiers, true) ? 'protected' : 'public';
     }
 
+    /**
+     * Zephir has no union syntax for parameters - anything genuinely of two
+     * types is declared `var`. A null default is the one exception it can
+     * express, and it means exactly what `?string` means in PHP, so it is
+     * rendered the same way and the two models line up.
+     *
+     * `mixed` already admits null, so it is left alone.
+     */
     private function parameterType(AstNode $parameter): string
     {
         $cast = $parameter->node('cast')?->text('value');
         if ($cast !== null) {
-            return $cast;
+            $type = $cast;
+        } else {
+            $declared = $parameter->text('data-type') ?? 'variable';
+            $type     = $declared === 'variable' ? 'mixed' : $declared;
         }
 
-        $type = $parameter->text('data-type') ?? 'variable';
+        if ($type !== 'mixed' && $parameter->node('default')?->text('type') === 'null') {
+            $type .= '|null';
+        }
 
-        return $type === 'variable' ? 'mixed' : $type;
+        return $type;
     }
 
     /**
