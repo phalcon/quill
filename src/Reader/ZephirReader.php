@@ -46,7 +46,6 @@ use function sort;
 use function str_replace;
 use function str_starts_with;
 use function strrchr;
-use function strtolower;
 use function substr;
 use function trim;
 
@@ -71,7 +70,7 @@ final class ZephirReader implements Reader
         foreach ($this->collectFiles($config) as $relPath) {
             /** @var array<int, mixed> $ast */
             $ast   = $parser->parse($prefix . $relPath);
-            $class = $this->readFile($ast, $relPath, $config);
+            $class = $this->readFile($ast, $relPath);
 
             if ($class !== null) {
                 $definitions[$class->fqcn] = $class;
@@ -209,14 +208,6 @@ final class ZephirReader implements Reader
         return $value;
     }
 
-    private function pageKey(string $relPath, Config $config): string
-    {
-        $segments = explode(DIRECTORY_SEPARATOR, $relPath);
-        $key      = str_replace('.' . $config->extension(), '', $segments[0]);
-
-        return 'phalcon_' . strtolower($key);
-    }
-
     /**
      * @param array<string, mixed> $parameter
      */
@@ -279,7 +270,7 @@ final class ZephirReader implements Reader
      *
      * @param array<int, mixed> $ast
      */
-    private function readFile(array $ast, string $relPath, Config $config): ?ClassDefinition
+    private function readFile(array $ast, string $relPath): ?ClassDefinition
     {
         $namespace = '';
         $uses      = [];
@@ -340,16 +331,12 @@ final class ZephirReader implements Reader
             return null;
         }
 
-        $fqcn  = $namespace . '\\' . ($this->text($node, 'name') ?? '');
-        $title = (string) preg_replace('/^Phalcon\\\\/', '', $fqcn);
+        $fqcn = $namespace . '\\' . ($this->text($node, 'name') ?? '');
 
         $definition = $this->node($node, 'definition') ?? [];
 
         return new ClassDefinition(
             $fqcn,
-            $title,
-            $this->pageKey($relPath, $config),
-            $this->slugify($title),
             $relPath,
             $namespace,
             $structure,
@@ -634,11 +621,6 @@ final class ZephirReader implements Reader
         }
 
         return $items;
-    }
-
-    private function slugify(string $title): string
-    {
-        return strtolower((string) preg_replace('/[^\w\s-]/', '', $title));
     }
 
     private function text(mixed $node, string $key): ?string

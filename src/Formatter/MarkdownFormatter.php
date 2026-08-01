@@ -28,6 +28,7 @@ use function count;
 use function explode;
 use function htmlspecialchars;
 use function implode;
+use function ksort;
 use function preg_replace;
 use function sort;
 use function str_repeat;
@@ -38,6 +39,7 @@ use function strtolower;
 use function trim;
 use function ucfirst;
 
+use const DIRECTORY_SEPARATOR;
 use const ENT_QUOTES;
 use const ENT_SUBSTITUTE;
 use const PHP_EOL;
@@ -57,7 +59,7 @@ final class MarkdownFormatter implements Formatter
      */
     public function format(Registry $registry, Config $config, string $filter = ''): array
     {
-        $pages  = $registry->pages();
+        $pages  = $this->pages($registry, $config);
         $output = [];
 
         foreach (array_keys($pages) as $page) {
@@ -129,7 +131,7 @@ final class MarkdownFormatter implements Formatter
             $css   = 'final';
         }
 
-        $output = "\n\n## {$class->title}\n\n"
+        $output = "\n\n## " . $this->title($class) . "\n\n"
             . "<span class=\"badge badge--{$css}\">{$badge}</span>\n"
             . "[:material-github: Source on GitHub]"
             . '(' . $config->sourceUrl($class->relPath) . ')'
@@ -139,9 +141,9 @@ final class MarkdownFormatter implements Formatter
             $output .= "\n" . $class->description . "\n";
         }
 
-        $output .= $this->tree($class, $registry);
+        $output .= $this->tree($class, $registry, $config);
         $output .= $this->uses($class);
-        $output .= $this->usedBy($class, $registry);
+        $output .= $this->usedBy($class, $registry, $config);
         $output .= $this->summary($class);
         $output .= $this->constants($class);
         $output .= $this->properties($class);
@@ -174,6 +176,15 @@ final class MarkdownFormatter implements Formatter
         return $output . "</div>\n";
     }
 
+    /**
+     * The mkdocs heading anchor. An output concern, so it is derived here
+     * rather than carried on the model.
+     */
+    private function anchor(ClassDefinition $class): string
+    {
+        return strtolower((string) preg_replace('/[^\w\s-]/', '', $this->title($class)));
+    }
+
     private function escape(string $text): string
     {
         return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE);
@@ -186,6 +197,7 @@ final class MarkdownFormatter implements Formatter
         string $display,
         ?string $fqcn,
         Registry $registry,
+        Config $config,
         string $currentPage
     ): string {
         $target = $fqcn === null ? null : $registry->get($fqcn);
@@ -193,9 +205,10 @@ final class MarkdownFormatter implements Formatter
             return "`{$display}`";
         }
 
-        $href = '#' . $target->anchor;
-        if ($target->page !== $currentPage) {
-            $href = $target->page . '.md' . $href;
+        $href       = '#' . $this->anchor($target);
+        $targetPage = $this->pageKey($target, $config);
+        if ($targetPage !== $currentPage) {
+            $href = $targetPage . '.md' . $href;
         }
 
         return "[`{$display}`]({$href})";
@@ -228,6 +241,48 @@ final class MarkdownFormatter implements Formatter
         }
 
         return $rendered;
+    }
+
+    /**
+     * Page key => the FQCNs on it, keys sorted and FQCNs sorted within each.
+     *
+     * Which file a class lands in is a Markdown decision, so the grouping
+     * lives here rather than on the registry.
+     *
+     * @return array<string, list<string>>
+     */
+    private function pages(Registry $registry, Config $config): array
+    {
+        $pages = [];
+        foreach ($registry->all() as $fqcn => $class) {
+            $pages[$this->pageKey($class, $config)][] = $fqcn;
+        }
+
+        ksort($pages);
+
+        foreach ($pages as $page => $fqcns) {
+            sort($fqcns);
+            $pages[$page] = $fqcns;
+        }
+
+        return $pages;
+    }
+
+    private function pageKey(ClassDefinition $class, Config $config): string
+    {
+        $segments = explode(DIRECTORY_SEPARATOR, $class->relPath);
+        $key      = str_replace('.' . $config->extension(), '', $segments[0]);
+
+        return 'phalcon_' . strtolower($key);
+    }
+
+    /**
+     * The heading text: the FQCN without the vendor root, which the page's
+     * own notice already states.
+     */
+    private function title(ClassDefinition $class): string
+    {
+        return (string) preg_replace('/^Phalcon\\\\/', '', $class->fqcn);
     }
 
     private function indexLine(string $page): string
@@ -274,7 +329,7 @@ final class MarkdownFormatter implements Formatter
 
     private function methodAnchor(ClassDefinition $class, string $methodName): string
     {
-        return $class->anchor . '-' . strtolower($methodName);
+        return $this->anchor($class) . "-" . strtolower($methodName);
     }
 
     private function methodDetails(ClassDefinition $class): string
@@ -463,14 +518,15 @@ final class MarkdownFormatter implements Formatter
         return '';
     }
 
-    private function tree(ClassDefinition $class, Registry $registry): string
+    private function tree(ClassDefinition $class, Registry $registry, Config $config): string
     {
-        $level = 0;
-        $lines = [];
+        $currentPage = $this->pageKey($class, $config);
+        $level       = 0;
+        $lines       = [];
 
         foreach ($registry->ancestorsOf($class) as $ancestor) {
             $lines[] = str_repeat(' ', $level * 4) . '- '
-                . $this->fqcnLink($ancestor['display'], $ancestor['fqcn'], $registry, $class->page);
+                . $this->fqcnLink($ancestor['display'], $ancestor['fqcn'], $registry, $config, $currentPage);
             $level++;
         }
 
@@ -481,7 +537,7 @@ final class MarkdownFormatter implements Formatter
             $links = [];
             foreach ($class->extends as $name) {
                 $fqcn    = $registry->resolve($name, $class);
-                $links[] = $this->fqcnLink($fqcn ?? $name, $fqcn, $registry, $class->page);
+                $links[] = $this->fqcnLink($fqcn ?? $name, $fqcn, $registry, $config, $currentPage);
             }
 
             $annotations[] = 'extends ' . implode(', ', $links);
@@ -491,7 +547,7 @@ final class MarkdownFormatter implements Formatter
             $links = [];
             foreach ($class->implements as $name) {
                 $fqcn    = $registry->resolve($name, $class);
-                $links[] = $this->fqcnLink($fqcn ?? $name, $fqcn, $registry, $class->page);
+                $links[] = $this->fqcnLink($fqcn ?? $name, $fqcn, $registry, $config, $currentPage);
             }
 
             $annotations[] = 'implements ' . implode(', ', $links);
@@ -508,7 +564,7 @@ final class MarkdownFormatter implements Formatter
         sort($children);
         foreach ($children as $child) {
             $lines[] = str_repeat(' ', $level * 4) . '- '
-                . $this->fqcnLink($child, $child, $registry, $class->page);
+                . $this->fqcnLink($child, $child, $registry, $config, $currentPage);
         }
 
         return "\n<div class=\"api-tree\" markdown>\n\n"
@@ -521,7 +577,7 @@ final class MarkdownFormatter implements Formatter
      * links because, unlike the import list, every target is by construction
      * in the registry.
      */
-    private function usedBy(ClassDefinition $class, Registry $registry): string
+    private function usedBy(ClassDefinition $class, Registry $registry, Config $config): string
     {
         $users = $registry->usedBy($class);
         if ($users === []) {
@@ -530,8 +586,10 @@ final class MarkdownFormatter implements Formatter
 
         sort($users);
 
+        $currentPage = $this->pageKey($class, $config);
+
         $links = array_map(
-            fn (string $fqcn): string => $this->fqcnLink($fqcn, $fqcn, $registry, $class->page),
+            fn (string $fqcn): string => $this->fqcnLink($fqcn, $fqcn, $registry, $config, $currentPage),
             $users
         );
 

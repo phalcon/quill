@@ -77,17 +77,6 @@ final class RegistryTest extends TestCase
         );
     }
 
-    public function testPagesAreGroupedAndSorted(): void
-    {
-        $this->assertSame(
-            [
-                'phalcon_base'    => ['Phalcon\\Base', 'Phalcon\\Child'],
-                'phalcon_support' => ['Phalcon\\Thing'],
-            ],
-            $this->registry()->pages()
-        );
-    }
-
     public function testResolveHandlesLeadingBackslash(): void
     {
         $registry = $this->registry();
@@ -120,16 +109,12 @@ final class RegistryTest extends TestCase
      */
     private function classDefinition(
         string $fqcn,
-        string $page,
         array $extends = [],
         array $usesMap = [],
         array $traits = []
     ): ClassDefinition {
         return new ClassDefinition(
             $fqcn,
-            $fqcn,
-            $page,
-            'anchor',
             'rel.zep',
             'Phalcon',
             Structure::classType(false, false),
@@ -153,15 +138,14 @@ final class RegistryTest extends TestCase
     private function registry(): Registry
     {
         return new Registry([
-            'Phalcon\\Base'  => $this->classDefinition('Phalcon\\Base', 'phalcon_base'),
+            'Phalcon\\Base'  => $this->classDefinition('Phalcon\\Base'),
             'Phalcon\\Child' => $this->classDefinition(
                 'Phalcon\\Child',
-                'phalcon_base',
                 ['Base'],
                 ['Base' => 'Phalcon\\Base'],
                 ['Thing']
             ),
-            'Phalcon\\Thing' => $this->classDefinition('Phalcon\\Thing', 'phalcon_support'),
+            'Phalcon\\Thing' => $this->classDefinition('Phalcon\\Thing'),
         ]);
     }
 }

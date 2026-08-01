@@ -157,9 +157,6 @@ final class MarkdownFormatterMethodsTest extends TestCase
 
         $child = new ClassDefinition(
             'Phalcon\\Sample\\Child',
-            'Sample\\Child',
-            'phalcon_sample',
-            'samplechild',
             'Sample/Child.zep',
             'Phalcon\\Sample',
             Structure::classType(false, false),

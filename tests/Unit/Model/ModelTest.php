@@ -31,7 +31,7 @@ final class ModelTest extends TestCase
     {
         $array = $this->classDefinition()->toArray();
 
-        $this->assertSame(4, $array['version']);
+        $this->assertSame(5, $array['version']);
         $this->assertSame(
             ['keyword' => 'trait', 'isAbstract' => null, 'isFinal' => null],
             $array['structure']
@@ -76,9 +76,6 @@ final class ModelTest extends TestCase
     {
         return new ClassDefinition(
             'Phalcon\\Support\\Helper\\Str\\Lower',
-            'Support\\Helper\\Str\\Lower',
-            'phalcon_support',
-            'supporthelperstrlower',
             'Support/Helper/Str/Lower.zep',
             'Phalcon\\Support\\Helper\\Str',
             Structure::trait(),

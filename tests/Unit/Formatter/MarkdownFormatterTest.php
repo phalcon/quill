@@ -125,9 +125,6 @@ final class MarkdownFormatterTest extends TestCase
     {
         $base = new ClassDefinition(
             'Phalcon\\Sample\\Base',
-            'Sample\\Base',
-            'phalcon_sample',
-            'samplebase',
             'Sample/Base.zep',
             'Phalcon\\Sample',
             Structure::classType(false, false),
@@ -144,9 +141,6 @@ final class MarkdownFormatterTest extends TestCase
 
         $child = new ClassDefinition(
             'Phalcon\\Sample\\Child',
-            'Sample\\Child',
-            'phalcon_sample',
-            'samplechild',
             'Sample/Child.zep',
             'Phalcon\\Sample',
             Structure::trait(),

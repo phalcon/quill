@@ -30,8 +30,10 @@ final class ClassDefinition implements Definition
      * 3 - `kind` renamed to `structure`; backing values unchanged.
      * 4 - `structure` nests keyword/isAbstract/isFinal, replacing the flat
      *     `structure`, `abstract` and `final` keys.
+     * 5 - dropped `title`, `page` and `anchor`; they were Markdown output
+     *     concerns, not facts about the declaration.
      */
-    public const MODEL_VERSION = 4;
+    public const MODEL_VERSION = 5;
 
     /**
      * `$uses` are namespace imports; `$traits` are the traits the body pulls
@@ -46,9 +48,6 @@ final class ClassDefinition implements Definition
      */
     public function __construct(
         public readonly string $fqcn,
-        public readonly string $title,
-        public readonly string $page,
-        public readonly string $anchor,
         public readonly string $relPath,
         public readonly string $namespace,
         public readonly Structure $structure,
@@ -72,9 +71,6 @@ final class ClassDefinition implements Definition
      * @return array{
      *     version: int,
      *     fqcn: string,
-     *     title: string,
-     *     page: string,
-     *     anchor: string,
      *     relPath: string,
      *     namespace: string,
      *     structure: array{keyword: string, isAbstract: bool|null, isFinal: bool|null},
@@ -97,9 +93,6 @@ final class ClassDefinition implements Definition
         return [
             'version'     => self::MODEL_VERSION,
             'fqcn'        => $this->fqcn,
-            'title'       => $this->title,
-            'page'        => $this->page,
-            'anchor'      => $this->anchor,
             'relPath'     => $this->relPath,
             'namespace'   => $this->namespace,
             'structure'   => $this->structure->toArray(),

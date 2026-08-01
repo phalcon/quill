@@ -16,9 +16,7 @@ namespace Phalcon\Scribe\Model;
 use function array_map;
 use function array_unshift;
 use function array_values;
-use function ksort;
 use function ltrim;
-use function sort;
 use function str_starts_with;
 
 /**
@@ -119,28 +117,6 @@ final class Registry
     public function has(string $fqcn): bool
     {
         return isset($this->definitions[$fqcn]);
-    }
-
-    /**
-     * Page key => the FQCNs on it. Keys sorted, and the FQCNs within each.
-     *
-     * @return array<string, list<string>>
-     */
-    public function pages(): array
-    {
-        $pages = [];
-        foreach ($this->definitions as $fqcn => $definition) {
-            $pages[$definition->page][] = $fqcn;
-        }
-
-        ksort($pages);
-
-        foreach ($pages as $page => $fqcns) {
-            sort($fqcns);
-            $pages[$page] = $fqcns;
-        }
-
-        return $pages;
     }
 
     public function parentOf(ClassDefinition $class): ?string

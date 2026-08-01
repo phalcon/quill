@@ -75,14 +75,12 @@ final class ZephirReaderTest extends TestCase
         $this->assertNull($method->parameters->all()[0]->default);
     }
 
-    public function testPageAnchorAndPathsFollowTheLegacyRules(): void
+    public function testIdentityAndPathAreCarried(): void
     {
         $class = $this->sample();
 
         $this->assertSame('Phalcon\\Sample\\Sample', $class->fqcn);
-        $this->assertSame('Sample\\Sample', $class->title);
-        $this->assertSame('phalcon_sample', $class->page);
-        $this->assertSame('samplesample', $class->anchor);
+        $this->assertSame('Phalcon\\Sample', $class->namespace);
         $this->assertSame('Sample.zep', $class->relPath);
     }
 
