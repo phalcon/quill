@@ -12,6 +12,7 @@
 
 declare(strict_types=1);
 
+use Phalcon\Scribe\Cli\DocblocksCommand;
 use Phalcon\Scribe\Cli\GenerateCommand;
 use Phalcon\Scribe\Cli\ParityCommand;
 use Phalcon\Scribe\Config;
@@ -33,6 +34,11 @@ $usage = <<<'USAGE'
     Usage:
       scribe generate [filter] [--config=<path>] [--output=<dir>] [--format=<name>]
       scribe parity <left.json> <right.json>
+      scribe docblocks <left.json> <right.json> <out.csv>
+
+    parity reports structural differences between two model documents.
+    docblocks writes the documentation disagreements to a spreadsheet, with a
+    winner column to fill in.
 
     Paths, repository and language come from a scribe.php at the project root.
     --config points elsewhere; --output overrides just the destination;
@@ -48,6 +54,27 @@ if ($command === null || in_array($command, ['-h', '--help', 'help'], true)) {
     fwrite(STDOUT, $usage);
 
     exit(0);
+}
+
+if ($command === 'docblocks') {
+    $args = array_values(array_filter(
+        array_slice($argv, 2),
+        static fn (string $t): bool => !str_starts_with($t, '-')
+    ));
+
+    if (count($args) !== 3) {
+        fwrite(STDERR, 'scribe: docblocks needs two model documents and a csv path' . PHP_EOL . $usage);
+
+        exit(1);
+    }
+
+    try {
+        exit((new DocblocksCommand())->execute($args[0], $args[1], $args[2]));
+    } catch (Exception $exception) {
+        fwrite(STDERR, 'scribe: ' . $exception->getMessage() . PHP_EOL);
+
+        exit(1);
+    }
 }
 
 if ($command === 'parity') {
