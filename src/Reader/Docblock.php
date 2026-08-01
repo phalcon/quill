@@ -92,6 +92,15 @@ final class Docblock
             return '';
         }
 
+        /**
+         * Parsers disagree about the delimiters. php-parser returns the whole
+         * comment including `/**` and the closing `*​/`; Zephir's has already
+         * removed the leading slash. Strip both forms here so the line loop
+         * below only ever sees content.
+         */
+        $raw = (string) preg_replace('#^\s*/?\*\*#', '', $raw);
+        $raw = (string) preg_replace('#\*/\s*$#', '', $raw);
+
         $output = [];
         foreach (explode("\n", $raw) as $line) {
             $line = trim($line);
