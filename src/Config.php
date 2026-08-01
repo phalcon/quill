@@ -25,9 +25,9 @@ use function str_starts_with;
 
 /**
  * Everything the readers and formatters need that is project-specific.
- * Nothing about a particular repository is compiled into scribe.
+ * Nothing about a particular repository is compiled into quill.
  *
- * Projects declare it in a `scribe.php` at their root, the same shape talon
+ * Projects declare it in a `quill.php` at their root, the same shape talon
  * uses for `talon.php`.
  */
 final class Config
@@ -70,7 +70,7 @@ final class Config
             $value = $config[$key] ?? null;
             if (!is_string($value) || $value === '') {
                 throw new InvalidConfiguration(
-                    "scribe configuration key '{$key}' is required and must be a non-empty string"
+                    "quill configuration key '{$key}' is required and must be a non-empty string"
                 );
             }
 
@@ -91,7 +91,7 @@ final class Config
     public static function fromFile(string $path): self
     {
         if (!is_file($path)) {
-            throw new InvalidConfiguration("scribe configuration: no such file '{$path}'");
+            throw new InvalidConfiguration("quill configuration: no such file '{$path}'");
         }
 
         /** @var mixed $config */

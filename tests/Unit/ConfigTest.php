@@ -53,7 +53,7 @@ final class ConfigTest extends TestCase
         $this->expectException(InvalidConfiguration::class);
         $this->expectExceptionMessage('no such file');
 
-        Config::fromFile('/nowhere/scribe.php');
+        Config::fromFile('/nowhere/quill.php');
     }
 
     public function testFromFileRejectsAMissingKey(): void

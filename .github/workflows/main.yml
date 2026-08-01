@@ -75,4 +75,4 @@ jobs:
       - name: octocov
         uses: k1LoW/octocov-action@a167dc0dee441b7ffc45e1b862ab55ec0d87f278 # v1.5.2
         with:
-          config: ${{ github.event_name == 'pull_request' && 'resources/octocov.pr.yml' || 'resources/octocov.yml' }}
+          config: ${{ github.event_name == 'pull_request' && '.octocov.pr.yml' || '.octocov.yml' }}

@@ -19,7 +19,7 @@ class WriteFailed extends Exception
     {
         parent::__construct(
             "Could not write '" . $path . "'. Check the destination is writable"
-            . ' by the user running scribe.'
+            . ' by the user running quill.'
         );
     }
 }
