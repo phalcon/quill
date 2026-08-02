@@ -15,10 +15,13 @@ namespace Phalcon\Quill\Cli;
 
 use Phalcon\Quill\Config;
 use Phalcon\Quill\Contracts\Formatter;
+use Phalcon\Quill\Exceptions\NamespaceNotFound;
 use Phalcon\Quill\Exceptions\WriteFailed;
+use Phalcon\Quill\Model\Registry;
 use Phalcon\Quill\Reader\ReaderFactory;
 use Phalcon\Quill\Selection;
 
+use function array_keys;
 use function basename;
 use function file_put_contents;
 use function fwrite;
@@ -55,7 +58,10 @@ final class GenerateCommand
     {
         $reader   = $this->factory->create($config->language());
         $registry = $reader->read($config);
-        $pages    = $this->formatter->format($registry, $config, $selection);
+
+        $this->guardNamespace($registry, $selection);
+
+        $pages = $this->formatter->format($registry, $config, $selection);
 
         $output = $config->outputDir();
         if (!is_dir($output)) {
@@ -92,6 +98,26 @@ final class GenerateCommand
         fwrite($this->stdout, 'Done. Output: ' . $output . PHP_EOL);
 
         return 0;
+    }
+
+    /**
+     * Checked against the registry rather than the formatter's output, because
+     * a JSON run would otherwise emit a structurally valid document holding no
+     * definitions - a silent success where a typo belongs.
+     */
+    private function guardNamespace(Registry $registry, Selection $selection): void
+    {
+        if ($selection->namespace === '') {
+            return;
+        }
+
+        foreach (array_keys($registry->definitions()->all()) as $fqcn) {
+            if ($selection->matchesNamespace($fqcn)) {
+                return;
+            }
+        }
+
+        throw new NamespaceNotFound($selection->namespace);
     }
 
     /**

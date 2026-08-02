@@ -15,6 +15,7 @@ namespace Phalcon\Quill\Tests\Unit\Cli;
 
 use Phalcon\Quill\Cli\GenerateCommand;
 use Phalcon\Quill\Config;
+use Phalcon\Quill\Exceptions\NamespaceNotFound;
 use Phalcon\Quill\Exceptions\WriteFailed;
 use Phalcon\Quill\Formatter\MarkdownFormatter;
 use Phalcon\Quill\Reader\ReaderFactory;
@@ -53,6 +54,33 @@ final class GenerateCommandTest extends TestCase
         $this->clean();
 
         parent::tearDown();
+    }
+
+    /**
+     * A typo would otherwise produce a structurally valid document holding no
+     * definitions, which reads as a successful run.
+     */
+    public function testANamespaceMatchingNothingFailsBeforeAnythingIsWritten(): void
+    {
+        $this->expectException(NamespaceNotFound::class);
+        $this->expectExceptionMessageMatches('/Phalcon\\\\Nope/');
+
+        try {
+            $this->command()->execute($this->config(), new Selection('', 'Phalcon\\Nope'));
+        } finally {
+            $this->assertSame([], glob($this->outputDir . '/*.md') ?: []);
+        }
+    }
+
+    public function testANamespacedRunPrunesNothing(): void
+    {
+        $stale = $this->outputDir . '/phalcon_stale.md';
+        $this->command()->execute($this->config(), Selection::none());
+        file_put_contents($stale, 'stale');
+
+        $this->command()->execute($this->config(), new Selection('', 'Phalcon\\Sample'));
+
+        $this->assertFileExists($stale);
     }
 
     public function testAFilteredRunPrunesNothing(): void
