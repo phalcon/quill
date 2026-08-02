@@ -10,4 +10,5 @@ return [
     'branch'     => '5.0.x',
     'prefix'     => 'phalcon',
     'extension'  => 'zep',
+    'namespace'  => 'Phalcon',
 ];

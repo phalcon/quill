@@ -18,4 +18,5 @@ return [
     'branch'     => 'master',
     'prefix'     => 'src',
     'extension'  => 'php',
+    'namespace'  => 'Phalcon',
 ];

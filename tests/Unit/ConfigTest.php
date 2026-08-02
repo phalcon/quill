@@ -34,6 +34,7 @@ final class ConfigTest extends TestCase
                 'branch'     => '5.0.x',
                 'prefix'     => 'phalcon',
                 'extension'  => 'zep',
+                'namespace'  => 'Phalcon',
             ],
             '/project'
         );
@@ -56,6 +57,7 @@ final class ConfigTest extends TestCase
                 'branch'     => '5.0.x',
                 'prefix'     => 'phalcon',
                 'extension'  => 'zep',
+                'namespace'  => 'Phalcon',
             ],
             '/project/'
         );
@@ -144,7 +146,8 @@ final class ConfigTest extends TestCase
             'phalcon/cphalcon',
             '5.0.x',
             'phalcon',
-            'zep'
+            'zep',
+            'Phalcon'
         );
 
         $this->assertSame('/src', $config->sourceRoot());
@@ -183,7 +186,8 @@ final class ConfigTest extends TestCase
             'phalcon/cphalcon',
             '5.0.x',
             'phalcon',
-            'zep'
+            'zep',
+            'Phalcon'
         );
     }
 }

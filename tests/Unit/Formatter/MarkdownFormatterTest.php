@@ -127,7 +127,8 @@ final class MarkdownFormatterTest extends TestCase
             'phalcon/cphalcon',
             '5.0.x',
             'phalcon',
-            'zep'
+            'zep',
+            'Phalcon'
         );
     }
 

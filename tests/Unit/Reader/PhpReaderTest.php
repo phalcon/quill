@@ -309,7 +309,8 @@ final class PhpReaderTest extends TestCase
             'phalcon/phalcon',
             'master',
             'src',
-            'php'
+            'php',
+            'Phalcon'
         );
 
         return (new PhpReader())->read($config);
