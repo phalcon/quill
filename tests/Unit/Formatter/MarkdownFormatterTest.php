@@ -36,6 +36,26 @@ use function substr_count;
 final class MarkdownFormatterTest extends TestCase
 {
     /**
+     * A namespace deeper than a page yields a partial page rather than no page:
+     * grouping is by top-level segment and does not change.
+     */
+    public function testADeepNamespaceLeavesAPartialPage(): void
+    {
+        $documents = (new MarkdownFormatter())->format(
+            $this->nestedRegistry(),
+            $this->config(),
+            new Selection('', 'Phalcon\\Sample\\Deep')
+        );
+
+        $page = $documents['phalcon_sample'] ?? self::fail('phalcon_sample page missing');
+
+        // Headings drop the root namespace, so the title reads Sample\Deep\Leaf.
+        $this->assertStringContainsString('## Sample\\Deep\\Leaf', $page);
+        $this->assertStringNotContainsString('## Sample\\Base', $page);
+        $this->assertStringNotContainsString('## Sample\\Child', $page);
+    }
+
+    /**
      * A constant's description is wrapped, in that order - the wrapper first,
      * then the text, then the close.
      */
@@ -138,6 +158,31 @@ final class MarkdownFormatterTest extends TestCase
         $pages = (new MarkdownFormatter())->format($this->registry(), $this->config(), Selection::none());
 
         return $pages['phalcon_sample'] ?? self::fail('phalcon_sample page missing');
+    }
+
+    /**
+     * The two shared definitions plus one a level deeper, which lands on the
+     * same page because its path still starts with `Sample/`.
+     */
+    private function nestedRegistry(): Registry
+    {
+        $leaf = new ClassDefinition(
+            new Location('Phalcon\\Sample\\Deep\\Leaf', 'Phalcon\\Sample\\Deep', 'Sample/Deep/Leaf.zep'),
+            Structure::classType(false, false),
+            'The leaf.',
+            new Imports([], []),
+            new Relations([], [], []),
+            new Members(
+                new ConstantDefinitionCollection(),
+                new PropertyDefinitionCollection(),
+                new MethodDefinitionCollection()
+            )
+        );
+
+        return new Registry(ClassDefinitionCollection::fromDefinitions([
+            ...array_values($this->registry()->definitions()->all()),
+            $leaf,
+        ]));
     }
 
     private function registry(): Registry

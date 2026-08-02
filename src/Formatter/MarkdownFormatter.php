@@ -98,7 +98,7 @@ final class MarkdownFormatter implements Formatter
      */
     public function format(Registry $registry, Config $config, Selection $selection): array
     {
-        $pages  = $this->pages($registry, $config);
+        $pages  = $this->pages($registry, $config, $selection);
         $output = [];
 
         foreach (array_keys($pages) as $page) {
@@ -309,10 +309,14 @@ final class MarkdownFormatter implements Formatter
      *
      * @return array<string, list<string>>
      */
-    private function pages(Registry $registry, Config $config): array
+    private function pages(Registry $registry, Config $config, Selection $selection): array
     {
         $pages = [];
         foreach ($registry->definitions() as $fqcn => $class) {
+            if (!$selection->matchesNamespace($fqcn)) {
+                continue;
+            }
+
             $pages[$this->naming->pageKey($class, $config)][] = $fqcn;
         }
 
