@@ -80,11 +80,24 @@ if ($command === null || in_array($command, ['-h', '--help', 'help'], true)) {
     exit(0);
 }
 
-if ($command === 'docblocks') {
-    $args = array_values(array_filter(
+/**
+ * The tokens after the command name that are not options, in order. Both
+ * comparison commands take their arguments positionally and neither accepts
+ * an option, so an option among them is dropped rather than rejected.
+ *
+ * @param list<string> $argv
+ *
+ * @return list<string>
+ */
+$positionals = static function (array $argv): array {
+    return array_values(array_filter(
         array_slice($argv, 2),
-        static fn (string $t): bool => !str_starts_with($t, '-')
+        static fn (string $token): bool => !str_starts_with($token, '-')
     ));
+};
+
+if ($command === 'docblocks') {
+    $args = $positionals($argv);
 
     if (count($args) !== 3) {
         fwrite(STDERR, 'quill: docblocks needs two model documents and a csv path' . PHP_EOL . $usage);
@@ -102,10 +115,7 @@ if ($command === 'docblocks') {
 }
 
 if ($command === 'parity') {
-    $paths = array_values(array_filter(
-        array_slice($argv, 2),
-        static fn (string $t): bool => !str_starts_with($t, '-')
-    ));
+    $paths = $positionals($argv);
 
     if (count($paths) !== 2) {
         fwrite(STDERR, 'quill: parity needs two model documents' . PHP_EOL . $usage);

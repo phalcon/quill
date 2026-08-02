@@ -17,24 +17,20 @@
 
 API documentation generator for Zephir and PHP sources.
 
-Quill reads a source tree into a typed model, then renders that model. Readers know one
-language and nothing about output; formatters know one output format and nothing about the
-language it came from.
+Quill reads a source tree into a typed model, then renders that model. Readers know one language and nothing about output; formatters know one output format and nothing about the language it came from.
 
 ```
-ZephirReader  (phalcon/zephir)   ─┐                        ┌─→ MarkdownFormatter  (mkdocs pages)
-                                  ├─→  Model  ─→ toArray() ─┤
-PhpReader     (nikic/php-parser) ─┘   (object graph)        └─→ JsonFormatter      (model document)
+ZephirReader  (phalcon/zephir)   ─┐                      ┌─> MarkdownFormatter (mkdocs pages)
+                                  ├>  Model -> toArray() ┤
+PhpReader     (nikic/php-parser) ─┘   (object graph)     └─> JsonFormatter     (model document)
 ```
 
 ## Requirements
 
 - PHP `^8.1`
-- `phalcon/zephir` to read `.zep` sources; selecting `language: zephir` without it fails with
-  an explanation rather than a "class not found"
+- `phalcon/zephir` to read `.zep` sources; selecting `language: zephir` without it fails with an explanation rather than a "class not found"
 
-`nikic/php-parser` is a hard dependency and comes with quill - the PHP reader is not optional
-the way the Zephir one is.
+`nikic/php-parser` is a hard dependency and comes with quill - the PHP reader is not optional the way the Zephir one is.
 
 ## Install
 
@@ -60,13 +56,11 @@ the way the Zephir one is.
 | `--help`, `-h` | usage |
 | `<filter>` | positional; narrows what is written, matched case-insensitively |
 
-The registry is always built from every source file regardless of the filter, so cross-page
-links stay correct.
+The registry is always built from every source file regardless of the filter, so cross-page links stay correct.
 
 ## Configuration
 
-Everything project-specific lives in a `quill.php` at the project root. Nothing about any
-particular repository is compiled into quill.
+Everything project-specific lives in a `quill.php` at the project root. Nothing about any particular repository is compiled into quill.
 
 ```php
 <?php
@@ -74,8 +68,8 @@ particular repository is compiled into quill.
 return [
     'language'   => 'zephir',
     'source'     => 'phalcon',
-    'output'     => 'nikos/docs/api',
-    'assets'     => 'nikos/docs/assets/css',
+    'output'     => 'output/docs/api',
+    'assets'     => 'output/docs/assets/css',
     'repository' => 'phalcon/cphalcon',
     'branch'     => '5.0.x',
     'prefix'     => 'phalcon',
@@ -94,13 +88,9 @@ return [
 | `extension` | file extension the reader collects |
 | `namespace` | root namespace; headings drop it and page names carry it lowercased |
 
-`source`, `output` and `assets` are relative to `quill.php` unless they start with a slash.
-Every key except `assets` is required and must be a non-empty string; anything missing raises
-`MissingConfigurationKey` naming the key.
+`source`, `output` and `assets` are relative to `quill.php` unless they start with a slash. Every key except `assets` is required and must be a non-empty string; anything missing raises `MissingConfigurationKey` naming the key.
 
-Splitting `output` from `assets` lets the destination mirror the layout of whatever consumes
-it. With the values above, `cp -r nikos/docs/* <site>/docs/` lands the pages and the
-stylesheet where each belongs.
+Splitting `output` from `assets` lets the destination mirror the layout of whatever consumes it. With the values above, `cp -r nikos/docs/* <site>/docs/` lands the pages and the stylesheet where each belongs.
 
 ## What `generate` writes
 
@@ -108,10 +98,7 @@ stylesheet where each belongs.
 - an `index` page linking to the rest
 - the formatter's static assets, if it has any
 
-A complete run also prunes: documents in the output directory that this run did not produce
-are deleted, so a source namespace that disappears takes its page with it. A filtered run is
-deliberately partial and never prunes. Pruning is scoped to the formatter's own extension -
-anything else in the directory belongs to someone else.
+A complete run also prunes: documents in the output directory that this run did not produce are deleted, so a source namespace that disappears takes its page with it. A filtered run is deliberately partial and never prunes. Pruning is scoped to the formatter's own extension - anything else in the directory belongs to someone else.
 
 ## Formatters
 
@@ -123,33 +110,19 @@ anything else in the directory belongs to someone else.
 | Enums | rendered as classes | `structure.keyword: enum` |
 | Traits | `Trait` badge, plus a `Used by` list | `structure.keyword: trait` |
 
-The model is deliberately complete and the Markdown formatter is deliberately opinionated:
-anything a reader can observe cheaply goes into the model even when today's formatters ignore
-it, so adding a formatter never means revisiting a reader.
+The model is deliberately complete and the Markdown formatter is deliberately opinionated: anything a reader can observe cheaply goes into the model even when today's formatters ignore it, so adding a formatter never means revisiting a reader.
 
-`api.css` carries selectors only. Colors come from `--api-*` custom properties it reads but
-does not define, which leaves the palette - and light and dark - to the site rendering the
-pages.
+`api.css` carries selectors only. Colors come from `--api-*` custom properties it reads but does not define, which leaves the palette - and light and dark - to the site rendering the pages.
 
 ## The model as an integration point
 
-`ClassDefinition::toArray()` serializes a whole definition and carries a `version`. It is a
-published format the moment anything reads it, so treat a shape change as a version bump. A
-document written by one installation is read back by another, and `parity` refuses a document
-whose version it does not recognize rather than reporting the moved keys as differences.
+`ClassDefinition::toArray()` serializes a whole definition and carries a `version`. It is a published format the moment anything reads it, so treat a shape change as a version bump. A document written by one installation is read back by another, and `parity` refuses a document whose version it does not recognize rather than reporting the moved keys as differences.
 
-A `ClassDefinition` is six things: a `Location` (fqcn, namespace, relPath), a `Structure`
-(keyword plus modifiers, `null` rather than `false` where they do not apply), a `description`,
-`Imports`, `Relations` and `Members`. The serialization mirrors that graph exactly.
+A `ClassDefinition` is six things: a `Location` (fqcn, namespace, relPath), a `Structure` (keyword plus modifiers, `null` rather than `false` where they do not apply), a `description`, `Imports`, `Relations` and `Members`. The serialization mirrors that graph exactly.
 
-`uses` and `traits` are different relations that share a keyword: `uses` are the file's
-namespace imports, `traits` are what the class body pulls in. `Registry` inverts the latter
-into `usedBy()`.
+`uses` and `traits` are different relations that share a keyword: `uses` are the file's namespace imports, `traits` are what the class body pulls in. `Registry` inverts the latter into `usedBy()`.
 
-Names in `Relations` are absolute and backslash-prefixed. Both languages spell a parent three
-ways - `\Foo`, `Foo` behind a `use`, or `Foo` meaning the sibling in the same namespace - and
-the readers resolve all three as they read, so two trees that agree cannot look like they
-disagree.
+Names in `Relations` are absolute and backslash-prefixed. Both languages spell a parent three ways - `\Foo`, `Foo` behind a `use`, or `Foo` meaning the sibling in the same namespace - and the readers resolve all three as they read, so two trees that agree cannot look like they disagree.
 
 ## Comparing two implementations
 
@@ -158,17 +131,13 @@ disagree.
     vendor/bin/quill generate --format=json --config=cphalcon/quill.php
     vendor/bin/quill generate --format=json --config=phalcon/quill.php
 
-Add `--namespace=` to both sides to compare one subsystem at a time, which keeps the diff
-readable:
+Add `--namespace=` to both sides to compare one subsystem at a time, which keeps the diff readable:
 
     vendor/bin/quill generate --format=json --namespace=Phalcon\Config --config=cphalcon/quill.php
 
-`parity` reports definitions present on one side only and, for shared ones, which members
-differ. It exits non-zero when anything differs, so it can gate a build.
+`parity` reports definitions present on one side only and, for shared ones, which members differ. It exits non-zero when anything differs, so it can gate a build.
 
-`docblocks` writes the documentation disagreements to a spreadsheet, one row per difference
-with a `winner` column to fill in. Rows where one side is blank are pre-filled; the rest are
-a human decision. Nothing here edits source.
+`docblocks` writes the documentation disagreements to a spreadsheet, one row per difference with a `winner` column to fill in. Rows where one side is blank are pre-filled; the rest are a human decision. Nothing here edits source.
 
 ## Development
 
@@ -178,8 +147,7 @@ a human decision. Nothing here edits source.
     docker exec -w /srv quill-8.1 composer analyze
     docker exec -w /srv quill-8.1 composer cs
 
-`quill-8.1` is the floor and where the byte-for-byte comparison runs; `quill-8.5` covers
-deprecations. The suite must pass on both.
+`quill-8.1` is the floor and where the byte-for-byte comparison runs; `quill-8.5` covers deprecations. The suite must pass on both.
 
 ## License
 
