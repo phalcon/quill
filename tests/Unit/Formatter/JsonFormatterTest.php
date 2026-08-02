@@ -37,6 +37,56 @@ use function json_decode;
 
 final class JsonFormatterTest extends TestCase
 {
+    public function testANamespaceAndAFilterCompose(): void
+    {
+        $registry = new Registry(ClassDefinitionCollection::fromDefinitions([
+            $this->definition('Phalcon\\Sample\\Zulu'),
+            $this->definition('Phalcon\\Sample\\Deep\\Charlie'),
+            $this->definition('Phalcon\\Other\\Charlie'),
+        ]));
+
+        $documents = (new JsonFormatter())->format(
+            $registry,
+            $this->config(),
+            new Selection('charlie', 'Phalcon\\Sample')
+        );
+
+        /** @var array<string, mixed> $decoded */
+        $decoded = json_decode($documents[JsonFormatter::DOCUMENT], true);
+
+        /** @var array<string, mixed> $definitions */
+        $definitions = $decoded['definitions'];
+
+        // The namespace drops Other\Charlie, the filter drops Sample\Zulu.
+        $this->assertSame(['Phalcon\\Sample\\Deep\\Charlie'], array_keys($definitions));
+    }
+
+    public function testANamespaceNarrowsToItsSubtree(): void
+    {
+        $registry = new Registry(ClassDefinitionCollection::fromDefinitions([
+            $this->definition('Phalcon\\Sample\\Zulu'),
+            $this->definition('Phalcon\\Sample\\Deep\\Charlie'),
+            $this->definition('Phalcon\\Other\\Bravo'),
+        ]));
+
+        $documents = (new JsonFormatter())->format(
+            $registry,
+            $this->config(),
+            new Selection('', 'Phalcon\\Sample')
+        );
+
+        /** @var array<string, mixed> $decoded */
+        $decoded = json_decode($documents[JsonFormatter::DOCUMENT], true);
+
+        /** @var array<string, mixed> $definitions */
+        $definitions = $decoded['definitions'];
+
+        $this->assertSame(
+            ['Phalcon\\Sample\\Deep\\Charlie', 'Phalcon\\Sample\\Zulu'],
+            array_keys($definitions)
+        );
+    }
+
     public function testDefinitionsAreKeyedByFqcnAndSorted(): void
     {
         /** @var array<string, mixed> $definitions */

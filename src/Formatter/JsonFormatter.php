@@ -61,13 +61,11 @@ final class JsonFormatter implements Formatter
      */
     public function format(Registry $registry, Config $config, Selection $selection): array
     {
-        $definitions = $registry->definitions();
-        if ($selection->filter !== '') {
-            $definitions = $definitions->filter(
-                static fn (ClassDefinition $class, string $fqcn): bool
-                    => stripos($fqcn, $selection->filter) !== false
-            );
-        }
+        $definitions = $registry->definitions()->filter(
+            static fn (ClassDefinition $class, string $fqcn): bool
+                => $selection->matchesNamespace($fqcn)
+                && ($selection->filter === '' || stripos($fqcn, $selection->filter) !== false)
+        );
 
         $serialized = [];
         foreach ($definitions->sorted() as $fqcn => $class) {
