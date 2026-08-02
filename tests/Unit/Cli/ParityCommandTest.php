@@ -58,6 +58,34 @@ final class ParityCommandTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * Exactly at the limit nothing was held back, so the remainder line has to
+     * stay silent - the boundary is `<=`, not `<`, and "and 0 more" would be
+     * both wrong and noise.
+     */
+    public function testACountEqualToTheLimitReportsNoRemainder(): void
+    {
+        $left = [];
+        for ($i = 1; $i <= 3; $i++) {
+            $left['Left' . $i] = $this->definition([]);
+        }
+
+        $this->write('left.json', $left);
+        $this->write('right.json', []);
+
+        $stdout = fopen('php://memory', 'rb+');
+        $this->assertIsResource($stdout);
+
+        (new ParityCommand($stdout))->execute($this->dir . '/left.json', $this->dir . '/right.json', 3);
+
+        rewind($stdout);
+        $output = (string) stream_get_contents($stdout);
+
+        $this->assertStringContainsString('Only on the left: 3', $output);
+        $this->assertStringContainsString('  Left3', $output);
+        $this->assertStringNotContainsString('more', $output);
+    }
+
     public function testAMissingDocumentIsRejected(): void
     {
         $this->expectException(MissingDocument::class);
@@ -143,34 +171,6 @@ final class ParityCommandTest extends TestCase
         $this->assertStringContainsString('Differing members: 1 of 1 shared definitions', $output);
         $this->assertStringContainsString('  A', $output);
         $this->assertStringContainsString('methods     -1 +1', $output);
-    }
-
-    /**
-     * Exactly at the limit nothing was held back, so the remainder line has to
-     * stay silent - the boundary is `<=`, not `<`, and "and 0 more" would be
-     * both wrong and noise.
-     */
-    public function testACountEqualToTheLimitReportsNoRemainder(): void
-    {
-        $left = [];
-        for ($i = 1; $i <= 3; $i++) {
-            $left['Left' . $i] = $this->definition([]);
-        }
-
-        $this->write('left.json', $left);
-        $this->write('right.json', []);
-
-        $stdout = fopen('php://memory', 'rb+');
-        $this->assertIsResource($stdout);
-
-        (new ParityCommand($stdout))->execute($this->dir . '/left.json', $this->dir . '/right.json', 3);
-
-        rewind($stdout);
-        $output = (string) stream_get_contents($stdout);
-
-        $this->assertStringContainsString('Only on the left: 3', $output);
-        $this->assertStringContainsString('  Left3', $output);
-        $this->assertStringNotContainsString('more', $output);
     }
 
     /**

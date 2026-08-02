@@ -13,10 +13,7 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Reader;
 
-use Phalcon\Quill\Config;
-use Phalcon\Quill\Contracts\Reader;
 use Phalcon\Quill\Model\ClassDefinition;
-use Phalcon\Quill\Model\ClassDefinitionCollection;
 use Phalcon\Quill\Model\ConstantDefinition;
 use Phalcon\Quill\Model\ConstantDefinitionCollection;
 use Phalcon\Quill\Model\Imports;
@@ -28,20 +25,18 @@ use Phalcon\Quill\Model\ParameterDefinition;
 use Phalcon\Quill\Model\ParameterDefinitionCollection;
 use Phalcon\Quill\Model\PropertyDefinition;
 use Phalcon\Quill\Model\PropertyDefinitionCollection;
-use Phalcon\Quill\Model\Registry;
 use Phalcon\Quill\Model\Relations;
 use Phalcon\Quill\Model\Structure;
 use Phalcon\Quill\Reader\Php\TypeRenderer;
 use Phalcon\Quill\Reader\Php\ValueRenderer;
 use PhpParser\Node;
 use PhpParser\Node\Stmt;
+use PhpParser\Parser;
 use PhpParser\ParserFactory;
 
 use function file_get_contents;
 use function implode;
 use function is_string;
-
-use const DIRECTORY_SEPARATOR;
 
 /**
  * Reads `.php` sources through nikic/php-parser.
@@ -52,35 +47,38 @@ use const DIRECTORY_SEPARATOR;
  * constants) and constructor property promotion (emitted as properties as
  * well as parameters, because that is what they are).
  */
-final class PhpReader implements Reader
+final class PhpReader extends AbstractReader
 {
+    private readonly Parser $parser;
     private readonly TypeRenderer $types;
     private readonly ValueRenderer $values;
 
     public function __construct()
     {
+        $this->parser = (new ParserFactory())->createForNewestSupportedVersion();
         $this->types  = new TypeRenderer();
         $this->values = new ValueRenderer();
     }
 
-    public function read(Config $config): Registry
+    protected function readSource(string $absolutePath, string $relPath): ?ClassDefinition
     {
-        $parser      = (new ParserFactory())->createForNewestSupportedVersion();
-        $prefix      = $config->sourceRoot() . DIRECTORY_SEPARATOR;
-        $definitions = [];
+        $ast = $this->parser->parse((string) file_get_contents($absolutePath)) ?? [];
 
-        foreach (SourceFiles::collect($config) as $relPath) {
-            $ast   = $parser->parse((string) file_get_contents($prefix . $relPath)) ?? [];
-            $class = $this->readFile($ast, $relPath);
+        return $this->readFile($ast, $relPath);
+    }
 
-            if ($class !== null) {
-                $definitions[] = $class;
-            }
-        }
-
-        return new Registry(
-            ClassDefinitionCollection::fromDefinitions($definitions),
-            $config->rootNamespace()
+    /**
+     * A constant built from its name, its value and the docblock it hangs
+     * under - which is everything a `const` entry and an enum case have in
+     * common, and all either one contributes.
+     */
+    private function constant(Node\Identifier $name, ?Node\Expr $value, Docblock $doc): ConstantDefinition
+    {
+        return new ConstantDefinition(
+            $name->toString(),
+            $this->values->render($value),
+            $doc->varType() ?? $this->scalarType($value),
+            $doc->description()
         );
     }
 
@@ -145,7 +143,7 @@ final class PhpReader implements Reader
                 ),
                 ($param->flags & Stmt\Class_::MODIFIER_READONLY) !== 0,
                 $this->values->render($param->default),
-                $this->types->render($param->type) ?? 'mixed',
+                $this->types->render($param->type) ?? Notation::TYPE_MIXED,
                 '',
                 []
             );
@@ -166,12 +164,7 @@ final class PhpReader implements Reader
         $constants = [];
 
         foreach ($member->consts as $const) {
-            $constants[] = new ConstantDefinition(
-                $const->name->toString(),
-                $this->values->render($const->value),
-                $doc->varType() ?? $this->scalarType($const->value),
-                $doc->description()
-            );
+            $constants[] = $this->constant($const->name, $const->value, $doc);
         }
 
         return $constants;
@@ -179,13 +172,10 @@ final class PhpReader implements Reader
 
     private function readEnumCase(Stmt\EnumCase $member): ConstantDefinition
     {
-        $doc = new Docblock($this->docComment($member));
-
-        return new ConstantDefinition(
-            $member->name->toString(),
-            $this->values->render($member->expr),
-            $doc->varType() ?? $this->scalarType($member->expr),
-            $doc->description()
+        return $this->constant(
+            $member->name,
+            $member->expr,
+            new Docblock($this->docComment($member))
         );
     }
 
@@ -372,7 +362,7 @@ final class PhpReader implements Reader
 
             $parameters[] = new ParameterDefinition(
                 $name,
-                $this->types->render($param->type) ?? 'mixed',
+                $this->types->render($param->type) ?? Notation::TYPE_MIXED,
                 $this->values->render($param->default)
             );
         }
@@ -440,7 +430,7 @@ final class PhpReader implements Reader
     {
         $doc        = new Docblock($this->docComment($member));
         $visibility = $this->visibility($member->isPrivate(), $member->isProtected());
-        $varType    = $doc->varType() ?? $this->types->render($member->type) ?? 'mixed';
+        $varType    = $doc->varType() ?? $this->types->render($member->type) ?? Notation::TYPE_MIXED;
         $properties = [];
 
         foreach ($member->props as $prop) {

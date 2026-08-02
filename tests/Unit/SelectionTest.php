@@ -51,6 +51,13 @@ final class SelectionTest extends TestCase
         $this->assertTrue(Selection::of('', 'Config', $config)->narrows());
     }
 
+    public function testTheFilterIsCarriedUntouched(): void
+    {
+        $selection = Selection::of('Adapter', 'Config', $this->config());
+
+        $this->assertSame('Adapter', $selection->filter);
+    }
+
     /**
      * Three spellings of the same namespace, because a caller should not have
      * to know whether the root is already there.
@@ -63,13 +70,6 @@ final class SelectionTest extends TestCase
         $this->assertSame('Phalcon\\Config', Selection::of('', 'Phalcon\\Config', $config)->namespace);
         $this->assertSame('Phalcon\\Config', Selection::of('', '\\Phalcon\\Config\\', $config)->namespace);
         $this->assertSame('Phalcon', Selection::of('', 'Phalcon', $config)->namespace);
-    }
-
-    public function testTheFilterIsCarriedUntouched(): void
-    {
-        $selection = Selection::of('Adapter', 'Config', $this->config());
-
-        $this->assertSame('Adapter', $selection->filter);
     }
 
     private function config(): Config

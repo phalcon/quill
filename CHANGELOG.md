@@ -2,6 +2,13 @@
 
 All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
 
+## [0.2.2](https://github.com/phalcon/quill/releases/tag/v0.2.2) (2026-08-02)
+
+### Fixed
+
+- `TypeRenderer` dropped the leading backslash from a fully qualified parameter or return type, rendering `\Throwable` as `Throwable`
+- `ZephirReader` reported a typed property defaulting to null as `T` rather than `T|null`; parameters already read it that way
+
 ## [0.2.1](https://github.com/phalcon/quill/releases/tag/v0.2.1) (2026-08-02)
 
 ### Fixed

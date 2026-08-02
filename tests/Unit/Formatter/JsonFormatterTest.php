@@ -37,6 +37,15 @@ use function json_decode;
 
 final class JsonFormatterTest extends TestCase
 {
+    /**
+     * A model document is data, so there is nothing to style and nothing to
+     * write beside it.
+     */
+    public function testAModelDocumentShipsNoAssets(): void
+    {
+        $this->assertSame([], (new JsonFormatter())->assets());
+    }
+
     public function testANamespaceAndAFilterCompose(): void
     {
         $registry = new Registry(ClassDefinitionCollection::fromDefinitions([
@@ -85,15 +94,6 @@ final class JsonFormatterTest extends TestCase
             ['Phalcon\\Sample\\Deep\\Charlie', 'Phalcon\\Sample\\Zulu'],
             array_keys($definitions)
         );
-    }
-
-    /**
-     * A model document is data, so there is nothing to style and nothing to
-     * write beside it.
-     */
-    public function testAModelDocumentShipsNoAssets(): void
-    {
-        $this->assertSame([], (new JsonFormatter())->assets());
     }
 
     public function testDefinitionsAreKeyedByFqcnAndSorted(): void

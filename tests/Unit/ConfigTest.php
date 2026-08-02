@@ -23,6 +23,33 @@ use function dirname;
 
 final class ConfigTest extends TestCase
 {
+    public function testAbsolutePathsInConfigPassThroughUnchanged(): void
+    {
+        $config = Config::fromArray(
+            [
+                'language'   => 'zephir',
+                'source'     => '/cphalcon/phalcon',
+                'output'     => '/out',
+                'repository' => 'phalcon/cphalcon',
+                'branch'     => '5.0.x',
+                'prefix'     => 'phalcon',
+                'extension'  => 'zep',
+                'namespace'  => 'Phalcon',
+            ],
+            '/project'
+        );
+
+        $this->assertSame('/cphalcon/phalcon', $config->sourceRoot());
+        $this->assertSame('/out', $config->outputDir());
+    }
+
+    public function testAConfiguredAssetsDirectoryIsResolvedAgainstTheRoot(): void
+    {
+        $config = Config::fromArray($this->values(['assets' => 'docs/assets/css']), '/project');
+
+        $this->assertSame('/project/docs/assets/css', $config->assetsDir());
+    }
+
     /**
      * The namespace is a name, not a path, so the separators a project might
      * write around it are stripped rather than carried into every page key and
@@ -47,33 +74,6 @@ final class ConfigTest extends TestCase
 
         $this->assertSame($absent->outputDir(), $absent->assetsDir());
         $this->assertSame($empty->outputDir(), $empty->assetsDir());
-    }
-
-    public function testAConfiguredAssetsDirectoryIsResolvedAgainstTheRoot(): void
-    {
-        $config = Config::fromArray($this->values(['assets' => 'docs/assets/css']), '/project');
-
-        $this->assertSame('/project/docs/assets/css', $config->assetsDir());
-    }
-
-    public function testAbsolutePathsInConfigPassThroughUnchanged(): void
-    {
-        $config = Config::fromArray(
-            [
-                'language'   => 'zephir',
-                'source'     => '/cphalcon/phalcon',
-                'output'     => '/out',
-                'repository' => 'phalcon/cphalcon',
-                'branch'     => '5.0.x',
-                'prefix'     => 'phalcon',
-                'extension'  => 'zep',
-                'namespace'  => 'Phalcon',
-            ],
-            '/project'
-        );
-
-        $this->assertSame('/cphalcon/phalcon', $config->sourceRoot());
-        $this->assertSame('/out', $config->outputDir());
     }
 
     /**

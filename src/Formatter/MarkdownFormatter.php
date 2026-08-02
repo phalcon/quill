@@ -248,6 +248,19 @@ final class MarkdownFormatter implements Formatter
             . '(' . $page . '.md)' . PHP_EOL;
     }
 
+    /**
+     * A labelled run of inline entries under a class - the shape both the
+     * import list and the trait's users are rendered in. Only the envelope is
+     * shared; what the entries are is the caller's business.
+     *
+     * @param list<string> $entries already rendered, in display order
+     */
+    private function inlineList(string $label, array $entries, string $cssClass): string
+    {
+        return "\n__" . $label . '__ ' . implode(' · ', $entries)
+            . "\n{ ." . $cssClass . " }\n";
+    }
+
     private function methodDetails(ClassDefinition $class, Presentation $view): string
     {
         $groups = $this->orderMethods($class->members->methods);
@@ -439,11 +452,12 @@ final class MarkdownFormatter implements Formatter
                         . $this->html->escape($method->returnType) . "</code>\n";
                 }
 
-                $output .= '<code class="sig">' . $this->signature->inline($method) . "</code>\n";
+                $output .= '<code class="' . Classes::SIGNATURE . '">'
+                    . $this->signature->inline($method) . "</code>\n";
 
                 $line = $this->summaryLine($method->description);
                 if ($line !== '') {
-                    $output .= '<span class="desc">'
+                    $output .= '<span class="' . Classes::DESCRIPTION . '">'
                         . $this->html->inlineCode($line) . "</span>\n";
                 }
 
@@ -539,7 +553,7 @@ final class MarkdownFormatter implements Formatter
             $users
         );
 
-        return "\n__Used by__ " . implode(' · ', $links) . "\n{ ." . Classes::USED_BY . " }\n";
+        return $this->inlineList('Used by', $links, Classes::USED_BY);
     }
 
     private function uses(ClassDefinition $class): string
@@ -556,6 +570,6 @@ final class MarkdownFormatter implements Formatter
             $uses
         );
 
-        return "\n__Uses__ " . implode(' · ', $codes) . "\n{ ." . Classes::USES . " }\n";
+        return $this->inlineList('Uses', $codes, Classes::USES);
     }
 }

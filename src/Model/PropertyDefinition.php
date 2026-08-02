@@ -20,7 +20,7 @@ namespace Phalcon\Quill\Model;
  * `$shortcuts` records Zephir's get/set/toString shortcuts. Nothing formats
  * them today; they are captured because the reader can see them cheaply.
  */
-final class PropertyDefinition implements NamedDefinition
+final class PropertyDefinition implements VisibleDefinition
 {
     /**
      * @param 'public'|'protected'|'private' $visibility

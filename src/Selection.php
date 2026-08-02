@@ -34,6 +34,11 @@ final class Selection
         $this->namespace = trim($namespace, '\\');
     }
 
+    public static function none(): self
+    {
+        return new self();
+    }
+
     /**
      * A namespace written without the configured root gets it prepended, so a
      * caller need not know whether the root is already there.
@@ -53,11 +58,6 @@ final class Selection
         }
 
         return new self($filter, $namespace);
-    }
-
-    public static function none(): self
-    {
-        return new self();
     }
 
     /**

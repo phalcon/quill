@@ -14,17 +14,8 @@ declare(strict_types=1);
 namespace Phalcon\Quill\Model;
 
 /**
- * @extends AbstractDefinitionCollection<PropertyDefinition>
+ * @extends AbstractVisibleCollection<PropertyDefinition>
  */
-final class PropertyDefinitionCollection extends AbstractDefinitionCollection
+final class PropertyDefinitionCollection extends AbstractVisibleCollection
 {
-    /**
-     * The model keeps private members; hiding them is a formatter decision.
-     */
-    public function withoutPrivate(): self
-    {
-        return $this->filter(
-            static fn (PropertyDefinition $property): bool => $property->visibility !== 'private'
-        );
-    }
 }

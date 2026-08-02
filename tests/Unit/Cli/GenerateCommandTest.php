@@ -58,31 +58,17 @@ final class GenerateCommandTest extends TestCase
         parent::tearDown();
     }
 
-    /**
-     * A typo would otherwise produce a structurally valid document holding no
-     * definitions, which reads as a successful run.
-     */
-    public function testANamespaceMatchingNothingFailsBeforeAnythingIsWritten(): void
+    public function testAFilteredRunPrunesNothing(): void
     {
-        $this->expectException(NamespaceNotFound::class);
-        $this->expectExceptionMessageMatches('/Phalcon\\\\Nope/');
-
-        try {
-            $this->command()->execute($this->config(), new Selection('', 'Phalcon\\Nope'));
-        } finally {
-            $this->assertSame([], glob($this->outputDir . '/*.md') ?: []);
-        }
-    }
-
-    public function testANamespacedRunPrunesNothing(): void
-    {
-        $stale = $this->outputDir . '/phalcon_stale.md';
         $this->command()->execute($this->config(), Selection::none());
-        file_put_contents($stale, 'stale');
 
-        $this->command()->execute($this->config(), new Selection('', 'Phalcon\\Sample'));
+        $kept = $this->outputDir . '/phalcon_sample.md';
+        $this->assertFileExists($kept);
 
-        $this->assertFileExists($stale);
+        // Filtered runs are deliberately partial, so untouched pages stay.
+        $this->command()->execute($this->config(), new Selection('nothingmatches'));
+
+        $this->assertFileExists($kept);
     }
 
     /**
@@ -112,6 +98,33 @@ final class GenerateCommandTest extends TestCase
         $this->assertFileExists($assets . '/' . MarkdownFormatter::STYLESHEET);
     }
 
+    public function testANamespacedRunPrunesNothing(): void
+    {
+        $stale = $this->outputDir . '/phalcon_stale.md';
+        $this->command()->execute($this->config(), Selection::none());
+        file_put_contents($stale, 'stale');
+
+        $this->command()->execute($this->config(), new Selection('', 'Phalcon\\Sample'));
+
+        $this->assertFileExists($stale);
+    }
+
+    /**
+     * A typo would otherwise produce a structurally valid document holding no
+     * definitions, which reads as a successful run.
+     */
+    public function testANamespaceMatchingNothingFailsBeforeAnythingIsWritten(): void
+    {
+        $this->expectException(NamespaceNotFound::class);
+        $this->expectExceptionMessageMatches('/Phalcon\\\\Nope/');
+
+        try {
+            $this->command()->execute($this->config(), new Selection('', 'Phalcon\\Nope'));
+        } finally {
+            $this->assertSame([], glob($this->outputDir . '/*.md') ?: []);
+        }
+    }
+
     public function testAnUnwritableAssetFailsLoudly(): void
     {
         $assets = $this->outputDir . '/assets';
@@ -127,19 +140,6 @@ final class GenerateCommandTest extends TestCase
         } finally {
             chmod($stylesheet, 0644);
         }
-    }
-
-    public function testAFilteredRunPrunesNothing(): void
-    {
-        $this->command()->execute($this->config(), Selection::none());
-
-        $kept = $this->outputDir . '/phalcon_sample.md';
-        $this->assertFileExists($kept);
-
-        // Filtered runs are deliberately partial, so untouched pages stay.
-        $this->command()->execute($this->config(), new Selection('nothingmatches'));
-
-        $this->assertFileExists($kept);
     }
 
     public function testAnUnwritableDestinationFailsLoudly(): void

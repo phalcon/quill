@@ -13,10 +13,7 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Reader;
 
-use Phalcon\Quill\Config;
-use Phalcon\Quill\Contracts\Reader;
 use Phalcon\Quill\Model\ClassDefinition;
-use Phalcon\Quill\Model\ClassDefinitionCollection;
 use Phalcon\Quill\Model\ConstantDefinition;
 use Phalcon\Quill\Model\ConstantDefinitionCollection;
 use Phalcon\Quill\Model\Imports;
@@ -28,7 +25,6 @@ use Phalcon\Quill\Model\ParameterDefinition;
 use Phalcon\Quill\Model\ParameterDefinitionCollection;
 use Phalcon\Quill\Model\PropertyDefinition;
 use Phalcon\Quill\Model\PropertyDefinitionCollection;
-use Phalcon\Quill\Model\Registry;
 use Phalcon\Quill\Model\Relations;
 use Phalcon\Quill\Model\Structure;
 use Phalcon\Quill\Reader\Zephir\AstNode;
@@ -39,8 +35,6 @@ use function in_array;
 use function strrchr;
 use function substr;
 
-use const DIRECTORY_SEPARATOR;
-
 /**
  * Reads `.zep` sources through Zephir's own parser.
  *
@@ -49,28 +43,21 @@ use const DIRECTORY_SEPARATOR;
  * formatter's call - and return types and default values are normalized to
  * strings here, so no parser AST leaks into the model.
  */
-final class ZephirReader implements Reader
+final class ZephirReader extends AbstractReader
 {
-    public function read(Config $config): Registry
+    private readonly Parser $parser;
+
+    public function __construct()
     {
-        $parser      = new Parser();
-        $prefix      = $config->sourceRoot() . DIRECTORY_SEPARATOR;
-        $definitions = [];
+        $this->parser = new Parser();
+    }
 
-        foreach (SourceFiles::collect($config) as $relPath) {
-            /** @var array<int, mixed> $ast */
-            $ast   = $parser->parse($prefix . $relPath);
-            $class = $this->readFile(AstNode::listFrom($ast), $relPath);
+    protected function readSource(string $absolutePath, string $relPath): ?ClassDefinition
+    {
+        /** @var array<int, mixed> $ast */
+        $ast = $this->parser->parse($absolutePath);
 
-            if ($class !== null) {
-                $definitions[] = $class;
-            }
-        }
-
-        return new Registry(
-            ClassDefinitionCollection::fromDefinitions($definitions),
-            $config->rootNamespace()
-        );
+        return $this->readFile(AstNode::listFrom($ast), $relPath);
     }
 
     /**
@@ -472,28 +459,6 @@ final class ZephirReader implements Reader
     }
 
     /**
-     * A Zephir type keyword in the model's vocabulary.
-     *
-     * Zephir spells several types differently from PHP and the two models have
-     * to agree: `double` is PHP's `float` - and is what the parser reports even
-     * when the source says `float` - `char` is a `string`, the sized integers
-     * are all `int`, and `var` is `mixed`. Anything else is a class name and
-     * passes through untouched.
-     */
-    private function zephirType(string $declared): string
-    {
-        return match ($declared) {
-            'var', 'variable'              => Notation::TYPE_MIXED,
-            'int', 'uint', 'long', 'ulong' => Notation::TYPE_INT,
-            'double', 'float'              => Notation::TYPE_FLOAT,
-            'char', 'string'               => Notation::TYPE_STRING,
-            'bool', 'boolean'              => Notation::TYPE_BOOL,
-            'array'                        => Notation::TYPE_ARRAY,
-            default                        => $declared,
-        };
-    }
-
-    /**
      * A member's type, in the order the two languages agree on: the docblock,
      * then the declaration, then whatever the default value implies.
      *
@@ -518,7 +483,15 @@ final class ZephirReader implements Reader
         }
 
         if ($declared !== null && $declared !== '') {
-            return $this->zephirType($declared);
+            $type = $this->zephirType($declared);
+
+            // Zephir writes no union on a property, so a declared type with a
+            // null default is the only one it can express. The PHP twin spells
+            // the same thing `?string`, which renders as `string|null`, and
+            // parameterType() already reads the declaration this way.
+            return $default?->text('type') === 'null'
+                ? Notation::nullable($type)
+                : $type;
         }
 
         return match ($default?->text('type') ?? '') {
@@ -528,6 +501,28 @@ final class ZephirReader implements Reader
             'bool'                 => Notation::TYPE_BOOL,
             'empty-array', 'array' => Notation::TYPE_ARRAY,
             default                => Notation::TYPE_MIXED,
+        };
+    }
+
+    /**
+     * A Zephir type keyword in the model's vocabulary.
+     *
+     * Zephir spells several types differently from PHP and the two models have
+     * to agree: `double` is PHP's `float` - and is what the parser reports even
+     * when the source says `float` - `char` is a `string`, the sized integers
+     * are all `int`, and `var` is `mixed`. Anything else is a class name and
+     * passes through untouched.
+     */
+    private function zephirType(string $declared): string
+    {
+        return match ($declared) {
+            'var', 'variable'              => Notation::TYPE_MIXED,
+            'int', 'uint', 'long', 'ulong' => Notation::TYPE_INT,
+            'double', 'float'              => Notation::TYPE_FLOAT,
+            'char', 'string'               => Notation::TYPE_STRING,
+            'bool', 'boolean'              => Notation::TYPE_BOOL,
+            'array'                        => Notation::TYPE_ARRAY,
+            default                        => $declared,
         };
     }
 }

@@ -19,6 +19,7 @@ use PhpParser\Node\ComplexType;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
+use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\UnionType;
 
@@ -54,7 +55,13 @@ final class TypeRenderer
         }
 
         if ($type instanceof Identifier || $type instanceof Name) {
-            return $type->toString();
+            // php-parser drops the leading backslash from a fully qualified
+            // name. Zephir keeps it, and both readers otherwise render a type
+            // as written - without this, `\Throwable` arrives as `Throwable`
+            // and reports a difference that is not one.
+            $prefix = $type instanceof FullyQualified ? '\\' : '';
+
+            return $prefix . $type->toString();
         }
 
         return null;

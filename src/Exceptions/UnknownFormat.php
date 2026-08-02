@@ -13,17 +13,13 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Exceptions;
 
-use function implode;
-
-class UnknownFormat extends Exception
+class UnknownFormat extends UnknownChoice
 {
     /**
      * @param list<string> $known
      */
     public function __construct(string $format, array $known)
     {
-        parent::__construct(
-            "Unknown format '" . $format . "'; known formats are: " . implode(', ', $known)
-        );
+        parent::__construct('format', $format, $known);
     }
 }

@@ -13,17 +13,13 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Exceptions;
 
-use function implode;
-
-class UnknownLanguage extends Exception
+class UnknownLanguage extends UnknownChoice
 {
     /**
      * @param list<string> $known
      */
     public function __construct(string $language, array $known)
     {
-        parent::__construct(
-            "Unknown language '" . $language . "'; known languages are: " . implode(', ', $known)
-        );
+        parent::__construct('language', $language, $known);
     }
 }

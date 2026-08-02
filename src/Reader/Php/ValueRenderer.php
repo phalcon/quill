@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Reader\Php;
 
+use Phalcon\Quill\Reader\Notation;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ClassConstFetch;
@@ -20,7 +21,6 @@ use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\UnaryMinus;
 use PhpParser\Node\Scalar\Float_;
 use PhpParser\Node\Scalar\Int_;
-use Phalcon\Quill\Reader\Notation;
 use PhpParser\Node\Scalar\String_;
 
 /**

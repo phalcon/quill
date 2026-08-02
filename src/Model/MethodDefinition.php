@@ -20,7 +20,7 @@ namespace Phalcon\Quill\Model;
  * - because the rendered signature joins them verbatim. `$visibility` is the
  * single word derived from it, used for grouping and filtering.
  */
-final class MethodDefinition implements NamedDefinition
+final class MethodDefinition implements VisibleDefinition
 {
     /**
      * @param list<string>                   $modifiers

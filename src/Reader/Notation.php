@@ -66,9 +66,9 @@ final class Notation
     }
 
     /**
-     * Zephir cannot write a union, so a typed parameter defaulting to null is
-     * how it says `?T`. Both readers render that as `T|null`. `mixed` already
-     * admits null and is left alone.
+     * Zephir cannot write a union on a property or a parameter, so a typed one
+     * defaulting to null is how it says `?T`. Both readers render that as
+     * `T|null`. `mixed` already admits null and is left alone.
      */
     public static function nullable(string $type): string
     {

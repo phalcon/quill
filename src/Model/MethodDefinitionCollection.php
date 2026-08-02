@@ -16,9 +16,9 @@ namespace Phalcon\Quill\Model;
 use function str_starts_with;
 
 /**
- * @extends AbstractDefinitionCollection<MethodDefinition>
+ * @extends AbstractVisibleCollection<MethodDefinition>
  */
-final class MethodDefinitionCollection extends AbstractDefinitionCollection
+final class MethodDefinitionCollection extends AbstractVisibleCollection
 {
     /**
      * Reserved (`__*`) methods first, then alphabetical.
@@ -32,26 +32,6 @@ final class MethodDefinitionCollection extends AbstractDefinitionCollection
 
                 return [$left, $a->name] <=> [$right, $b->name];
             }
-        );
-    }
-
-    /**
-     * The model keeps private members; hiding them is a formatter decision.
-     */
-    public function withoutPrivate(): self
-    {
-        return $this->filter(
-            static fn (MethodDefinition $method): bool => $method->visibility !== 'private'
-        );
-    }
-
-    /**
-     * @param 'public'|'protected'|'private' $visibility
-     */
-    public function withVisibility(string $visibility): self
-    {
-        return $this->filter(
-            static fn (MethodDefinition $method): bool => $method->visibility === $visibility
         );
     }
 }

@@ -72,11 +72,7 @@ final class GenerateCommand
         foreach ($pages as $page => $document) {
             $path = $output . DIRECTORY_SEPARATOR . $page . '.' . $this->formatter->extension();
 
-            // Suppressed because the return value is checked: an unwritable
-            // destination would otherwise report a full, successful run.
-            if (@file_put_contents($path, $document) === false) {
-                throw new WriteFailed($path);
-            }
+            $this->write($path, $document);
 
             $written[$path] = true;
 
@@ -151,6 +147,20 @@ final class GenerateCommand
     }
 
     /**
+     * One file, or the failure that stopped it.
+     *
+     * The suppression is here rather than at the call sites because the return
+     * value is checked: an unwritable destination would otherwise report a
+     * full, successful run.
+     */
+    private function write(string $path, string $contents): void
+    {
+        if (@file_put_contents($path, $contents) === false) {
+            throw new WriteFailed($path);
+        }
+    }
+
+    /**
      * Writes the formatter's static assets to the configured assets directory,
      * which defaults to the one the documents go in.
      *
@@ -176,9 +186,7 @@ final class GenerateCommand
         foreach ($assets as $name => $contents) {
             $path = $directory . DIRECTORY_SEPARATOR . $name;
 
-            if (@file_put_contents($path, $contents) === false) {
-                throw new WriteFailed($path);
-            }
+            $this->write($path, $contents);
 
             $written[] = $path;
         }

@@ -87,6 +87,40 @@ final class RegistryTest extends TestCase
         $this->assertSame('Phalcon\\Base', $registry->resolve('Base', $child));
     }
 
+    public function testResolveReturnsNullForUnknownNames(): void
+    {
+        $registry = $this->registry();
+        $child    = $this->definition($registry, 'Phalcon\\Child');
+
+        $this->assertNull($registry->resolve('NoSuchThing', $child));
+    }
+
+    /**
+     * Without a configured root the third candidate is skipped rather than
+     * built, so a name that only the root could have found stays unresolved.
+     */
+    public function testResolveSkipsTheRootCandidateWhenThereIsNoRoot(): void
+    {
+        $registry = new Registry(
+            ClassDefinitionCollection::fromDefinitions([$this->classDefinition('Phalcon\\Rooted')])
+        );
+
+        $context = new ClassDefinition(
+            new Location('Deep\\Place\\Context', 'Deep\\Place', 'rel.zep'),
+            Structure::classType(false, false),
+            '',
+            new Imports([], []),
+            new Relations([], [], []),
+            new Members(
+                new ConstantDefinitionCollection(),
+                new PropertyDefinitionCollection(),
+                new MethodDefinitionCollection()
+            )
+        );
+
+        $this->assertNull($registry->resolve('Rooted', $context));
+    }
+
     /**
      * Each candidate on its own.
      *
@@ -126,40 +160,6 @@ final class RegistryTest extends TestCase
         $this->assertSame('Vendor\\Aliased', $registry->resolve('Shortcut', $context));
         $this->assertSame('Deep\\Place\\Sibling', $registry->resolve('Sibling', $context));
         $this->assertSame('Phalcon\\Rooted', $registry->resolve('Rooted', $context));
-    }
-
-    /**
-     * Without a configured root the third candidate is skipped rather than
-     * built, so a name that only the root could have found stays unresolved.
-     */
-    public function testResolveSkipsTheRootCandidateWhenThereIsNoRoot(): void
-    {
-        $registry = new Registry(
-            ClassDefinitionCollection::fromDefinitions([$this->classDefinition('Phalcon\\Rooted')])
-        );
-
-        $context = new ClassDefinition(
-            new Location('Deep\\Place\\Context', 'Deep\\Place', 'rel.zep'),
-            Structure::classType(false, false),
-            '',
-            new Imports([], []),
-            new Relations([], [], []),
-            new Members(
-                new ConstantDefinitionCollection(),
-                new PropertyDefinitionCollection(),
-                new MethodDefinitionCollection()
-            )
-        );
-
-        $this->assertNull($registry->resolve('Rooted', $context));
-    }
-
-    public function testResolveReturnsNullForUnknownNames(): void
-    {
-        $registry = $this->registry();
-        $child    = $this->definition($registry, 'Phalcon\\Child');
-
-        $this->assertNull($registry->resolve('NoSuchThing', $child));
     }
 
     public function testToArraySerializesEveryDefinitionInOrder(): void
