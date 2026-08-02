@@ -23,6 +23,7 @@ use Phalcon\Quill\Model\ClassDefinition;
 use Phalcon\Quill\Model\Keyword;
 use Phalcon\Quill\Model\MethodDefinitionCollection;
 use Phalcon\Quill\Model\Registry;
+use Phalcon\Quill\Selection;
 
 use function array_keys;
 use function array_map;
@@ -95,13 +96,13 @@ final class MarkdownFormatter implements Formatter
     /**
      * @return array<string, string>
      */
-    public function format(Registry $registry, Config $config, string $filter = ''): array
+    public function format(Registry $registry, Config $config, Selection $selection): array
     {
         $pages  = $this->pages($registry, $config);
         $output = [];
 
         foreach (array_keys($pages) as $page) {
-            if ($filter !== '' && stripos($page, $filter) === false) {
+            if ($selection->filter !== '' && stripos($page, $selection->filter) === false) {
                 unset($pages[$page]);
             }
         }

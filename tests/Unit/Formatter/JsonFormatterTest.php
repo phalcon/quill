@@ -29,6 +29,7 @@ use Phalcon\Quill\Model\PropertyDefinitionCollection;
 use Phalcon\Quill\Model\Registry;
 use Phalcon\Quill\Model\Relations;
 use Phalcon\Quill\Model\Structure;
+use Phalcon\Quill\Selection;
 use PHPUnit\Framework\TestCase;
 
 use function array_keys;
@@ -74,7 +75,7 @@ final class JsonFormatterTest extends TestCase
 
     public function testFilterIsCaseInsensitive(): void
     {
-        $pages = (new JsonFormatter())->format($this->registry(), $this->config(), 'ZuLu');
+        $pages = (new JsonFormatter())->format($this->registry(), $this->config(), new Selection('ZuLu'));
 
         /** @var array<string, mixed> $decoded */
         $decoded = json_decode($pages[JsonFormatter::DOCUMENT], true);
@@ -92,7 +93,7 @@ final class JsonFormatterTest extends TestCase
     {
         // The registry hands Zulu over first, so Alpha is only reachable if
         // the loop carries on past the miss.
-        $pages = (new JsonFormatter())->format($this->registry(), $this->config(), 'alpha');
+        $pages = (new JsonFormatter())->format($this->registry(), $this->config(), new Selection('alpha'));
 
         /** @var array<string, mixed> $decoded */
         $decoded = json_decode($pages[JsonFormatter::DOCUMENT], true);
@@ -104,7 +105,7 @@ final class JsonFormatterTest extends TestCase
 
     public function testFilterNarrowsByFqcn(): void
     {
-        $pages = (new JsonFormatter())->format($this->registry(), $this->config(), 'zulu');
+        $pages = (new JsonFormatter())->format($this->registry(), $this->config(), new Selection('zulu'));
 
         /** @var array<string, mixed> $decoded */
         $decoded = json_decode($pages[JsonFormatter::DOCUMENT], true);
@@ -121,7 +122,8 @@ final class JsonFormatterTest extends TestCase
      */
     public function testTheDocumentIsPrettyPrintedWithUnescapedSlashes(): void
     {
-        $json = (new JsonFormatter())->format($this->registry(), $this->config())[JsonFormatter::DOCUMENT];
+        $documents = (new JsonFormatter())->format($this->registry(), $this->config(), Selection::none());
+        $json      = $documents[JsonFormatter::DOCUMENT];
 
         $this->assertStringContainsString("{\n    \"version\"", $json);
         $this->assertStringContainsString('"phalcon/cphalcon"', $json);
@@ -132,7 +134,7 @@ final class JsonFormatterTest extends TestCase
     public function testWritesOneDocumentWithAJsonExtension(): void
     {
         $formatter = new JsonFormatter();
-        $pages     = $formatter->format($this->registry(), $this->config());
+        $pages     = $formatter->format($this->registry(), $this->config(), Selection::none());
 
         $this->assertSame('json', $formatter->extension());
         $this->assertSame([JsonFormatter::DOCUMENT], array_keys($pages));
@@ -157,7 +159,7 @@ final class JsonFormatterTest extends TestCase
      */
     private function decode(): array
     {
-        $pages = (new JsonFormatter())->format($this->registry(), $this->config());
+        $pages = (new JsonFormatter())->format($this->registry(), $this->config(), Selection::none());
 
         /** @var array<string, mixed> $decoded */
         $decoded = json_decode($pages[JsonFormatter::DOCUMENT], true);

@@ -20,6 +20,7 @@ use Phalcon\Quill\Config;
 use Phalcon\Quill\Exceptions\Exception;
 use Phalcon\Quill\Formatter\FormatterFactory;
 use Phalcon\Quill\Reader\ReaderFactory;
+use Phalcon\Quill\Selection;
 
 foreach ([__DIR__ . '/../vendor/autoload.php', __DIR__ . '/../../../autoload.php'] as $file) {
     if (file_exists($file)) {
@@ -165,7 +166,7 @@ try {
         (new FormatterFactory())->create($format)
     );
 
-    exit($command->execute($config, $filter));
+    exit($command->execute($config, Selection::of($filter, '', $config)));
 } catch (Exception $exception) {
     fwrite(STDERR, 'quill: ' . $exception->getMessage() . PHP_EOL);
 

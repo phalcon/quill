@@ -17,6 +17,7 @@ use Phalcon\Quill\Config;
 use Phalcon\Quill\Contracts\Formatter;
 use Phalcon\Quill\Exceptions\WriteFailed;
 use Phalcon\Quill\Reader\ReaderFactory;
+use Phalcon\Quill\Selection;
 
 use function basename;
 use function file_put_contents;
@@ -47,14 +48,14 @@ final class GenerateCommand
     }
 
     /**
-     * The registry always covers every source file; `$filter` narrows only
+     * The registry always covers every source file; `$selection` narrows only
      * what is written out.
      */
-    public function execute(Config $config, string $filter = ''): int
+    public function execute(Config $config, Selection $selection): int
     {
         $reader   = $this->factory->create($config->language());
         $registry = $reader->read($config);
-        $pages    = $this->formatter->format($registry, $config, $filter);
+        $pages    = $this->formatter->format($registry, $config, $selection);
 
         $output = $config->outputDir();
         if (!is_dir($output)) {
@@ -80,9 +81,9 @@ final class GenerateCommand
             fwrite($this->stdout, 'Asset: ' . basename($path) . PHP_EOL);
         }
 
-        // Only a complete run may prune. A filtered run is deliberately partial,
-        // so what it did not write was never asked about, not stale.
-        if ($filter === '') {
+        // Only an unnarrowed run may prune. A narrowed run is deliberately
+        // partial, so what it did not write was never asked about, not stale.
+        if (!$selection->narrows()) {
             foreach ($this->prune($output, $written) as $path) {
                 fwrite($this->stdout, 'Removed: ' . basename($path) . PHP_EOL);
             }

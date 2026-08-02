@@ -18,6 +18,7 @@ use Phalcon\Quill\Config;
 use Phalcon\Quill\Exceptions\WriteFailed;
 use Phalcon\Quill\Formatter\MarkdownFormatter;
 use Phalcon\Quill\Reader\ReaderFactory;
+use Phalcon\Quill\Selection;
 use PHPUnit\Framework\TestCase;
 
 use function chmod;
@@ -56,20 +57,20 @@ final class GenerateCommandTest extends TestCase
 
     public function testAFilteredRunPrunesNothing(): void
     {
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         $kept = $this->outputDir . '/phalcon_sample.md';
         $this->assertFileExists($kept);
 
         // Filtered runs are deliberately partial, so untouched pages stay.
-        $this->command()->execute($this->config(), 'nothingmatches');
+        $this->command()->execute($this->config(), new Selection('nothingmatches'));
 
         $this->assertFileExists($kept);
     }
 
     public function testAnUnwritableDestinationFailsLoudly(): void
     {
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         // Simulate what a root-owned output directory does to a non-root run.
         $page = $this->outputDir . '/phalcon_sample.md';
@@ -79,7 +80,7 @@ final class GenerateCommandTest extends TestCase
         $this->expectExceptionMessage('Could not write');
 
         try {
-            $this->command()->execute($this->config());
+            $this->command()->execute($this->config(), Selection::none());
         } finally {
             chmod($page, 0644);
         }
@@ -89,14 +90,14 @@ final class GenerateCommandTest extends TestCase
     {
         $this->assertFalse(file_exists($this->outputDir));
 
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         $this->assertDirectoryExists($this->outputDir);
     }
 
     public function testFilterRestrictsWhichPagesAreWritten(): void
     {
-        $this->assertSame(0, $this->command()->execute($this->config(), 'nothingmatches'));
+        $this->assertSame(0, $this->command()->execute($this->config(), new Selection('nothingmatches')));
 
         // The index is always written; no page files survive the filter.
         $this->assertFileExists($this->outputDir . '/index.md');
@@ -105,12 +106,12 @@ final class GenerateCommandTest extends TestCase
 
     public function testOtherFileTypesAreLeftAlone(): void
     {
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         $foreign = $this->outputDir . '/notes.txt';
         file_put_contents($foreign, 'not ours');
 
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         $this->assertFileExists($foreign);
         unlink($foreign);
@@ -118,13 +119,13 @@ final class GenerateCommandTest extends TestCase
 
     public function testStaleDocumentsArePruned(): void
     {
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         // A page whose source namespace has since been deleted.
         $orphan = $this->outputDir . '/phalcon_gone.md';
         file_put_contents($orphan, 'stale');
 
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         $this->assertFileDoesNotExist($orphan);
         $this->assertFileExists($this->outputDir . '/phalcon_sample.md');
@@ -132,7 +133,7 @@ final class GenerateCommandTest extends TestCase
 
     public function testWritesTheIndexAndEveryPage(): void
     {
-        $this->assertSame(0, $this->command()->execute($this->config()));
+        $this->assertSame(0, $this->command()->execute($this->config(), Selection::none()));
 
         $this->assertFileExists($this->outputDir . '/index.md');
         $this->assertFileExists($this->outputDir . '/phalcon_sample.md');

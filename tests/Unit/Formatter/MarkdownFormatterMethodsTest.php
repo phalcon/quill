@@ -29,6 +29,7 @@ use Phalcon\Quill\Model\PropertyDefinitionCollection;
 use Phalcon\Quill\Model\Registry;
 use Phalcon\Quill\Model\Relations;
 use Phalcon\Quill\Model\Structure;
+use Phalcon\Quill\Selection;
 use PHPUnit\Framework\TestCase;
 
 use function strpos;
@@ -116,7 +117,7 @@ final class MarkdownFormatterMethodsTest extends TestCase
 
     private function format(Registry $registry): string
     {
-        $pages = (new MarkdownFormatter())->format($registry, $this->config());
+        $pages = (new MarkdownFormatter())->format($registry, $this->config(), Selection::none());
 
         return $pages['phalcon_sample'] ?? self::fail('phalcon_sample page missing');
     }
@@ -126,7 +127,7 @@ final class MarkdownFormatterMethodsTest extends TestCase
      */
     private function formatted(): array
     {
-        return (new MarkdownFormatter())->format($this->registry(), $this->config());
+        return (new MarkdownFormatter())->format($this->registry(), $this->config(), Selection::none());
     }
 
     /**

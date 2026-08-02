@@ -28,6 +28,7 @@ use Phalcon\Quill\Model\PropertyDefinitionCollection;
 use Phalcon\Quill\Model\Registry;
 use Phalcon\Quill\Model\Relations;
 use Phalcon\Quill\Model\Structure;
+use Phalcon\Quill\Selection;
 use PHPUnit\Framework\TestCase;
 
 use function substr_count;
@@ -134,7 +135,7 @@ final class MarkdownFormatterTest extends TestCase
 
     private function page(): string
     {
-        $pages = (new MarkdownFormatter())->format($this->registry(), $this->config());
+        $pages = (new MarkdownFormatter())->format($this->registry(), $this->config(), Selection::none());
 
         return $pages['phalcon_sample'] ?? self::fail('phalcon_sample page missing');
     }
