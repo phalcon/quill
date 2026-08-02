@@ -471,13 +471,13 @@ final class PhpReader implements Reader
     private function scalarType(?Node\Expr $expr): string
     {
         return match (true) {
-            $expr instanceof Node\Scalar\String_                     => 'string',
-            $expr instanceof Node\Scalar\Int_                        => 'int',
-            $expr instanceof Node\Scalar\Float_                      => 'float',
-            $expr instanceof Node\Expr\Array_                        => 'array',
+            $expr instanceof Node\Scalar\String_                     => Notation::TYPE_STRING,
+            $expr instanceof Node\Scalar\Int_                        => Notation::TYPE_INT,
+            $expr instanceof Node\Scalar\Float_                      => Notation::TYPE_FLOAT,
+            $expr instanceof Node\Expr\Array_                        => Notation::TYPE_ARRAY,
             $expr instanceof Node\Expr\ConstFetch
-                && implode('', $expr->name->getParts()) !== 'null'   => 'bool',
-            default                                                  => 'mixed',
+                && implode('', $expr->name->getParts()) !== 'null'   => Notation::TYPE_BOOL,
+            default                                                  => Notation::TYPE_MIXED,
         };
     }
 
@@ -506,10 +506,6 @@ final class PhpReader implements Reader
      */
     private function visibility(bool $isPrivate, bool $isProtected): string
     {
-        if ($isPrivate) {
-            return 'private';
-        }
-
-        return $isProtected ? 'protected' : 'public';
+        return Notation::visibility($isPrivate, $isProtected);
     }
 }

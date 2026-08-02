@@ -40,7 +40,7 @@ final class Signature
      */
     public function inline(MethodDefinition $method): string
     {
-        $name   = '<span class="sf">' . $this->html->escape($method->name) . '</span>';
+        $name   = '<span class="' . Classes::TOKEN_FUNCTION . '">' . $this->html->escape($method->name) . '</span>';
         $params = $this->htmlParams($method->parameters);
 
         if (count($method->parameters) < 2) {
@@ -53,7 +53,7 @@ final class Signature
         $last  = count($params) - 1;
         foreach ($params as $index => $param) {
             $comma  = $index < $last ? ',' : '';
-            $lines .= '<span class="prm">' . $param . $comma . '</span>';
+            $lines .= '<span class="' . Classes::PARAMETER . '">' . $param . $comma . '</span>';
         }
 
         return $name . '(' . $lines . ')';
@@ -93,8 +93,10 @@ final class Signature
     {
         $rendered = [];
         foreach ($parameters as $parameter) {
-            $rendered[] = '<span class="st">' . $this->html->escape($parameter->type) . '</span>'
-                . ' <span class="sv">$' . $this->html->escape($parameter->name) . '</span>'
+            $rendered[] = '<span class="' . Classes::TOKEN_TYPE . '">'
+                . $this->html->escape($parameter->type) . '</span>'
+                . ' <span class="' . Classes::TOKEN_VARIABLE . '">$'
+                . $this->html->escape($parameter->name) . '</span>'
                 . $this->html->default($parameter->default);
         }
 

@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Formatter\Markdown;
 
-use Phalcon\Quill\Config;
 use Phalcon\Quill\Model\ClassDefinition;
 
 use function explode;
@@ -38,34 +37,34 @@ final class Naming
     /**
      * The mkdocs heading anchor: the title with everything mkdocs would strip.
      */
-    public function anchor(ClassDefinition $class, Config $config): string
+    public function anchor(ClassDefinition $class, Presentation $presentation): string
     {
-        return strtolower((string) preg_replace('/[^\w\s-]/', '', $this->title($class, $config)));
+        return strtolower((string) preg_replace('/[^\w\s-]/', '', $this->title($class, $presentation)));
     }
 
-    public function methodAnchor(ClassDefinition $class, string $methodName, Config $config): string
+    public function methodAnchor(ClassDefinition $class, string $methodName, Presentation $presentation): string
     {
-        return $this->anchor($class, $config) . '-' . strtolower($methodName);
+        return $this->anchor($class, $presentation) . '-' . strtolower($methodName);
     }
 
     /**
      * The page a definition belongs on: its top-level namespace segment.
      */
-    public function pageKey(ClassDefinition $class, Config $config): string
+    public function pageKey(ClassDefinition $class, Presentation $presentation): string
     {
         $segments = explode(DIRECTORY_SEPARATOR, $class->location->relPath);
-        $key      = str_replace('.' . $config->extension(), '', $segments[0]);
+        $key      = str_replace('.' . $presentation->extension, '', $segments[0]);
 
-        return $config->pagePrefix() . strtolower($key);
+        return $presentation->pagePrefix . strtolower($key);
     }
 
     /**
      * The heading text: the FQCN without the root namespace, which the page's
      * own notice already states.
      */
-    public function title(ClassDefinition $class, Config $config): string
+    public function title(ClassDefinition $class, Presentation $presentation): string
     {
-        $root = $config->rootNamespace() . '\\';
+        $root = $presentation->rootNamespace . '\\';
 
         return str_starts_with($class->location->fqcn, $root)
             ? substr($class->location->fqcn, strlen($root))

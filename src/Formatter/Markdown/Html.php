@@ -36,7 +36,7 @@ final class Html
             return '';
         }
 
-        return '<span class="sm"> = ' . $this->escape($default) . '</span>';
+        return '<span class="' . Classes::TOKEN_MUTED . '"> = ' . $this->escape($default) . '</span>';
     }
 
     public function escape(string $text): string

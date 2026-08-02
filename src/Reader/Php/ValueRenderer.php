@@ -20,15 +20,15 @@ use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\UnaryMinus;
 use PhpParser\Node\Scalar\Float_;
 use PhpParser\Node\Scalar\Int_;
+use Phalcon\Quill\Reader\Notation;
 use PhpParser\Node\Scalar\String_;
 
 /**
  * Renders a default-value expression to the string the model carries.
  *
- * The output deliberately matches the Zephir reader's: quoted strings, bare
- * numbers, `[]` for an empty array and `[...]` for a populated one. Two
- * models that render defaults differently would report parity differences
- * that are only about formatting.
+ * What a rendered default looks like belongs to Notation, which the Zephir
+ * reader writes through as well - two models that render defaults differently
+ * would report parity differences that are only about formatting.
  */
 final class ValueRenderer
 {
@@ -39,7 +39,9 @@ final class ValueRenderer
         }
 
         if ($expr instanceof String_) {
-            return '"' . $expr->value . '"';
+            // php-parser hands back the value, not the source text, so the
+            // escapes have to go back on.
+            return Notation::string($expr->value);
         }
 
         if ($expr instanceof Int_ || $expr instanceof Float_) {
@@ -52,14 +54,14 @@ final class ValueRenderer
         }
 
         if ($expr instanceof Array_) {
-            return $expr->items === [] ? '[]' : '[...]';
+            return $expr->items === [] ? Notation::ARRAY_EMPTY : Notation::ARRAY_FILLED;
         }
 
         if ($expr instanceof ClassConstFetch) {
-            $class = $expr->class instanceof Expr ? '' : $expr->class->toString();
-            $name  = $expr->name instanceof Expr ? '' : $expr->name->toString();
-
-            return $class . '::' . $name;
+            return Notation::classConstant(
+                $expr->class instanceof Expr ? '' : $expr->class->toString(),
+                $expr->name instanceof Expr ? '' : $expr->name->toString()
+            );
         }
 
         if ($expr instanceof UnaryMinus) {

@@ -80,20 +80,16 @@ final class ZephirReader implements Reader
      */
     private function methodVisibility(array $modifiers): string
     {
-        if (in_array('private', $modifiers, true)) {
-            return 'private';
-        }
-
-        return in_array('protected', $modifiers, true) ? 'protected' : 'public';
+        return Notation::visibility(
+            in_array('private', $modifiers, true),
+            in_array('protected', $modifiers, true)
+        );
     }
 
     /**
      * Zephir has no union syntax for parameters - anything genuinely of two
      * types is declared `var`. A null default is the one exception it can
-     * express, and it means exactly what `?string` means in PHP, so it is
-     * rendered the same way and the two models line up.
-     *
-     * `mixed` already admits null, so it is left alone.
+     * express, and Notation renders it the way PHP writes `?string`.
      */
     private function parameterType(AstNode $parameter): string
     {
@@ -102,11 +98,11 @@ final class ZephirReader implements Reader
             $type = $cast;
         } else {
             $declared = $parameter->text('data-type') ?? 'variable';
-            $type     = $declared === 'variable' ? 'mixed' : $declared;
+            $type     = $declared === 'variable' ? Notation::TYPE_MIXED : $declared;
         }
 
-        if ($type !== 'mixed' && $parameter->node('default')?->text('type') === 'null') {
-            $type .= '|null';
+        if ($parameter->node('default')?->text('type') === 'null') {
+            $type = Notation::nullable($type);
         }
 
         return $type;
@@ -119,12 +115,12 @@ final class ZephirReader implements Reader
      */
     private function propertyVisibility(array $modifiers): string
     {
-        if (in_array('private', $modifiers, true)) {
-            return 'private';
-        }
-
-        // A Zephir property declared without an explicit keyword is protected.
-        return in_array('public', $modifiers, true) ? 'public' : 'protected';
+        // A Zephir property declared without an explicit keyword is protected,
+        // so the absence of `public` is what makes it so.
+        return Notation::visibility(
+            in_array('private', $modifiers, true),
+            !in_array('public', $modifiers, true)
+        );
     }
 
     /**
@@ -386,7 +382,7 @@ final class ZephirReader implements Reader
                 $this->propertyVisibility($property->strings('visibility')),
                 false,
                 $this->renderDefault($default),
-                $this->varType($doc, $default),
+                $this->varType($doc, $default, $property->text('data-type')),
                 $doc->description(),
                 $shortcuts
             );
@@ -433,15 +429,17 @@ final class ZephirReader implements Reader
         $type = $expr->text('type') ?? '';
 
         return match ($type) {
-            'string'                 => '"' . $expr->stringValue('value') . '"',
-            'char'                   => "'" . $expr->stringValue('value') . "'",
+            'string'                 => Notation::escapedString($expr->stringValue('value')),
+            'char'                   => Notation::char($expr->stringValue('value')),
             'int', 'uint', 'long',
             'double', 'bool'         => $expr->stringValue('value'),
-            'null'                   => 'null',
-            'empty-array'            => '[]',
-            'array'                  => '[...]',
-            'static-constant-access' => ($expr->node('left')?->text('value') ?? 'self')
-                . '::' . ($expr->node('right')?->text('value') ?? ''),
+            'null'                   => Notation::NULL,
+            'empty-array'            => Notation::ARRAY_EMPTY,
+            'array'                  => Notation::ARRAY_FILLED,
+            'static-constant-access' => Notation::classConstant(
+                $expr->node('left')?->text('value') ?? 'self',
+                $expr->node('right')?->text('value') ?? ''
+            ),
             'constant'               => $expr->stringValue('value'),
             'minus'                  => '-' . ($this->renderDefault($expr->node('left')) ?? ''),
             default                  => $expr->has('value') ? $expr->stringValue('value') : $type,
@@ -475,22 +473,62 @@ final class ZephirReader implements Reader
     }
 
     /**
-     * The declared `@var` type, falling back to the default value's type.
+     * A Zephir type keyword in the model's vocabulary.
+     *
+     * Zephir spells several types differently from PHP and the two models have
+     * to agree: `double` is PHP's `float` - and is what the parser reports even
+     * when the source says `float` - `char` is a `string`, the sized integers
+     * are all `int`, and `var` is `mixed`. Anything else is a class name and
+     * passes through untouched.
      */
-    private function varType(Docblock $doc, ?AstNode $default): string
+    private function zephirType(string $declared): string
     {
-        $declared = $doc->varType();
-        if ($declared !== null) {
-            return $declared;
+        return match ($declared) {
+            'var', 'variable'              => Notation::TYPE_MIXED,
+            'int', 'uint', 'long', 'ulong' => Notation::TYPE_INT,
+            'double', 'float'              => Notation::TYPE_FLOAT,
+            'char', 'string'               => Notation::TYPE_STRING,
+            'bool', 'boolean'              => Notation::TYPE_BOOL,
+            'array'                        => Notation::TYPE_ARRAY,
+            default                        => $declared,
+        };
+    }
+
+    /**
+     * A member's type, in the order the two languages agree on: the docblock,
+     * then the declaration, then whatever the default value implies.
+     *
+     * The docblock wins because it is the only one of the three that can be
+     * richer than the declaration - `array<string, string>` says more than
+     * `array`, and dropping it for the bare keyword would lose information the
+     * PHP twin keeps.
+     *
+     * The declaration comes before the default because the default is a guess:
+     * `float ratio = 0` is a float whose default happens to look like an int.
+     * Zephir only started carrying property types recently, so a source that
+     * has migrated to them and dropped its docblocks reaches this branch.
+     *
+     * `$declared` is null for a constant, which has no declared type, and for
+     * an untyped property, where the parser omits the key entirely.
+     */
+    private function varType(Docblock $doc, ?AstNode $default, ?string $declared = null): string
+    {
+        $documented = $doc->varType();
+        if ($documented !== null) {
+            return $documented;
+        }
+
+        if ($declared !== null && $declared !== '') {
+            return $this->zephirType($declared);
         }
 
         return match ($default?->text('type') ?? '') {
-            'string', 'char'       => 'string',
-            'int', 'uint', 'long'  => 'int',
-            'double'               => 'float',
-            'bool'                 => 'bool',
-            'empty-array', 'array' => 'array',
-            default                => 'mixed',
+            'string', 'char'       => Notation::TYPE_STRING,
+            'int', 'uint', 'long'  => Notation::TYPE_INT,
+            'double'               => Notation::TYPE_FLOAT,
+            'bool'                 => Notation::TYPE_BOOL,
+            'empty-array', 'array' => Notation::TYPE_ARRAY,
+            default                => Notation::TYPE_MIXED,
         };
     }
 }
