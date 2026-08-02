@@ -51,6 +51,7 @@ $usage = $banner . <<<'USAGE'
 
     Usage:
       quill generate [filter] [--config=<path>] [--output=<dir>] [--format=<name>]
+                     [--namespace=<ns>]
       quill parity <left.json> <right.json>
       quill docblocks <left.json> <right.json> <out.csv>
 
@@ -62,6 +63,11 @@ $usage = $banner . <<<'USAGE'
     --config points elsewhere; --output overrides just the destination;
     --format picks the output (markdown or json), defaulting to markdown. The
     optional filter limits what is written, matched case-insensitively.
+
+    --namespace limits the run to one namespace and everything beneath it,
+    matched exactly. The configured root is implied, so Config and
+    Phalcon\Config mean the same thing. A namespace matching nothing is an
+    error rather than an empty document.
 
     USAGE;
 
@@ -126,6 +132,7 @@ $configPath = 'quill.php';
 $outputDir  = null;
 $format     = 'markdown';
 $filter     = '';
+$namespace  = '';
 
 foreach (array_slice($argv, 2) as $token) {
     if (str_starts_with($token, '--config=')) {
@@ -142,6 +149,12 @@ foreach (array_slice($argv, 2) as $token) {
 
     if (str_starts_with($token, '--format=')) {
         $format = substr($token, 9);
+
+        continue;
+    }
+
+    if (str_starts_with($token, '--namespace=')) {
+        $namespace = substr($token, 12);
 
         continue;
     }
@@ -166,7 +179,7 @@ try {
         (new FormatterFactory())->create($format)
     );
 
-    exit($command->execute($config, Selection::of($filter, '', $config)));
+    exit($command->execute($config, Selection::of($filter, $namespace, $config)));
 } catch (Exception $exception) {
     fwrite(STDERR, 'quill: ' . $exception->getMessage() . PHP_EOL);
 
