@@ -346,7 +346,19 @@ final class PhpReader implements Reader
     {
         $visibility = $this->visibility($method->isPrivate(), $method->isProtected());
 
-        $modifiers = [$visibility];
+        // Zephir hands its modifiers back in source order, so the same order
+        // is spelled out here - a list that differs only in arrangement would
+        // report a parity difference that is not one.
+        $modifiers = [];
+        if ($method->isAbstract()) {
+            $modifiers[] = 'abstract';
+        }
+
+        if ($method->isFinal()) {
+            $modifiers[] = 'final';
+        }
+
+        $modifiers[] = $visibility;
         if ($method->isStatic()) {
             $modifiers[] = 'static';
         }

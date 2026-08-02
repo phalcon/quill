@@ -2,6 +2,12 @@
 
 All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
 
+## [0.2.1](https://github.com/phalcon/quill/releases/tag/v0.2.1) (2026-08-02)
+
+### Fixed
+
+- `PhpReader` dropped `final` and `abstract` from method modifiers, reporting every such method as a parity difference
+
 ## [0.2.0](https://github.com/phalcon/quill/releases/tag/v0.2.0) (2026-08-02)
 
 ### Changed
