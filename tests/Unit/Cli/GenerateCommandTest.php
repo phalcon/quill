@@ -15,8 +15,10 @@ namespace Phalcon\Quill\Tests\Unit\Cli;
 
 use Phalcon\Quill\Cli\GenerateCommand;
 use Phalcon\Quill\Config;
+use Phalcon\Quill\Contracts\Formatter;
 use Phalcon\Quill\Exceptions\NamespaceNotFound;
 use Phalcon\Quill\Exceptions\WriteFailed;
+use Phalcon\Quill\Formatter\JsonFormatter;
 use Phalcon\Quill\Formatter\MarkdownFormatter;
 use Phalcon\Quill\Reader\ReaderFactory;
 use Phalcon\Quill\Selection;
@@ -81,6 +83,50 @@ final class GenerateCommandTest extends TestCase
         $this->command()->execute($this->config(), new Selection('', 'Phalcon\\Sample'));
 
         $this->assertFileExists($stale);
+    }
+
+    /**
+     * A formatter with no assets skips the whole step rather than creating an
+     * empty directory for nothing.
+     */
+    public function testAFormatterWithoutAssetsWritesNone(): void
+    {
+        $assets = $this->outputDir . '/assets';
+
+        $this->command(new JsonFormatter())->execute($this->config($assets), Selection::none());
+
+        $this->assertDirectoryDoesNotExist($assets);
+        $this->assertFileExists($this->outputDir . '/model.json');
+    }
+
+    /**
+     * The assets directory is created when it is somewhere other than the one
+     * the documents go in, which is the layout a documentation site wants.
+     */
+    public function testAnAbsentAssetsDirectoryIsCreated(): void
+    {
+        $assets = $this->outputDir . '/nested/assets/css';
+
+        $this->command()->execute($this->config($assets), Selection::none());
+
+        $this->assertFileExists($assets . '/' . MarkdownFormatter::STYLESHEET);
+    }
+
+    public function testAnUnwritableAssetFailsLoudly(): void
+    {
+        $assets = $this->outputDir . '/assets';
+        mkdir($assets, 0777, true);
+
+        $stylesheet = $assets . '/' . MarkdownFormatter::STYLESHEET;
+        file_put_contents($stylesheet, '');
+        chmod($stylesheet, 0444);
+
+        try {
+            $this->expectException(WriteFailed::class);
+            $this->command()->execute($this->config($assets), Selection::none());
+        } finally {
+            chmod($stylesheet, 0644);
+        }
     }
 
     public function testAFilteredRunPrunesNothing(): void
@@ -174,26 +220,22 @@ final class GenerateCommandTest extends TestCase
 
     private function clean(): void
     {
-        foreach (glob($this->outputDir . '/*') ?: [] as $file) {
-            if (is_file($file)) {
-                unlink($file);
-            }
-        }
-
-        if (is_dir($this->outputDir)) {
-            rmdir($this->outputDir);
-        }
+        $this->remove($this->outputDir);
     }
 
-    private function command(): GenerateCommand
+    private function command(?Formatter $formatter = null): GenerateCommand
     {
         $stdout = fopen('php://memory', 'rb+');
         $this->assertIsResource($stdout);
 
-        return new GenerateCommand(new ReaderFactory(), new MarkdownFormatter(), $stdout);
+        return new GenerateCommand(
+            new ReaderFactory(),
+            $formatter ?? new MarkdownFormatter(),
+            $stdout
+        );
     }
 
-    private function config(): Config
+    private function config(string $assetsDir = ''): Config
     {
         return new Config(
             'zephir',
@@ -203,7 +245,29 @@ final class GenerateCommandTest extends TestCase
             '5.0.x',
             'phalcon',
             'zep',
-            'Phalcon'
+            'Phalcon',
+            $assetsDir
         );
+    }
+
+    /**
+     * Depth first, because a run can write into nested directories now that the
+     * assets destination need not be the one the documents go in.
+     */
+    private function remove(string $path): void
+    {
+        if (!is_dir($path)) {
+            if (is_file($path)) {
+                unlink($path);
+            }
+
+            return;
+        }
+
+        foreach (glob($path . '/*') ?: [] as $child) {
+            $this->remove($child);
+        }
+
+        rmdir($path);
     }
 }

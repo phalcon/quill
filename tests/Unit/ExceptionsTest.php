@@ -17,6 +17,7 @@ use Phalcon\Quill\Exceptions\Exception;
 use Phalcon\Quill\Exceptions\IncompatibleDocument;
 use Phalcon\Quill\Exceptions\MalformedConfiguration;
 use Phalcon\Quill\Exceptions\MalformedDocument;
+use Phalcon\Quill\Exceptions\MissingAsset;
 use Phalcon\Quill\Exceptions\MissingConfiguration;
 use Phalcon\Quill\Exceptions\MissingConfigurationKey;
 use Phalcon\Quill\Exceptions\MissingDependency;
@@ -50,6 +51,22 @@ final class ExceptionsTest extends TestCase
 
         $this->assertSame(
             "'/project/model.json' is not a model document",
+            $exception->getMessage()
+        );
+    }
+
+    /**
+     * A packaged asset that cannot be found means a broken installation, not a
+     * misconfigured project, and the message has to say which.
+     */
+    public function testAMissingAssetNamesThePathAndBlamesTheInstall(): void
+    {
+        $exception = new MissingAsset('/vendor/phalcon/quill/resources/api.css');
+
+        $this->assertSame(
+            "The asset '/vendor/phalcon/quill/resources/api.css' is missing from"
+            . ' this installation. It ships with quill, so a copy that cannot'
+            . ' find it is incomplete rather than misconfigured.',
             $exception->getMessage()
         );
     }

@@ -34,6 +34,32 @@ use function array_keys;
 
 final class ModelTest extends TestCase
 {
+    /**
+     * The three spellings a source can use for one parent, all landing on the
+     * same absolute name. The alias branch is the one a `use` statement makes
+     * reachable, and it substitutes the import's target for the first segment
+     * rather than the whole name - `Aliased\Deep` keeps its tail.
+     */
+    public function testQualifyResolvesEverySpelling(): void
+    {
+        $imports = new Imports(
+            ['Phalcon\\Sample\\Support\\Helper'],
+            ['Aliased' => 'Phalcon\\Sample\\Support\\Helper']
+        );
+
+        $this->assertSame(
+            '\\Phalcon\\Sample\\Support\\Helper',
+            $imports->qualify('Aliased', 'Phalcon\\Other')
+        );
+        $this->assertSame(
+            '\\Phalcon\\Sample\\Support\\Helper\\Deep',
+            $imports->qualify('Aliased\\Deep', 'Phalcon\\Other')
+        );
+        $this->assertSame('\\Exception', $imports->qualify('\\Exception', 'Phalcon\\Other'));
+        $this->assertSame('\\Phalcon\\Other\\Sibling', $imports->qualify('Sibling', 'Phalcon\\Other'));
+        $this->assertSame('\\Loose', $imports->qualify('Loose', ''));
+    }
+
     public function testClassToArrayNestsChildrenAndCarriesVersion(): void
     {
         $array = $this->classDefinition()->toArray();

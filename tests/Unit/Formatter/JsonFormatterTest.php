@@ -87,6 +87,15 @@ final class JsonFormatterTest extends TestCase
         );
     }
 
+    /**
+     * A model document is data, so there is nothing to style and nothing to
+     * write beside it.
+     */
+    public function testAModelDocumentShipsNoAssets(): void
+    {
+        $this->assertSame([], (new JsonFormatter())->assets());
+    }
+
     public function testDefinitionsAreKeyedByFqcnAndSorted(): void
     {
         /** @var array<string, mixed> $definitions */

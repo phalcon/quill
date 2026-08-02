@@ -32,6 +32,10 @@ abstract class Shapes extends Consumer implements Countable, Stringable
 
     private items = [1, 2];
 
+    // Typed with neither a docblock nor a default, so the declaration is the
+    // only thing that can name the type.
+    protected array registry;
+
     public function withCast(<Consumer> item) -> <Consumer>
     {
         return item;

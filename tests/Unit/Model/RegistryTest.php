@@ -87,6 +87,73 @@ final class RegistryTest extends TestCase
         $this->assertSame('Phalcon\\Base', $registry->resolve('Base', $child));
     }
 
+    /**
+     * Each candidate on its own.
+     *
+     * The other resolve tests use a registry where the alias, the namespace and
+     * the root all point at the same definition, so any one of the three could
+     * be deleted without a test noticing. These isolate them: each name here can
+     * only be found by the candidate it is named for.
+     */
+    public function testResolveTriesTheAliasThenTheNamespaceThenTheRoot(): void
+    {
+        $registry = new Registry(
+            ClassDefinitionCollection::fromDefinitions([
+                // Reachable only through the alias - outside the root, and not
+                // a sibling of the context.
+                $this->classDefinition('Vendor\\Aliased'),
+                // Reachable only as a sibling of the context's namespace.
+                $this->classDefinition('Deep\\Place\\Sibling'),
+                // Reachable only under the configured root namespace.
+                $this->classDefinition('Phalcon\\Rooted'),
+            ]),
+            'Phalcon'
+        );
+
+        $context = new ClassDefinition(
+            new Location('Deep\\Place\\Context', 'Deep\\Place', 'rel.zep'),
+            Structure::classType(false, false),
+            '',
+            new Imports([], ['Shortcut' => 'Vendor\\Aliased']),
+            new Relations([], [], []),
+            new Members(
+                new ConstantDefinitionCollection(),
+                new PropertyDefinitionCollection(),
+                new MethodDefinitionCollection()
+            )
+        );
+
+        $this->assertSame('Vendor\\Aliased', $registry->resolve('Shortcut', $context));
+        $this->assertSame('Deep\\Place\\Sibling', $registry->resolve('Sibling', $context));
+        $this->assertSame('Phalcon\\Rooted', $registry->resolve('Rooted', $context));
+    }
+
+    /**
+     * Without a configured root the third candidate is skipped rather than
+     * built, so a name that only the root could have found stays unresolved.
+     */
+    public function testResolveSkipsTheRootCandidateWhenThereIsNoRoot(): void
+    {
+        $registry = new Registry(
+            ClassDefinitionCollection::fromDefinitions([$this->classDefinition('Phalcon\\Rooted')])
+        );
+
+        $context = new ClassDefinition(
+            new Location('Deep\\Place\\Context', 'Deep\\Place', 'rel.zep'),
+            Structure::classType(false, false),
+            '',
+            new Imports([], []),
+            new Relations([], [], []),
+            new Members(
+                new ConstantDefinitionCollection(),
+                new PropertyDefinitionCollection(),
+                new MethodDefinitionCollection()
+            )
+        );
+
+        $this->assertNull($registry->resolve('Rooted', $context));
+    }
+
     public function testResolveReturnsNullForUnknownNames(): void
     {
         $registry = $this->registry();

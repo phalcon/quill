@@ -29,6 +29,8 @@ class Subject
 
     protected float ratio;
 
+    protected bool enabled;
+
     public function describe(string text = null) -> string
     {
         return text;
@@ -36,5 +38,12 @@ class Subject
 
     protected function hidden(int count) -> void
     {
+    }
+
+    // The parser reports `float` as `double` for both the parameter and the
+    // return, so this pins the keyword mapping on all three member kinds.
+    public function scale(float factor) -> float
+    {
+        return factor;
     }
 }

@@ -97,8 +97,7 @@ final class ZephirReader implements Reader
         if ($cast !== null) {
             $type = $cast;
         } else {
-            $declared = $parameter->text('data-type') ?? 'variable';
-            $type     = $declared === 'variable' ? Notation::TYPE_MIXED : $declared;
+            $type = $this->zephirType($parameter->text('data-type') ?? 'var');
         }
 
         if ($parameter->node('default')?->text('type') === 'null') {
@@ -441,7 +440,8 @@ final class ZephirReader implements Reader
                 $expr->node('right')?->text('value') ?? ''
             ),
             'constant'               => $expr->stringValue('value'),
-            'minus'                  => '-' . ($this->renderDefault($expr->node('left')) ?? ''),
+            // No `minus` arm: the parser folds a sign into the literal, so
+            // `-1` arrives as an int whose value is already "-1".
             default                  => $expr->has('value') ? $expr->stringValue('value') : $type,
         };
     }
@@ -465,8 +465,7 @@ final class ZephirReader implements Reader
                 continue;
             }
 
-            $dataType = $entry->text('data-type') ?? 'mixed';
-            $types[]  = $dataType === 'variable' ? 'mixed' : $dataType;
+            $types[] = $this->zephirType($entry->text('data-type') ?? 'var');
         }
 
         return $types === [] ? null : implode('|', $types);

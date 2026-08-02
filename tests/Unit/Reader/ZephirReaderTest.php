@@ -179,6 +179,10 @@ final class ZephirReaderTest extends TestCase
             $properties[$property->name] = $property;
         }
 
+        // A declared type with no docblock and no default: the declaration is
+        // the only thing left to name it, which is where the sources are going.
+        $this->assertSame('array', $properties['registry']->varType);
+
         $this->assertSame(['get', 'set'], $properties['label']->shortcuts);
         $this->assertSame([], $properties['counter']->shortcuts);
         // No keyword at all would be protected; these say so explicitly.

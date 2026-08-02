@@ -495,10 +495,14 @@ final class PhpReader implements Reader
             return Structure::enum();
         }
 
-        return Structure::classType(
-            $node instanceof Stmt\Class_ && $node->isAbstract(),
-            $node instanceof Stmt\Class_ && $node->isFinal()
-        );
+        // Asked once rather than per modifier: the three declarations above
+        // have returned, so this is a class - but only Stmt\Class_ declares
+        // isAbstract() and isFinal(), and the analyzer needs to be told.
+        if ($node instanceof Stmt\Class_) {
+            return Structure::classType($node->isAbstract(), $node->isFinal());
+        }
+
+        return Structure::classType(false, false);
     }
 
     /**
