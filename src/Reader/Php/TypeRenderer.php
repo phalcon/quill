@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Reader\Php;
 
+use Phalcon\Quill\Reader\Notation;
 use PhpParser\Node;
 use PhpParser\Node\ComplexType;
 use PhpParser\Node\Identifier;
@@ -41,7 +42,7 @@ final class TypeRenderer
         if ($type instanceof NullableType) {
             $inner = $this->render($type->type);
 
-            return $inner === null ? 'null' : $inner . '|null';
+            return $inner === null ? Notation::NULL : Notation::nullable($inner);
         }
 
         if ($type instanceof UnionType) {

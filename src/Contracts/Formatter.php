@@ -15,6 +15,7 @@ namespace Phalcon\Quill\Contracts;
 
 use Phalcon\Quill\Config;
 use Phalcon\Quill\Model\Registry;
+use Phalcon\Quill\Selection;
 
 /**
  * Turns the model into output. Every presentation decision - what to hide,
@@ -39,10 +40,10 @@ interface Formatter
     public function extension(): string;
 
     /**
-     * The registry always covers every source file; `$filter` narrows only
+     * The registry always covers every source file; `$selection` narrows only
      * what gets emitted, index included.
      *
      * @return array<string, string> document key => rendered document
      */
-    public function format(Registry $registry, Config $config, string $filter = ''): array;
+    public function format(Registry $registry, Config $config, Selection $selection): array;
 }

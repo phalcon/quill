@@ -15,9 +15,13 @@ namespace Phalcon\Quill\Tests\Unit\Cli;
 
 use Phalcon\Quill\Cli\GenerateCommand;
 use Phalcon\Quill\Config;
+use Phalcon\Quill\Contracts\Formatter;
+use Phalcon\Quill\Exceptions\NamespaceNotFound;
 use Phalcon\Quill\Exceptions\WriteFailed;
+use Phalcon\Quill\Formatter\JsonFormatter;
 use Phalcon\Quill\Formatter\MarkdownFormatter;
 use Phalcon\Quill\Reader\ReaderFactory;
+use Phalcon\Quill\Selection;
 use PHPUnit\Framework\TestCase;
 
 use function chmod;
@@ -54,22 +58,93 @@ final class GenerateCommandTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * A typo would otherwise produce a structurally valid document holding no
+     * definitions, which reads as a successful run.
+     */
+    public function testANamespaceMatchingNothingFailsBeforeAnythingIsWritten(): void
+    {
+        $this->expectException(NamespaceNotFound::class);
+        $this->expectExceptionMessageMatches('/Phalcon\\\\Nope/');
+
+        try {
+            $this->command()->execute($this->config(), new Selection('', 'Phalcon\\Nope'));
+        } finally {
+            $this->assertSame([], glob($this->outputDir . '/*.md') ?: []);
+        }
+    }
+
+    public function testANamespacedRunPrunesNothing(): void
+    {
+        $stale = $this->outputDir . '/phalcon_stale.md';
+        $this->command()->execute($this->config(), Selection::none());
+        file_put_contents($stale, 'stale');
+
+        $this->command()->execute($this->config(), new Selection('', 'Phalcon\\Sample'));
+
+        $this->assertFileExists($stale);
+    }
+
+    /**
+     * A formatter with no assets skips the whole step rather than creating an
+     * empty directory for nothing.
+     */
+    public function testAFormatterWithoutAssetsWritesNone(): void
+    {
+        $assets = $this->outputDir . '/assets';
+
+        $this->command(new JsonFormatter())->execute($this->config($assets), Selection::none());
+
+        $this->assertDirectoryDoesNotExist($assets);
+        $this->assertFileExists($this->outputDir . '/model.json');
+    }
+
+    /**
+     * The assets directory is created when it is somewhere other than the one
+     * the documents go in, which is the layout a documentation site wants.
+     */
+    public function testAnAbsentAssetsDirectoryIsCreated(): void
+    {
+        $assets = $this->outputDir . '/nested/assets/css';
+
+        $this->command()->execute($this->config($assets), Selection::none());
+
+        $this->assertFileExists($assets . '/' . MarkdownFormatter::STYLESHEET);
+    }
+
+    public function testAnUnwritableAssetFailsLoudly(): void
+    {
+        $assets = $this->outputDir . '/assets';
+        mkdir($assets, 0777, true);
+
+        $stylesheet = $assets . '/' . MarkdownFormatter::STYLESHEET;
+        file_put_contents($stylesheet, '');
+        chmod($stylesheet, 0444);
+
+        try {
+            $this->expectException(WriteFailed::class);
+            $this->command()->execute($this->config($assets), Selection::none());
+        } finally {
+            chmod($stylesheet, 0644);
+        }
+    }
+
     public function testAFilteredRunPrunesNothing(): void
     {
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         $kept = $this->outputDir . '/phalcon_sample.md';
         $this->assertFileExists($kept);
 
         // Filtered runs are deliberately partial, so untouched pages stay.
-        $this->command()->execute($this->config(), 'nothingmatches');
+        $this->command()->execute($this->config(), new Selection('nothingmatches'));
 
         $this->assertFileExists($kept);
     }
 
     public function testAnUnwritableDestinationFailsLoudly(): void
     {
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         // Simulate what a root-owned output directory does to a non-root run.
         $page = $this->outputDir . '/phalcon_sample.md';
@@ -79,7 +154,7 @@ final class GenerateCommandTest extends TestCase
         $this->expectExceptionMessage('Could not write');
 
         try {
-            $this->command()->execute($this->config());
+            $this->command()->execute($this->config(), Selection::none());
         } finally {
             chmod($page, 0644);
         }
@@ -89,14 +164,14 @@ final class GenerateCommandTest extends TestCase
     {
         $this->assertFalse(file_exists($this->outputDir));
 
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         $this->assertDirectoryExists($this->outputDir);
     }
 
     public function testFilterRestrictsWhichPagesAreWritten(): void
     {
-        $this->assertSame(0, $this->command()->execute($this->config(), 'nothingmatches'));
+        $this->assertSame(0, $this->command()->execute($this->config(), new Selection('nothingmatches')));
 
         // The index is always written; no page files survive the filter.
         $this->assertFileExists($this->outputDir . '/index.md');
@@ -105,12 +180,12 @@ final class GenerateCommandTest extends TestCase
 
     public function testOtherFileTypesAreLeftAlone(): void
     {
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         $foreign = $this->outputDir . '/notes.txt';
         file_put_contents($foreign, 'not ours');
 
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         $this->assertFileExists($foreign);
         unlink($foreign);
@@ -118,13 +193,13 @@ final class GenerateCommandTest extends TestCase
 
     public function testStaleDocumentsArePruned(): void
     {
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         // A page whose source namespace has since been deleted.
         $orphan = $this->outputDir . '/phalcon_gone.md';
         file_put_contents($orphan, 'stale');
 
-        $this->command()->execute($this->config());
+        $this->command()->execute($this->config(), Selection::none());
 
         $this->assertFileDoesNotExist($orphan);
         $this->assertFileExists($this->outputDir . '/phalcon_sample.md');
@@ -132,7 +207,7 @@ final class GenerateCommandTest extends TestCase
 
     public function testWritesTheIndexAndEveryPage(): void
     {
-        $this->assertSame(0, $this->command()->execute($this->config()));
+        $this->assertSame(0, $this->command()->execute($this->config(), Selection::none()));
 
         $this->assertFileExists($this->outputDir . '/index.md');
         $this->assertFileExists($this->outputDir . '/phalcon_sample.md');
@@ -145,26 +220,22 @@ final class GenerateCommandTest extends TestCase
 
     private function clean(): void
     {
-        foreach (glob($this->outputDir . '/*') ?: [] as $file) {
-            if (is_file($file)) {
-                unlink($file);
-            }
-        }
-
-        if (is_dir($this->outputDir)) {
-            rmdir($this->outputDir);
-        }
+        $this->remove($this->outputDir);
     }
 
-    private function command(): GenerateCommand
+    private function command(?Formatter $formatter = null): GenerateCommand
     {
         $stdout = fopen('php://memory', 'rb+');
         $this->assertIsResource($stdout);
 
-        return new GenerateCommand(new ReaderFactory(), new MarkdownFormatter(), $stdout);
+        return new GenerateCommand(
+            new ReaderFactory(),
+            $formatter ?? new MarkdownFormatter(),
+            $stdout
+        );
     }
 
-    private function config(): Config
+    private function config(string $assetsDir = ''): Config
     {
         return new Config(
             'zephir',
@@ -174,7 +245,29 @@ final class GenerateCommandTest extends TestCase
             '5.0.x',
             'phalcon',
             'zep',
-            'Phalcon'
+            'Phalcon',
+            $assetsDir
         );
+    }
+
+    /**
+     * Depth first, because a run can write into nested directories now that the
+     * assets destination need not be the one the documents go in.
+     */
+    private function remove(string $path): void
+    {
+        if (!is_dir($path)) {
+            if (is_file($path)) {
+                unlink($path);
+            }
+
+            return;
+        }
+
+        foreach (glob($path . '/*') ?: [] as $child) {
+            $this->remove($child);
+        }
+
+        rmdir($path);
     }
 }

@@ -73,11 +73,15 @@ final class Docblock
 
     /**
      * The declared `@var` type, or null when the comment does not carry one.
+     *
+     * Normalized through Notation because this is the one type in the model
+     * that arrives as prose rather than being built, and it is also the one
+     * that wins - both readers prefer it over the declared type.
      */
     public function varType(): ?string
     {
         if (preg_match('/^@var\s+(.+)$/m', $this->text, $matches) === 1) {
-            return trim($matches[1]);
+            return Notation::type($matches[1]);
         }
 
         return null;

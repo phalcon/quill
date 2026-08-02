@@ -16,13 +16,16 @@ namespace Phalcon\Quill\Formatter;
 use Phalcon\Quill\Config;
 use Phalcon\Quill\Contracts\Formatter;
 use Phalcon\Quill\Exceptions\MissingAsset;
+use Phalcon\Quill\Formatter\Markdown\Classes;
 use Phalcon\Quill\Formatter\Markdown\Html;
 use Phalcon\Quill\Formatter\Markdown\Naming;
+use Phalcon\Quill\Formatter\Markdown\Presentation;
 use Phalcon\Quill\Formatter\Markdown\Signature;
 use Phalcon\Quill\Model\ClassDefinition;
 use Phalcon\Quill\Model\Keyword;
 use Phalcon\Quill\Model\MethodDefinitionCollection;
 use Phalcon\Quill\Model\Registry;
+use Phalcon\Quill\Selection;
 
 use function array_keys;
 use function array_map;
@@ -95,13 +98,14 @@ final class MarkdownFormatter implements Formatter
     /**
      * @return array<string, string>
      */
-    public function format(Registry $registry, Config $config, string $filter = ''): array
+    public function format(Registry $registry, Config $config, Selection $selection): array
     {
-        $pages  = $this->pages($registry, $config);
+        $view   = Presentation::from($config);
+        $pages  = $this->pages($registry, $view, $selection);
         $output = [];
 
         foreach (array_keys($pages) as $page) {
-            if ($filter !== '' && stripos($page, $filter) === false) {
+            if ($selection->filter !== '' && stripos($page, $selection->filter) === false) {
                 unset($pages[$page]);
             }
         }
@@ -119,7 +123,7 @@ final class MarkdownFormatter implements Formatter
             EOT;
 
         foreach (array_keys($pages) as $page) {
-            $index .= $this->indexLine($page, $config);
+            $index .= $this->indexLine($page, $view);
         }
 
         $output['index'] = $index;
@@ -133,14 +137,14 @@ final class MarkdownFormatter implements Formatter
 
                 !!! info "NOTE"
 
-                    All classes are prefixed with `{$config->rootNamespace()}`
+                    All classes are prefixed with `{$view->rootNamespace}`
 
                 EOT;
 
             foreach ($fqcns as $fqcn) {
                 $class = $registry->get($fqcn);
                 if ($class !== null) {
-                    $document .= $this->classDoc($class, $registry, $config);
+                    $document .= $this->classDoc($class, $registry, $view);
                 }
             }
 
@@ -150,7 +154,7 @@ final class MarkdownFormatter implements Formatter
         return $output;
     }
 
-    private function classDoc(ClassDefinition $class, Registry $registry, Config $config): string
+    private function classDoc(ClassDefinition $class, Registry $registry, Presentation $view): string
     {
         $badge = 'Class';
         $css   = 'class';
@@ -169,23 +173,25 @@ final class MarkdownFormatter implements Formatter
             $css   = 'final';
         }
 
-        $output = "\n\n## " . $this->naming->title($class, $config) . "\n\n"
-            . "<span class=\"badge badge--{$css}\">{$badge}</span>\n"
+        $badgeClass = Classes::BADGE . ' ' . Classes::BADGE_PREFIX . $css;
+
+        $output = "\n\n## " . $this->naming->title($class, $view) . "\n\n"
+            . "<span class=\"{$badgeClass}\">{$badge}</span>\n"
             . "[:material-github: Source on GitHub]"
-            . '(' . $config->sourceUrl($class->location->relPath) . ')'
-            . "{ .src-btn }\n";
+            . '(' . $view->sourceUrl($class->location->relPath) . ')'
+            . '{ .' . Classes::SOURCE_BUTTON . " }\n";
 
         if ($class->description !== '') {
             $output .= "\n" . $class->description . "\n";
         }
 
-        $output .= $this->tree($class, $registry, $config);
+        $output .= $this->tree($class, $registry, $view);
         $output .= $this->uses($class);
-        $output .= $this->usedBy($class, $registry, $config);
-        $output .= $this->summary($class, $config);
+        $output .= $this->usedBy($class, $registry, $view);
+        $output .= $this->summary($class, $view);
         $output .= $this->constants($class);
         $output .= $this->properties($class);
-        $output .= $this->methodDetails($class, $config);
+        $output .= $this->methodDetails($class, $view);
 
         return $output;
     }
@@ -196,19 +202,15 @@ final class MarkdownFormatter implements Formatter
             return '';
         }
 
-        $output = "\n### Constants\n\n<div class=\"api-list\">\n";
+        $output = "\n### Constants\n\n" . $this->openList();
         foreach ($class->members->constants as $constant) {
-            $output .= "<div class=\"api-item\">\n"
-                . '<code class="ret">' . $this->html->escape($constant->varType) . "</code>\n"
-                . '<code class="sig"><span class="sc">' . $this->html->escape($constant->name)
-                . '</span>' . $this->html->default($constant->default) . "</code>\n";
-
-            if ($constant->description !== '') {
-                $output .= '<span class="desc">'
-                    . $this->html->inlineCode($constant->description) . "</span>\n";
-            }
-
-            $output .= "</div>\n";
+            $output .= $this->row(
+                '<code class="' . Classes::RETURN_TYPE . '">' . $this->html->escape($constant->varType) . "</code>\n"
+                . '<code class="' . Classes::SIGNATURE . '"><span class="' . Classes::TOKEN_CONSTANT
+                . '">' . $this->html->escape($constant->name)
+                . '</span>' . $this->html->default($constant->default) . "</code>\n",
+                $constant->description
+            );
         }
 
         return $output . "</div>\n";
@@ -221,7 +223,7 @@ final class MarkdownFormatter implements Formatter
         string $display,
         ?string $fqcn,
         Registry $registry,
-        Config $config,
+        Presentation $view,
         string $currentPage
     ): string {
         $target = $fqcn === null ? null : $registry->get($fqcn);
@@ -229,8 +231,8 @@ final class MarkdownFormatter implements Formatter
             return "`{$display}`";
         }
 
-        $href       = '#' . $this->naming->anchor($target, $config);
-        $targetPage = $this->naming->pageKey($target, $config);
+        $href       = '#' . $this->naming->anchor($target, $view);
+        $targetPage = $this->naming->pageKey($target, $view);
         if ($targetPage !== $currentPage) {
             $href = $targetPage . '.md' . $href;
         }
@@ -238,18 +240,18 @@ final class MarkdownFormatter implements Formatter
         return "[`{$display}`]({$href})";
     }
 
-    private function indexLine(string $page, Config $config): string
+    private function indexLine(string $page, Presentation $view): string
     {
-        $label = ucfirst(str_replace($config->pagePrefix(), '', $page));
+        $label = ucfirst(str_replace($view->pagePrefix, '', $page));
 
-        return '- [' . $config->rootNamespace() . ' ' . $label . ']'
+        return '- [' . $view->rootNamespace . ' ' . $label . ']'
             . '(' . $page . '.md)' . PHP_EOL;
     }
 
-    private function methodDetails(ClassDefinition $class, Config $config): string
+    private function methodDetails(ClassDefinition $class, Presentation $view): string
     {
         $groups = $this->orderMethods($class->members->methods);
-        if ($groups['public']->isEmpty() && $groups['protected']->isEmpty()) {
+        if ($groups === null) {
             return '';
         }
 
@@ -262,10 +264,11 @@ final class MarkdownFormatter implements Formatter
 
             $count   = $groups[$group]->count();
             $label   = ucfirst($group);
-            $output .= "\n<div class=\"api-group\">{$label} · {$count}</div>\n";
+            $groupClass = Classes::GROUP;
+            $output    .= "\n<div class=\"{$groupClass}\">{$label} · {$count}</div>\n";
 
             foreach ($groups[$group] as $method) {
-                $anchor    = $this->naming->methodAnchor($class, $method->name, $config);
+                $anchor    = $this->naming->methodAnchor($class, $method->name, $view);
                 $signature = implode("\n", $this->signature->lines($method));
 
                 $output .= "\n#### `{$method->name}()` { #{$anchor} }\n\n"
@@ -281,23 +284,39 @@ final class MarkdownFormatter implements Formatter
     }
 
     /**
+     * The opening tag of a member list. Three sections emit one, and the class
+     * name on it is part of the contract with the stylesheet.
+     */
+    private function openList(): string
+    {
+        return '<div class="' . Classes::LIST . "\">\n";
+    }
+
+    /**
      * Private methods dropped, reserved (__*) first, then alphabetical, split
-     * by visibility.
+     * by visibility. Null when nothing survives.
      *
      * The emptiness guard is on the result rather than the incoming list: the
      * model keeps private members, so a class whose methods are all private
-     * would otherwise emit a heading with nothing under it.
+     * would otherwise emit a heading with nothing under it. Both sections that
+     * render methods open with this question, so both ask it here.
      *
-     * @return array{public: MethodDefinitionCollection, protected: MethodDefinitionCollection}
+     * @return array{public: MethodDefinitionCollection, protected: MethodDefinitionCollection}|null
      */
-    private function orderMethods(MethodDefinitionCollection $methods): array
+    private function orderMethods(MethodDefinitionCollection $methods): ?array
     {
         $visible = $methods->withoutPrivate()->ordered();
 
-        return [
+        $groups = [
             'public'    => $visible->withVisibility('public'),
             'protected' => $visible->withVisibility('protected'),
         ];
+
+        if ($groups['public']->isEmpty() && $groups['protected']->isEmpty()) {
+            return null;
+        }
+
+        return $groups;
     }
 
     /**
@@ -308,11 +327,15 @@ final class MarkdownFormatter implements Formatter
      *
      * @return array<string, list<string>>
      */
-    private function pages(Registry $registry, Config $config): array
+    private function pages(Registry $registry, Presentation $view, Selection $selection): array
     {
         $pages = [];
         foreach ($registry->definitions() as $fqcn => $class) {
-            $pages[$this->naming->pageKey($class, $config)][] = $fqcn;
+            if (!$selection->matchesNamespace($fqcn)) {
+                continue;
+            }
+
+            $pages[$this->naming->pageKey($class, $view)][] = $fqcn;
         }
 
         ksort($pages);
@@ -332,45 +355,87 @@ final class MarkdownFormatter implements Formatter
             return '';
         }
 
-        $output = "\n### Properties\n\n<div class=\"api-list\">\n";
+        $output = "\n### Properties\n\n" . $this->openList();
         foreach ($visible as $property) {
             $visibility = $property->visibility;
+            $visClass   = Classes::VISIBILITY . ' ' . Classes::VISIBILITY_PREFIX . $visibility;
 
-            $output .= "<div class=\"api-item\">\n"
-                . "<code class=\"vis vis-{$visibility}\">{$visibility}</code>\n"
-                . '<code class="ret">' . $this->html->escape($property->varType) . "</code>\n"
-                . '<code class="sig"><span class="sv">$' . $this->html->escape($property->name)
-                . '</span>' . $this->html->default($property->default) . "</code>\n";
-
-            if ($property->description !== '') {
-                $output .= '<span class="desc">'
-                    . $this->html->inlineCode($property->description) . "</span>\n";
-            }
-
-            $output .= "</div>\n";
+            $output .= $this->row(
+                "<code class=\"{$visClass}\">{$visibility}</code>\n"
+                . '<code class="' . Classes::RETURN_TYPE . '">' . $this->html->escape($property->varType) . "</code>\n"
+                . '<code class="' . Classes::SIGNATURE . '"><span class="' . Classes::TOKEN_VARIABLE
+                . '">$' . $this->html->escape($property->name)
+                . '</span>' . $this->html->default($property->default) . "</code>\n",
+                $property->description
+            );
         }
 
         return $output . "</div>\n";
     }
 
-    private function summary(ClassDefinition $class, Config $config): string
+    /**
+     * One relation's names as a comma-separated list of links, for the
+     * `extends`/`implements` annotation under a class in the tree. A name the
+     * registry does not hold falls back to plain code, which fqcnLink handles.
+     *
+     * @param list<string> $names
+     */
+    private function relationLinks(
+        array $names,
+        ClassDefinition $class,
+        Registry $registry,
+        Presentation $view,
+        string $currentPage
+    ): string {
+        $links = [];
+        foreach ($names as $name) {
+            $fqcn    = $registry->resolve($name, $class);
+            $links[] = $this->fqcnLink($fqcn ?? $name, $fqcn, $registry, $view, $currentPage);
+        }
+
+        return implode(', ', $links);
+    }
+
+    /**
+     * One row of an `api-list`: the wrapper, whatever the caller puts inside,
+     * and the description when there is one.
+     *
+     * Only the envelope is shared - a constant row and a property row differ in
+     * the middle, and forcing those through one signature would take more
+     * parameters than it saves lines.
+     */
+    private function row(string $body, string $description): string
+    {
+        $output = '<div class="' . Classes::ITEM . "\">\n" . $body;
+
+        if ($description !== '') {
+            $output .= '<span class="' . Classes::DESCRIPTION . '">'
+                . $this->html->inlineCode($description) . "</span>\n";
+        }
+
+        return $output . "</div>\n";
+    }
+
+    private function summary(ClassDefinition $class, Presentation $view): string
     {
         $groups = $this->orderMethods($class->members->methods);
-        if ($groups['public']->isEmpty() && $groups['protected']->isEmpty()) {
+        if ($groups === null) {
             return '';
         }
 
-        $output = "\n### Method Summary\n\n<div class=\"api-list\">\n";
+        $output = "\n### Method Summary\n\n" . $this->openList();
 
         foreach (['public', 'protected'] as $group) {
             foreach ($groups[$group] as $method) {
-                $anchor = $this->naming->methodAnchor($class, $method->name, $config);
+                $anchor   = $this->naming->methodAnchor($class, $method->name, $view);
+                $itemClass = Classes::ITEM;
+                $visClass  = Classes::VISIBILITY . ' ' . Classes::VISIBILITY_PREFIX . $group;
 
-                $output .= "<a class=\"api-item\" href=\"#{$anchor}\">\n"
-                    . "<code class=\"vis vis-{$group}\">{$group}</code>\n";
+                $output .= "<a class=\"{$itemClass}\" href=\"#{$anchor}\">\n"
+                    . "<code class=\"{$visClass}\">{$group}</code>\n";
 
                 if ($method->returnType !== null) {
-                    $output .= '<code class="ret">'
+                    $output .= '<code class="' . Classes::RETURN_TYPE . '">'
                         . $this->html->escape($method->returnType) . "</code>\n";
                 }
 
@@ -409,15 +474,15 @@ final class MarkdownFormatter implements Formatter
         return '';
     }
 
-    private function tree(ClassDefinition $class, Registry $registry, Config $config): string
+    private function tree(ClassDefinition $class, Registry $registry, Presentation $view): string
     {
-        $currentPage = $this->naming->pageKey($class, $config);
+        $currentPage = $this->naming->pageKey($class, $view);
         $level       = 0;
         $lines       = [];
 
         foreach ($registry->ancestorsOf($class) as $ancestor) {
             $lines[] = str_repeat(' ', $level * 4) . '- '
-                . $this->fqcnLink($ancestor['display'], $ancestor['fqcn'], $registry, $config, $currentPage);
+                . $this->fqcnLink($ancestor['display'], $ancestor['fqcn'], $registry, $view, $currentPage);
             $level++;
         }
 
@@ -425,23 +490,13 @@ final class MarkdownFormatter implements Formatter
 
         $annotations = [];
         if ($class->structure->keyword === Keyword::Interface && count($class->relations->extends) > 1) {
-            $links = [];
-            foreach ($class->relations->extends as $name) {
-                $fqcn    = $registry->resolve($name, $class);
-                $links[] = $this->fqcnLink($fqcn ?? $name, $fqcn, $registry, $config, $currentPage);
-            }
-
-            $annotations[] = 'extends ' . implode(', ', $links);
+            $annotations[] = 'extends '
+                . $this->relationLinks($class->relations->extends, $class, $registry, $view, $currentPage);
         }
 
         if ($class->relations->implements !== []) {
-            $links = [];
-            foreach ($class->relations->implements as $name) {
-                $fqcn    = $registry->resolve($name, $class);
-                $links[] = $this->fqcnLink($fqcn ?? $name, $fqcn, $registry, $config, $currentPage);
-            }
-
-            $annotations[] = 'implements ' . implode(', ', $links);
+            $annotations[] = 'implements '
+                . $this->relationLinks($class->relations->implements, $class, $registry, $view, $currentPage);
         }
 
         if ($annotations !== []) {
@@ -455,10 +510,10 @@ final class MarkdownFormatter implements Formatter
         sort($children);
         foreach ($children as $child) {
             $lines[] = str_repeat(' ', $level * 4) . '- '
-                . $this->fqcnLink($child, $child, $registry, $config, $currentPage);
+                . $this->fqcnLink($child, $child, $registry, $view, $currentPage);
         }
 
-        return "\n<div class=\"api-tree\" markdown>\n\n"
+        return "\n<div class=\"" . Classes::TREE . "\" markdown>\n\n"
             . implode("\n", $lines)
             . "\n\n</div>\n";
     }
@@ -468,7 +523,7 @@ final class MarkdownFormatter implements Formatter
      * links because, unlike the import list, every target is by construction
      * in the registry.
      */
-    private function usedBy(ClassDefinition $class, Registry $registry, Config $config): string
+    private function usedBy(ClassDefinition $class, Registry $registry, Presentation $view): string
     {
         $users = $registry->usedBy($class);
         if ($users === []) {
@@ -477,14 +532,14 @@ final class MarkdownFormatter implements Formatter
 
         sort($users);
 
-        $currentPage = $this->naming->pageKey($class, $config);
+        $currentPage = $this->naming->pageKey($class, $view);
 
         $links = array_map(
-            fn (string $fqcn): string => $this->fqcnLink($fqcn, $fqcn, $registry, $config, $currentPage),
+            fn (string $fqcn): string => $this->fqcnLink($fqcn, $fqcn, $registry, $view, $currentPage),
             $users
         );
 
-        return "\n__Used by__ " . implode(' · ', $links) . "\n{ .api-used-by }\n";
+        return "\n__Used by__ " . implode(' · ', $links) . "\n{ ." . Classes::USED_BY . " }\n";
     }
 
     private function uses(ClassDefinition $class): string
@@ -501,6 +556,6 @@ final class MarkdownFormatter implements Formatter
             $uses
         );
 
-        return "\n__Uses__ " . implode(' · ', $codes) . "\n{ .api-uses }\n";
+        return "\n__Uses__ " . implode(' · ', $codes) . "\n{ ." . Classes::USES . " }\n";
     }
 }

@@ -2,6 +2,20 @@
 
 All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
 
+## [0.2.0](https://github.com/phalcon/quill/releases/tag/v0.2.0) (2026-xx-xx)
+
+### Changed
+
+- `Contracts\Formatter::format()` takes a `Selection` in place of the filter string
+- `GenerateCommand::execute()` takes a `Selection`
+- Pruning is skipped for any narrowed run, not only a filtered one
+
+### Added
+
+- `--namespace=` on `generate`: one namespace and everything beneath it, root implied
+- `Selection`, carrying what a run narrows to
+- `NamespaceNotFound`, thrown when a requested namespace matches nothing
+
 ## [0.1.0](https://github.com/phalcon/quill/releases/tag/v0.1.0) (2026-08-01)
 
 ### Changed

@@ -23,6 +23,39 @@ use function dirname;
 
 final class ConfigTest extends TestCase
 {
+    /**
+     * The namespace is a name, not a path, so the separators a project might
+     * write around it are stripped rather than carried into every page key and
+     * every resolution candidate.
+     */
+    public function testANamespaceIsTrimmedOfItsSeparators(): void
+    {
+        $config = Config::fromArray($this->values(['namespace' => '\\Phalcon\\']), '/project');
+
+        $this->assertSame('Phalcon', $config->rootNamespace());
+        $this->assertSame('phalcon_', $config->pagePrefix());
+    }
+
+    /**
+     * Absent and present-but-empty mean the same thing - assets go where the
+     * documents go - and neither may be mistaken for a configured path.
+     */
+    public function testAnEmptyOrAbsentAssetsKeyFallsBackToTheOutputDirectory(): void
+    {
+        $absent = Config::fromArray($this->values(), '/project');
+        $empty  = Config::fromArray($this->values(['assets' => '']), '/project');
+
+        $this->assertSame($absent->outputDir(), $absent->assetsDir());
+        $this->assertSame($empty->outputDir(), $empty->assetsDir());
+    }
+
+    public function testAConfiguredAssetsDirectoryIsResolvedAgainstTheRoot(): void
+    {
+        $config = Config::fromArray($this->values(['assets' => 'docs/assets/css']), '/project');
+
+        $this->assertSame('/project/docs/assets/css', $config->assetsDir());
+    }
+
     public function testAbsolutePathsInConfigPassThroughUnchanged(): void
     {
         $config = Config::fromArray(
@@ -189,5 +222,28 @@ final class ConfigTest extends TestCase
             'zep',
             'Phalcon'
         );
+    }
+
+    /**
+     * A complete key set, with any of it overridden per test.
+     *
+     * @param array<string, string> $overrides
+     *
+     * @return array<string, string>
+     */
+    private function values(array $overrides = []): array
+    {
+        // The overrides go first: `+` keeps the left operand for a duplicate
+        // key, so putting the defaults there would silently ignore them.
+        return $overrides + [
+            'language'   => 'zephir',
+            'source'     => 'phalcon',
+            'output'     => 'nikos/api',
+            'repository' => 'phalcon/cphalcon',
+            'branch'     => '5.0.x',
+            'prefix'     => 'phalcon',
+            'extension'  => 'zep',
+            'namespace'  => 'Phalcon',
+        ];
     }
 }

@@ -15,9 +15,13 @@ namespace Phalcon\Quill\Cli;
 
 use Phalcon\Quill\Config;
 use Phalcon\Quill\Contracts\Formatter;
+use Phalcon\Quill\Exceptions\NamespaceNotFound;
 use Phalcon\Quill\Exceptions\WriteFailed;
+use Phalcon\Quill\Model\Registry;
 use Phalcon\Quill\Reader\ReaderFactory;
+use Phalcon\Quill\Selection;
 
+use function array_keys;
 use function basename;
 use function file_put_contents;
 use function fwrite;
@@ -47,14 +51,17 @@ final class GenerateCommand
     }
 
     /**
-     * The registry always covers every source file; `$filter` narrows only
+     * The registry always covers every source file; `$selection` narrows only
      * what is written out.
      */
-    public function execute(Config $config, string $filter = ''): int
+    public function execute(Config $config, Selection $selection): int
     {
         $reader   = $this->factory->create($config->language());
         $registry = $reader->read($config);
-        $pages    = $this->formatter->format($registry, $config, $filter);
+
+        $this->guardNamespace($registry, $selection);
+
+        $pages = $this->formatter->format($registry, $config, $selection);
 
         $output = $config->outputDir();
         if (!is_dir($output)) {
@@ -80,9 +87,9 @@ final class GenerateCommand
             fwrite($this->stdout, 'Asset: ' . basename($path) . PHP_EOL);
         }
 
-        // Only a complete run may prune. A filtered run is deliberately partial,
-        // so what it did not write was never asked about, not stale.
-        if ($filter === '') {
+        // Only an unnarrowed run may prune. A narrowed run is deliberately
+        // partial, so what it did not write was never asked about, not stale.
+        if (!$selection->narrows()) {
             foreach ($this->prune($output, $written) as $path) {
                 fwrite($this->stdout, 'Removed: ' . basename($path) . PHP_EOL);
             }
@@ -91,6 +98,26 @@ final class GenerateCommand
         fwrite($this->stdout, 'Done. Output: ' . $output . PHP_EOL);
 
         return 0;
+    }
+
+    /**
+     * Checked against the registry rather than the formatter's output, because
+     * a JSON run would otherwise emit a structurally valid document holding no
+     * definitions - a silent success where a typo belongs.
+     */
+    private function guardNamespace(Registry $registry, Selection $selection): void
+    {
+        if ($selection->namespace === '') {
+            return;
+        }
+
+        foreach (array_keys($registry->definitions()->all()) as $fqcn) {
+            if ($selection->matchesNamespace($fqcn)) {
+                return;
+            }
+        }
+
+        throw new NamespaceNotFound($selection->namespace);
     }
 
     /**

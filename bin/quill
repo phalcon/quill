@@ -20,6 +20,7 @@ use Phalcon\Quill\Config;
 use Phalcon\Quill\Exceptions\Exception;
 use Phalcon\Quill\Formatter\FormatterFactory;
 use Phalcon\Quill\Reader\ReaderFactory;
+use Phalcon\Quill\Selection;
 
 foreach ([__DIR__ . '/../vendor/autoload.php', __DIR__ . '/../../../autoload.php'] as $file) {
     if (file_exists($file)) {
@@ -50,6 +51,7 @@ $usage = $banner . <<<'USAGE'
 
     Usage:
       quill generate [filter] [--config=<path>] [--output=<dir>] [--format=<name>]
+                     [--namespace=<ns>]
       quill parity <left.json> <right.json>
       quill docblocks <left.json> <right.json> <out.csv>
 
@@ -62,6 +64,11 @@ $usage = $banner . <<<'USAGE'
     --format picks the output (markdown or json), defaulting to markdown. The
     optional filter limits what is written, matched case-insensitively.
 
+    --namespace limits the run to one namespace and everything beneath it,
+    matched exactly. The configured root is implied, so Config and
+    Phalcon\Config mean the same thing. A namespace matching nothing is an
+    error rather than an empty document.
+
     USAGE;
 
 $argv    = $_SERVER['argv'] ?? [];
@@ -73,11 +80,24 @@ if ($command === null || in_array($command, ['-h', '--help', 'help'], true)) {
     exit(0);
 }
 
-if ($command === 'docblocks') {
-    $args = array_values(array_filter(
+/**
+ * The tokens after the command name that are not options, in order. Both
+ * comparison commands take their arguments positionally and neither accepts
+ * an option, so an option among them is dropped rather than rejected.
+ *
+ * @param list<string> $argv
+ *
+ * @return list<string>
+ */
+$positionals = static function (array $argv): array {
+    return array_values(array_filter(
         array_slice($argv, 2),
-        static fn (string $t): bool => !str_starts_with($t, '-')
+        static fn (string $token): bool => !str_starts_with($token, '-')
     ));
+};
+
+if ($command === 'docblocks') {
+    $args = $positionals($argv);
 
     if (count($args) !== 3) {
         fwrite(STDERR, 'quill: docblocks needs two model documents and a csv path' . PHP_EOL . $usage);
@@ -95,10 +115,7 @@ if ($command === 'docblocks') {
 }
 
 if ($command === 'parity') {
-    $paths = array_values(array_filter(
-        array_slice($argv, 2),
-        static fn (string $t): bool => !str_starts_with($t, '-')
-    ));
+    $paths = $positionals($argv);
 
     if (count($paths) !== 2) {
         fwrite(STDERR, 'quill: parity needs two model documents' . PHP_EOL . $usage);
@@ -125,6 +142,7 @@ $configPath = 'quill.php';
 $outputDir  = null;
 $format     = 'markdown';
 $filter     = '';
+$namespace  = '';
 
 foreach (array_slice($argv, 2) as $token) {
     if (str_starts_with($token, '--config=')) {
@@ -141,6 +159,12 @@ foreach (array_slice($argv, 2) as $token) {
 
     if (str_starts_with($token, '--format=')) {
         $format = substr($token, 9);
+
+        continue;
+    }
+
+    if (str_starts_with($token, '--namespace=')) {
+        $namespace = substr($token, 12);
 
         continue;
     }
@@ -165,7 +189,7 @@ try {
         (new FormatterFactory())->create($format)
     );
 
-    exit($command->execute($config, $filter));
+    exit($command->execute($config, Selection::of($filter, $namespace, $config)));
 } catch (Exception $exception) {
     fwrite(STDERR, 'quill: ' . $exception->getMessage() . PHP_EOL);
 

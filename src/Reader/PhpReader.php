@@ -471,13 +471,13 @@ final class PhpReader implements Reader
     private function scalarType(?Node\Expr $expr): string
     {
         return match (true) {
-            $expr instanceof Node\Scalar\String_                     => 'string',
-            $expr instanceof Node\Scalar\Int_                        => 'int',
-            $expr instanceof Node\Scalar\Float_                      => 'float',
-            $expr instanceof Node\Expr\Array_                        => 'array',
+            $expr instanceof Node\Scalar\String_                     => Notation::TYPE_STRING,
+            $expr instanceof Node\Scalar\Int_                        => Notation::TYPE_INT,
+            $expr instanceof Node\Scalar\Float_                      => Notation::TYPE_FLOAT,
+            $expr instanceof Node\Expr\Array_                        => Notation::TYPE_ARRAY,
             $expr instanceof Node\Expr\ConstFetch
-                && implode('', $expr->name->getParts()) !== 'null'   => 'bool',
-            default                                                  => 'mixed',
+                && implode('', $expr->name->getParts()) !== 'null'   => Notation::TYPE_BOOL,
+            default                                                  => Notation::TYPE_MIXED,
         };
     }
 
@@ -495,10 +495,14 @@ final class PhpReader implements Reader
             return Structure::enum();
         }
 
-        return Structure::classType(
-            $node instanceof Stmt\Class_ && $node->isAbstract(),
-            $node instanceof Stmt\Class_ && $node->isFinal()
-        );
+        // Asked once rather than per modifier: the three declarations above
+        // have returned, so this is a class - but only Stmt\Class_ declares
+        // isAbstract() and isFinal(), and the analyzer needs to be told.
+        if ($node instanceof Stmt\Class_) {
+            return Structure::classType($node->isAbstract(), $node->isFinal());
+        }
+
+        return Structure::classType(false, false);
     }
 
     /**
@@ -506,10 +510,6 @@ final class PhpReader implements Reader
      */
     private function visibility(bool $isPrivate, bool $isProtected): string
     {
-        if ($isPrivate) {
-            return 'private';
-        }
-
-        return $isProtected ? 'protected' : 'public';
+        return Notation::visibility($isPrivate, $isProtected);
     }
 }

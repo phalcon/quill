@@ -18,6 +18,7 @@ use Phalcon\Quill\Contracts\Formatter;
 use Phalcon\Quill\Model\ClassDefinition;
 use Phalcon\Quill\Model\Document;
 use Phalcon\Quill\Model\Registry;
+use Phalcon\Quill\Selection;
 
 use function json_encode;
 use function stripos;
@@ -58,14 +59,13 @@ final class JsonFormatter implements Formatter
      *
      * @return array<string, string>
      */
-    public function format(Registry $registry, Config $config, string $filter = ''): array
+    public function format(Registry $registry, Config $config, Selection $selection): array
     {
-        $definitions = $registry->definitions();
-        if ($filter !== '') {
-            $definitions = $definitions->filter(
-                static fn (ClassDefinition $class, string $fqcn): bool => stripos($fqcn, $filter) !== false
-            );
-        }
+        $definitions = $registry->definitions()->filter(
+            static fn (ClassDefinition $class, string $fqcn): bool
+                => $selection->matchesNamespace($fqcn)
+                && ($selection->filter === '' || stripos($fqcn, $selection->filter) !== false)
+        );
 
         $serialized = [];
         foreach ($definitions->sorted() as $fqcn => $class) {
