@@ -2,7 +2,7 @@
 
 All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
 
-## [0.2.0](https://github.com/phalcon/quill/releases/tag/v0.2.0) (2026-xx-xx)
+## [0.2.0](https://github.com/phalcon/quill/releases/tag/v0.2.0) (2026-08-02)
 
 ### Changed
 
