@@ -36,8 +36,14 @@ final class Registry
     /** @var array<string, list<string>> trait FQCN => the FQCNs pulling it in */
     private array $usedBy = [];
 
-    public function __construct(private readonly ClassDefinitionCollection $definitions)
-    {
+    /**
+     * `$rootNamespace` is the last candidate short-name resolution tries, for a
+     * name that reached resolve() unqualified.
+     */
+    public function __construct(
+        private readonly ClassDefinitionCollection $definitions,
+        private readonly string $rootNamespace = '',
+    ) {
         foreach ($this->definitions as $fqcn => $definition) {
             $parent = $this->parentOf($definition);
             if ($parent !== null) {
@@ -128,9 +134,12 @@ final class Registry
     }
 
     /**
-     * Short name => FQCN, using the class's `use` map, then its own namespace,
-     * then the Phalcon root. A leading backslash means absolute and skips the
-     * candidate list entirely.
+     * A referenced name => the FQCN it names here, or null when it names
+     * nothing this registry holds.
+     *
+     * The readers resolve as they read, so every name arriving from one takes
+     * the absolute branch. The candidate list below is the fallback for a name
+     * that reached this method unresolved.
      */
     public function resolve(string $name, ClassDefinition $context): ?string
     {
@@ -143,7 +152,7 @@ final class Registry
         $candidates = [
             $context->imports->aliases[$name] ?? null,
             $context->location->namespace . '\\' . $name,
-            'Phalcon\\' . $name,
+            $this->rootNamespace === '' ? null : $this->rootNamespace . '\\' . $name,
         ];
 
         foreach ($candidates as $candidate) {

@@ -65,12 +65,8 @@ final class GenerateCommand
         foreach ($pages as $page => $document) {
             $path = $output . DIRECTORY_SEPARATOR . $page . '.' . $this->formatter->extension();
 
-            /**
-             * A silent failure here is worse than a loud one: an unwritable
-             * destination would otherwise report a full, successful run. The
-             * native warning is suppressed because the return value is
-             * checked and WriteFailed says more than the warning does.
-             */
+            // Suppressed because the return value is checked: an unwritable
+            // destination would otherwise report a full, successful run.
             if (@file_put_contents($path, $document) === false) {
                 throw new WriteFailed($path);
             }
@@ -80,11 +76,12 @@ final class GenerateCommand
             fwrite($this->stdout, 'Processing: ' . $page . PHP_EOL);
         }
 
-        /**
-         * Only a complete run may prune. A filtered run is deliberately
-         * partial, so everything it did not write is a page it was never
-         * asked about - not a stale one.
-         */
+        foreach ($this->writeAssets($config) as $path) {
+            fwrite($this->stdout, 'Asset: ' . basename($path) . PHP_EOL);
+        }
+
+        // Only a complete run may prune. A filtered run is deliberately partial,
+        // so what it did not write was never asked about, not stale.
         if ($filter === '') {
             foreach ($this->prune($output, $written) as $path) {
                 fwrite($this->stdout, 'Removed: ' . basename($path) . PHP_EOL);
@@ -124,5 +121,41 @@ final class GenerateCommand
         }
 
         return $removed;
+    }
+
+    /**
+     * Writes the formatter's static assets to the configured assets directory,
+     * which defaults to the one the documents go in.
+     *
+     * A filtered run writes them too - they do not vary with what was selected.
+     * prune() cannot reach them either way: it globs the formatter's own
+     * extension, and an asset never carries it.
+     *
+     * @return list<string>
+     */
+    private function writeAssets(Config $config): array
+    {
+        $assets = $this->formatter->assets();
+        if ($assets === []) {
+            return [];
+        }
+
+        $directory = $config->assetsDir();
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        $written = [];
+        foreach ($assets as $name => $contents) {
+            $path = $directory . DIRECTORY_SEPARATOR . $name;
+
+            if (@file_put_contents($path, $contents) === false) {
+                throw new WriteFailed($path);
+            }
+
+            $written[] = $path;
+        }
+
+        return $written;
     }
 }

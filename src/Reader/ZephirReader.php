@@ -67,7 +67,10 @@ final class ZephirReader implements Reader
             }
         }
 
-        return new Registry(ClassDefinitionCollection::fromDefinitions($definitions));
+        return new Registry(
+            ClassDefinitionCollection::fromDefinitions($definitions),
+            $config->rootNamespace()
+        );
     }
 
     /**

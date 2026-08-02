@@ -17,9 +17,8 @@ namespace Phalcon\Quill\Model;
  * How a definition was declared: the keyword, plus the modifiers that qualify
  * it.
  *
- * `isAbstract` and `isFinal` are null for anything but a class, because the
- * concept does not apply - an interface is not "not abstract", the question is
- * meaningless. Storing false there would assert something untrue.
+ * `isAbstract` and `isFinal` are null for anything but a class: an interface is
+ * not "not abstract", so false would assert something untrue.
  *
  * Built only through the named constructors, so an abstract interface is
  * unrepresentable rather than merely rejected.

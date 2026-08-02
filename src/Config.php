@@ -24,6 +24,8 @@ use function is_string;
 use function rtrim;
 use function str_replace;
 use function str_starts_with;
+use function strtolower;
+use function trim;
 
 /**
  * Everything the readers and formatters need that is project-specific.
@@ -43,11 +45,19 @@ final class Config
         'branch',
         'prefix',
         'extension',
+        'namespace',
     ];
 
+    private readonly string $assetsDir;
     private readonly string $outputDir;
     private readonly string $sourceRoot;
 
+    /**
+     * `$assetsDir` defaults to the output directory, which puts a formatter's
+     * assets beside the documents they style. A destination that separates the
+     * two - as an mkdocs site separates `docs/api` from `docs/assets/css` -
+     * names it instead.
+     */
     public function __construct(
         private readonly string $language,
         string $sourceRoot,
@@ -56,9 +66,12 @@ final class Config
         private readonly string $branch,
         private readonly string $sourcePrefix,
         private readonly string $extension,
+        private readonly string $rootNamespace,
+        string $assetsDir = '',
     ) {
         $this->sourceRoot = rtrim($sourceRoot, '/');
         $this->outputDir  = rtrim($outputDir, '/');
+        $this->assetsDir  = $assetsDir === '' ? $this->outputDir : rtrim($assetsDir, '/');
     }
 
     /**
@@ -77,6 +90,11 @@ final class Config
             $values[$key] = $value;
         }
 
+        // Absent from KEYS on purpose: a project that keeps assets with its
+        // documents says nothing and takes the constructor's default.
+        /** @var mixed $assets */
+        $assets = $config['assets'] ?? null;
+
         return new self(
             $values['language'],
             self::absolute($values['source'], $root),
@@ -85,6 +103,8 @@ final class Config
             $values['branch'],
             $values['prefix'],
             $values['extension'],
+            trim($values['namespace'], '\\'),
+            is_string($assets) && $assets !== '' ? self::absolute($assets, $root) : '',
         );
     }
 
@@ -113,6 +133,11 @@ final class Config
         return str_starts_with($path, '/') ? $path : rtrim($root, '/') . '/' . $path;
     }
 
+    public function assetsDir(): string
+    {
+        return $this->assetsDir;
+    }
+
     public function branch(): string
     {
         return $this->branch;
@@ -133,9 +158,28 @@ final class Config
         return $this->outputDir;
     }
 
+    /**
+     * What a generated page file is named before its own segment - the root
+     * namespace lowercased, which is where `phalcon_acl.md` comes from.
+     */
+    public function pagePrefix(): string
+    {
+        return strtolower($this->rootNamespace) . '_';
+    }
+
     public function repository(): string
     {
         return $this->repository;
+    }
+
+    /**
+     * The namespace every documented declaration sits under. Headings drop it,
+     * page names carry it lowercased, and short-name resolution falls back to
+     * it.
+     */
+    public function rootNamespace(): string
+    {
+        return $this->rootNamespace;
     }
 
     public function sourcePrefix(): string
@@ -159,6 +203,9 @@ final class Config
     /**
      * A copy writing somewhere else, for one-off runs that must not touch the
      * configured destination. Normal use never needs it.
+     *
+     * The assets directory is not carried over - a redirected run wants
+     * everything it produces in the one place.
      */
     public function withOutputDir(string $outputDir): self
     {
@@ -170,6 +217,7 @@ final class Config
             $this->branch,
             $this->sourcePrefix,
             $this->extension,
+            $this->rootNamespace,
         );
     }
 }

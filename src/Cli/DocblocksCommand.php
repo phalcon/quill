@@ -31,9 +31,7 @@ use const STDOUT;
  * Writes the documentation disagreements between two implementations as CSV,
  * one row per difference, with an empty column for the decision.
  *
- * A spreadsheet is the right medium: hundreds of rows of two-sided prose where
- * a human picks a side. Filling the decision column is the whole workflow;
- * nothing here edits source.
+ * Filling that column is the whole workflow; nothing here edits source.
  */
 final class DocblocksCommand
 {

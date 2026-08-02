@@ -26,10 +26,8 @@ use function ksort;
 /**
  * Every definition read from one source tree, keyed by its FQCN.
  *
- * The member collections each own their own narrowing and ordering; this is
- * the same idea one level up, for the definitions themselves. Keying by FQCN
- * is this object's business alone - a reader hands over what it read and does
- * not need to know what the key is.
+ * Keying by FQCN is this object's business alone - a reader hands over what it
+ * read and does not need to know what the key is.
  *
  * Registry wraps one of these and answers the questions that need the whole
  * set at once, such as who extends whom.

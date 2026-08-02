@@ -14,8 +14,8 @@ declare(strict_types=1);
 namespace Phalcon\Quill\Model;
 
 /**
- * What a definition connects to. All short names as written in the source;
- * Registry resolves them against the rest of the tree.
+ * What a definition connects to. Names are absolute and backslash-prefixed -
+ * the readers resolve them through Imports::qualify() as they read.
  */
 final class Relations
 {

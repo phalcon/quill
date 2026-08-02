@@ -78,7 +78,10 @@ final class PhpReader implements Reader
             }
         }
 
-        return new Registry(ClassDefinitionCollection::fromDefinitions($definitions));
+        return new Registry(
+            ClassDefinitionCollection::fromDefinitions($definitions),
+            $config->rootNamespace()
+        );
     }
 
     private function docComment(Node $node): ?string
@@ -88,10 +91,9 @@ final class PhpReader implements Reader
 
     /**
      * A referenced name, resolved. php-parser drops the leading backslash from
-     * a fully qualified name, which loses the one thing that says the name is
-     * global rather than relative to the current namespace - and
-     * `Phalcon\X\Exception extends \Exception` would then resolve to itself -
-     * so it goes back on before Imports resolves the rest.
+     * a fully qualified name, so it goes back on before Imports resolves the
+     * rest - without it, `Phalcon\X\Exception extends \Exception` resolves to
+     * itself.
      */
     private function name(Node\Name $name, Imports $imports, string $namespace): string
     {

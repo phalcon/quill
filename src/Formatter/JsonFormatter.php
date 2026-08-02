@@ -37,6 +37,16 @@ final class JsonFormatter implements Formatter
 {
     public const DOCUMENT = 'model';
 
+    /**
+     * None. A model document is data, and data is not styled.
+     *
+     * @return array<string, string>
+     */
+    public function assets(): array
+    {
+        return [];
+    }
+
     public function extension(): string
     {
         return 'json';

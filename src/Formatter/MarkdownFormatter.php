@@ -15,6 +15,7 @@ namespace Phalcon\Quill\Formatter;
 
 use Phalcon\Quill\Config;
 use Phalcon\Quill\Contracts\Formatter;
+use Phalcon\Quill\Exceptions\MissingAsset;
 use Phalcon\Quill\Formatter\Markdown\Html;
 use Phalcon\Quill\Formatter\Markdown\Naming;
 use Phalcon\Quill\Formatter\Markdown\Signature;
@@ -26,7 +27,9 @@ use Phalcon\Quill\Model\Registry;
 use function array_keys;
 use function array_map;
 use function count;
+use function dirname;
 use function explode;
+use function file_get_contents;
 use function implode;
 use function ksort;
 use function sort;
@@ -52,6 +55,8 @@ use const PHP_EOL;
  */
 final class MarkdownFormatter implements Formatter
 {
+    public const STYLESHEET = 'api.css';
+
     private readonly Html $html;
     private readonly Naming $naming;
     private readonly Signature $signature;
@@ -61,6 +66,25 @@ final class MarkdownFormatter implements Formatter
         $this->html      = new Html();
         $this->naming    = new Naming();
         $this->signature = new Signature($this->html);
+    }
+
+    /**
+     * The stylesheet the emitted markup depends on: selectors only. Colors come
+     * from `--api-*` custom properties it reads but does not define, leaving the
+     * palette - and light and dark - to whichever site renders the pages.
+     *
+     * @return array<string, string>
+     */
+    public function assets(): array
+    {
+        $path  = dirname(__DIR__, 2) . '/resources/' . self::STYLESHEET;
+        $sheet = @file_get_contents($path);
+
+        if ($sheet === false) {
+            throw new MissingAsset($path);
+        }
+
+        return [self::STYLESHEET => $sheet];
     }
 
     public function extension(): string
@@ -95,7 +119,7 @@ final class MarkdownFormatter implements Formatter
             EOT;
 
         foreach (array_keys($pages) as $page) {
-            $index .= $this->indexLine($page);
+            $index .= $this->indexLine($page, $config);
         }
 
         $output['index'] = $index;
@@ -109,7 +133,7 @@ final class MarkdownFormatter implements Formatter
 
                 !!! info "NOTE"
 
-                    All classes are prefixed with `Phalcon`
+                    All classes are prefixed with `{$config->rootNamespace()}`
 
                 EOT;
 
@@ -145,7 +169,7 @@ final class MarkdownFormatter implements Formatter
             $css   = 'final';
         }
 
-        $output = "\n\n## " . $this->naming->title($class) . "\n\n"
+        $output = "\n\n## " . $this->naming->title($class, $config) . "\n\n"
             . "<span class=\"badge badge--{$css}\">{$badge}</span>\n"
             . "[:material-github: Source on GitHub]"
             . '(' . $config->sourceUrl($class->location->relPath) . ')'
@@ -158,10 +182,10 @@ final class MarkdownFormatter implements Formatter
         $output .= $this->tree($class, $registry, $config);
         $output .= $this->uses($class);
         $output .= $this->usedBy($class, $registry, $config);
-        $output .= $this->summary($class);
+        $output .= $this->summary($class, $config);
         $output .= $this->constants($class);
         $output .= $this->properties($class);
-        $output .= $this->methodDetails($class);
+        $output .= $this->methodDetails($class, $config);
 
         return $output;
     }
@@ -205,7 +229,7 @@ final class MarkdownFormatter implements Formatter
             return "`{$display}`";
         }
 
-        $href       = '#' . $this->naming->anchor($target);
+        $href       = '#' . $this->naming->anchor($target, $config);
         $targetPage = $this->naming->pageKey($target, $config);
         if ($targetPage !== $currentPage) {
             $href = $targetPage . '.md' . $href;
@@ -214,13 +238,15 @@ final class MarkdownFormatter implements Formatter
         return "[`{$display}`]({$href})";
     }
 
-    private function indexLine(string $page): string
+    private function indexLine(string $page, Config $config): string
     {
-        return '- [Phalcon ' . ucfirst(str_replace('phalcon_', '', $page)) . ']'
+        $label = ucfirst(str_replace($config->pagePrefix(), '', $page));
+
+        return '- [' . $config->rootNamespace() . ' ' . $label . ']'
             . '(' . $page . '.md)' . PHP_EOL;
     }
 
-    private function methodDetails(ClassDefinition $class): string
+    private function methodDetails(ClassDefinition $class, Config $config): string
     {
         $groups = $this->orderMethods($class->members->methods);
         if ($groups['public']->isEmpty() && $groups['protected']->isEmpty()) {
@@ -239,7 +265,7 @@ final class MarkdownFormatter implements Formatter
             $output .= "\n<div class=\"api-group\">{$label} · {$count}</div>\n";
 
             foreach ($groups[$group] as $method) {
-                $anchor    = $this->naming->methodAnchor($class, $method->name);
+                $anchor    = $this->naming->methodAnchor($class, $method->name, $config);
                 $signature = implode("\n", $this->signature->lines($method));
 
                 $output .= "\n#### `{$method->name}()` { #{$anchor} }\n\n"
@@ -327,7 +353,7 @@ final class MarkdownFormatter implements Formatter
         return $output . "</div>\n";
     }
 
-    private function summary(ClassDefinition $class): string
+    private function summary(ClassDefinition $class, Config $config): string
     {
         $groups = $this->orderMethods($class->members->methods);
         if ($groups['public']->isEmpty() && $groups['protected']->isEmpty()) {
@@ -338,7 +364,7 @@ final class MarkdownFormatter implements Formatter
 
         foreach (['public', 'protected'] as $group) {
             foreach ($groups[$group] as $method) {
-                $anchor = $this->naming->methodAnchor($class, $method->name);
+                $anchor = $this->naming->methodAnchor($class, $method->name, $config);
 
                 $output .= "<a class=\"api-item\" href=\"#{$anchor}\">\n"
                     . "<code class=\"vis vis-{$group}\">{$group}</code>\n";

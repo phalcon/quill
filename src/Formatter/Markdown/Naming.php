@@ -19,7 +19,10 @@ use Phalcon\Quill\Model\ClassDefinition;
 use function explode;
 use function preg_replace;
 use function str_replace;
+use function str_starts_with;
+use function strlen;
 use function strtolower;
+use function substr;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -35,14 +38,14 @@ final class Naming
     /**
      * The mkdocs heading anchor: the title with everything mkdocs would strip.
      */
-    public function anchor(ClassDefinition $class): string
+    public function anchor(ClassDefinition $class, Config $config): string
     {
-        return strtolower((string) preg_replace('/[^\w\s-]/', '', $this->title($class)));
+        return strtolower((string) preg_replace('/[^\w\s-]/', '', $this->title($class, $config)));
     }
 
-    public function methodAnchor(ClassDefinition $class, string $methodName): string
+    public function methodAnchor(ClassDefinition $class, string $methodName, Config $config): string
     {
-        return $this->anchor($class) . '-' . strtolower($methodName);
+        return $this->anchor($class, $config) . '-' . strtolower($methodName);
     }
 
     /**
@@ -53,15 +56,19 @@ final class Naming
         $segments = explode(DIRECTORY_SEPARATOR, $class->location->relPath);
         $key      = str_replace('.' . $config->extension(), '', $segments[0]);
 
-        return 'phalcon_' . strtolower($key);
+        return $config->pagePrefix() . strtolower($key);
     }
 
     /**
-     * The heading text: the FQCN without the vendor root, which the page's
+     * The heading text: the FQCN without the root namespace, which the page's
      * own notice already states.
      */
-    public function title(ClassDefinition $class): string
+    public function title(ClassDefinition $class, Config $config): string
     {
-        return (string) preg_replace('/^Phalcon\\\\/', '', $class->location->fqcn);
+        $root = $config->rootNamespace() . '\\';
+
+        return str_starts_with($class->location->fqcn, $root)
+            ? substr($class->location->fqcn, strlen($root))
+            : $class->location->fqcn;
     }
 }

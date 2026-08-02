@@ -42,17 +42,13 @@ final class Imports
     /**
      * A name written in this file, resolved to an absolute one.
      *
-     * Both languages spell a parent three ways - `\Foo` outright, `Foo` behind
-     * a `use`, or `Foo` meaning the sibling in the same namespace - and which
-     * one a source picks says nothing about what it means. Recording the name
-     * as written left the model carrying all three spellings, so two trees that
-     * agree looked like they disagreed.
+     * Both languages spell a parent three ways - `\Foo`, `Foo` behind a `use`,
+     * or `Foo` meaning the sibling in the same namespace - so recording it as
+     * written leaves one relation carrying three spellings, and two trees that
+     * agree look like they disagree.
      *
-     * The rules are PHP's, and Zephir follows them: a leading backslash is
-     * already absolute, a first segment matching an import takes that import's
-     * target, and anything else belongs to the enclosing namespace. The
-     * backslash stays on the way out, marking the name as resolved rather than
-     * relative to wherever it is read next.
+     * Resolution is PHP's, which Zephir follows. The leading backslash stays on
+     * the way out, marking the name as resolved rather than relative.
      */
     public function qualify(string $name, string $namespace): string
     {

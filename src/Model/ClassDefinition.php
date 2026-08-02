@@ -16,13 +16,12 @@ namespace Phalcon\Quill\Model;
 /**
  * One class, interface, trait or enum.
  *
- * Immutable, and deliberately unaware of any other definition: resolving short
- * names to FQCNs, ancestors and children is Registry's job, which keeps this
- * object language-agnostic and readonly.
+ * Immutable, and deliberately unaware of any other definition: ancestors and
+ * children are Registry's job, which keeps this object language-agnostic and
+ * readonly.
  *
  * `description` stands alone because it is the only field here that is human
- * prose rather than a parsed fact. It is also where a richer Documentation
- * object would appear if docblock tags are ever surfaced.
+ * prose rather than a parsed fact.
  */
 final class ClassDefinition implements Definition
 {

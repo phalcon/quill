@@ -17,8 +17,7 @@ namespace Phalcon\Quill\Model;
  * The keyword a declaration opens with - which of PHP's four class-like
  * declarations this is.
  *
- * Not a "type": a trait is never an object, an interface cannot be
- * instantiated, and the model already uses `type` for parameter, return and
+ * Not called a "type": the model already uses `type` for parameter, return and
  * property types.
  *
  * `ClassType` carries a suffix because PHP reserves `Class` as a constant name

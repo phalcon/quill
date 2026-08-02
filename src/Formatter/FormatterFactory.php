@@ -20,8 +20,7 @@ use Phalcon\Quill\Exceptions\UnknownFormat;
  * Resolves a requested output format to its formatter.
  *
  * Format is a run parameter rather than project configuration - the same
- * sources are legitimately rendered as pages one moment and as a model
- * document the next.
+ * sources are rendered as pages one moment and as a model document the next.
  */
 final class FormatterFactory
 {

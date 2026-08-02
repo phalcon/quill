@@ -21,10 +21,9 @@ use function is_string;
 /**
  * Reaches one section of members out of a decoded model document.
  *
- * A document read from disk is untrusted shape, so every step down to a
- * member has to be guarded. Both comparisons need the same walk and differ
- * only in what they keep from it, so the walk lives here and they take the
- * keys or the values as they need.
+ * A document read from disk is untrusted shape, so every step down to a member
+ * has to be guarded. Both comparisons need the same guarded walk and differ
+ * only in whether they keep the keys or the values.
  */
 final class MemberIndex
 {

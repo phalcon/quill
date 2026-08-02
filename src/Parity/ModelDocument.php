@@ -62,18 +62,12 @@ final class ModelDocument
             throw new MalformedDocument($path);
         }
 
-        /**
-         * The version gate comes before anything is read out of the document,
-         * and before the shape of what is inside it is judged - an older
-         * document is better explained by its version than by the key that
-         * moved. Two versions disagree about where things live, and a
-         * comparison that ran anyway would report those moves as differences
-         * between the two implementations: false findings in the one tool
-         * meant to surface real ones.
-         *
-         * Language is deliberately not gated: comparing zephir against php is
-         * the whole point, so it is carried for reporting only.
-         */
+        // The version gate comes before the shape is judged: two versions
+        // disagree about where things live, and a comparison that ran anyway
+        // would report those moves as differences between the implementations.
+        //
+        // Language is deliberately not gated - comparing zephir against php is
+        // the point, so it is carried for reporting only.
         $version = $decoded[Document::VERSION] ?? null;
         if ($version !== ClassDefinition::MODEL_VERSION) {
             throw new IncompatibleDocument(

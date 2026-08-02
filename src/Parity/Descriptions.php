@@ -25,9 +25,8 @@ use function usort;
 /**
  * Finds documentation text that two implementations disagree about.
  *
- * Only definitions and members that exist on both sides are considered -
- * anything present on one side alone is a structural difference, not a
- * wording one, and belongs to a different conversation.
+ * Only definitions and members present on both sides are considered - anything
+ * on one side alone is a structural difference, which Comparison reports.
  */
 final class Descriptions
 {

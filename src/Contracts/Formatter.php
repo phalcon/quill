@@ -23,6 +23,17 @@ use Phalcon\Quill\Model\Registry;
 interface Formatter
 {
     /**
+     * Static files the output needs alongside the documents, invariant of the
+     * sources. They ship with the formatter because they restate its output -
+     * a stylesheet's class names are the ones the formatter writes.
+     *
+     * Empty for a formatter whose output stands alone.
+     *
+     * @return array<string, string> file name => contents
+     */
+    public function assets(): array;
+
+    /**
      * The file extension the documents are written with, without the dot.
      */
     public function extension(): string;
