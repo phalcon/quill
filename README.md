@@ -45,6 +45,7 @@ the way the Zephir one is.
     vendor/bin/quill generate                             every page, using ./quill.php
     vendor/bin/quill generate encryption                  only pages matching the filter
     vendor/bin/quill generate --format=json               one model document instead
+    vendor/bin/quill generate --namespace=Phalcon\Config  one namespace and below
     vendor/bin/quill parity left.json right.json          structural differences
     vendor/bin/quill docblocks left.json right.json out.csv
 
@@ -55,6 +56,7 @@ the way the Zephir one is.
 | `--config=<path>` | explicit path to `quill.php`, default `./quill.php` |
 | `--output=<dir>` | destination override for one run; assets follow the documents |
 | `--format=<name>` | `markdown` (default) or `json` |
+| `--namespace=<ns>` | limit to one namespace and everything beneath it; the configured root is implied, so `Config` and `Phalcon\Config` are the same. A namespace matching nothing is an error |
 | `--help`, `-h` | usage |
 | `<filter>` | positional; narrows what is written, matched case-insensitively |
 
@@ -155,6 +157,11 @@ disagree.
 
     vendor/bin/quill generate --format=json --config=cphalcon/quill.php
     vendor/bin/quill generate --format=json --config=phalcon/quill.php
+
+Add `--namespace=` to both sides to compare one subsystem at a time, which keeps the diff
+readable:
+
+    vendor/bin/quill generate --format=json --namespace=Phalcon\Config --config=cphalcon/quill.php
 
 `parity` reports definitions present on one side only and, for shared ones, which members
 differ. It exits non-zero when anything differs, so it can gate a build.
