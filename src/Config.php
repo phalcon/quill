@@ -124,10 +124,6 @@ final class Config
         return self::fromArray($config, dirname($path));
     }
 
-    /**
-     * Mirrors Talon\Cli\SuiteMap::absolute() - a leading slash wins, anything
-     * else is relative to the configuration file's directory.
-     */
     private static function absolute(string $path, string $root): string
     {
         return str_starts_with($path, '/') ? $path : rtrim($root, '/') . '/' . $path;

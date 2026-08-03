@@ -30,25 +30,25 @@ final class Classes
     public const BADGE        = 'badge';
     public const BADGE_PREFIX = 'badge--';
 
-    public const DESCRIPTION      = 'desc';
+    public const DESCRIPTION = 'desc';
 
-    public const GROUP   = 'api-group';
-    public const ITEM    = 'api-item';
-    public const LIST    = 'api-list';
-    public const PARAMETER        = 'prm';
-    public const RETURN_TYPE      = 'ret';
-    public const SIGNATURE        = 'sig';
+    public const GROUP       = 'api-group';
+    public const ITEM        = 'api-item';
+    public const LIST        = 'api-list';
+    public const PARAMETER   = 'prm';
+    public const RETURN_TYPE = 'ret';
+    public const SIGNATURE   = 'sig';
 
     public const SOURCE_BUTTON = 'src-btn';
 
-    public const TOKEN_CONSTANT = 'sc';
-    public const TOKEN_FUNCTION = 'sf';
-    public const TOKEN_MUTED    = 'sm';
-    public const TOKEN_TYPE     = 'st';
-    public const TOKEN_VARIABLE = 'sv';
-    public const TREE    = 'api-tree';
-    public const USED_BY = 'api-used-by';
-    public const USES    = 'api-uses';
-    public const VISIBILITY       = 'vis';
+    public const TOKEN_CONSTANT    = 'sc';
+    public const TOKEN_FUNCTION    = 'sf';
+    public const TOKEN_MUTED       = 'sm';
+    public const TOKEN_TYPE        = 'st';
+    public const TOKEN_VARIABLE    = 'sv';
+    public const TREE              = 'api-tree';
+    public const USED_BY           = 'api-used-by';
+    public const USES              = 'api-uses';
+    public const VISIBILITY        = 'vis';
     public const VISIBILITY_PREFIX = 'vis-';
 }

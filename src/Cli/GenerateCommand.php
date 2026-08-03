@@ -70,7 +70,8 @@ final class GenerateCommand
 
         $written = [];
         foreach ($pages as $page => $document) {
-            $path = $output . DIRECTORY_SEPARATOR . $page . '.' . $this->formatter->extension();
+            $path = $output
+                . DIRECTORY_SEPARATOR . $page . '.' . $this->formatter->extension();
 
             $this->write($path, $document);
 
@@ -130,7 +131,8 @@ final class GenerateCommand
      */
     private function prune(string $output, array $written): array
     {
-        $pattern = $output . DIRECTORY_SEPARATOR . '*.' . $this->formatter->extension();
+        $pattern = $output 
+            . DIRECTORY_SEPARATOR . '*.' . $this->formatter->extension();
 
         $removed = [];
         foreach (glob($pattern) ?: [] as $path) {

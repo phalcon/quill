@@ -40,7 +40,9 @@ final class Signature
      */
     public function inline(MethodDefinition $method): string
     {
-        $name   = '<span class="' . Classes::TOKEN_FUNCTION . '">' . $this->html->escape($method->name) . '</span>';
+        $name   = '<span class="'
+            . Classes::TOKEN_FUNCTION . '">' . $this->html->escape($method->name)
+            . '</span>';
         $params = $this->htmlParams($method->parameters);
 
         if (count($method->parameters) < 2) {
@@ -53,7 +55,9 @@ final class Signature
         $last  = count($params) - 1;
         foreach ($params as $index => $param) {
             $comma  = $index < $last ? ',' : '';
-            $lines .= '<span class="' . Classes::PARAMETER . '">' . $param . $comma . '</span>';
+            $lines .= '<span class="'
+                . Classes::PARAMETER . '">' . $param . $comma
+                . '</span>';
         }
 
         return $name . '(' . $lines . ')';

@@ -205,10 +205,14 @@ final class MarkdownFormatter implements Formatter
         $output = "\n### Constants\n\n" . $this->openList();
         foreach ($class->members->constants as $constant) {
             $output .= $this->row(
-                '<code class="' . Classes::RETURN_TYPE . '">' . $this->html->escape($constant->varType) . "</code>\n"
-                . '<code class="' . Classes::SIGNATURE . '"><span class="' . Classes::TOKEN_CONSTANT
+                '<code class="' . Classes::RETURN_TYPE . '">'
+                . $this->html->escape($constant->varType)
+                . "</code>\n"
+                . '<code class="' . Classes::SIGNATURE . '"><span class="'
+                . Classes::TOKEN_CONSTANT
                 . '">' . $this->html->escape($constant->name)
-                . '</span>' . $this->html->default($constant->default) . "</code>\n",
+                . '</span>' . $this->html->default($constant->default)
+                . "</code>\n",
                 $constant->description
             );
         }
@@ -375,10 +379,13 @@ final class MarkdownFormatter implements Formatter
 
             $output .= $this->row(
                 "<code class=\"{$visClass}\">{$visibility}</code>\n"
-                . '<code class="' . Classes::RETURN_TYPE . '">' . $this->html->escape($property->varType) . "</code>\n"
-                . '<code class="' . Classes::SIGNATURE . '"><span class="' . Classes::TOKEN_VARIABLE
+                . '<code class="' . Classes::RETURN_TYPE . '">'
+                . $this->html->escape($property->varType) . "</code>\n"
+                . '<code class="' . Classes::SIGNATURE . '"><span class="'
+                . Classes::TOKEN_VARIABLE
                 . '">$' . $this->html->escape($property->name)
-                . '</span>' . $this->html->default($property->default) . "</code>\n",
+                . '</span>' . $this->html->default($property->default)
+                . "</code>\n",
                 $property->description
             );
         }
@@ -488,29 +495,52 @@ final class MarkdownFormatter implements Formatter
         return '';
     }
 
-    private function tree(ClassDefinition $class, Registry $registry, Presentation $view): string
-    {
+    private function tree(
+        ClassDefinition $class,
+        Registry $registry,
+        Presentation $view
+    ): string {
         $currentPage = $this->naming->pageKey($class, $view);
         $level       = 0;
         $lines       = [];
 
         foreach ($registry->ancestorsOf($class) as $ancestor) {
             $lines[] = str_repeat(' ', $level * 4) . '- '
-                . $this->fqcnLink($ancestor['display'], $ancestor['fqcn'], $registry, $view, $currentPage);
+                . $this->fqcnLink(
+                    $ancestor['display'],
+                    $ancestor['fqcn'],
+                    $registry,
+                    $view,
+                    $currentPage
+                );
             $level++;
         }
 
         $current = str_repeat(' ', $level * 4) . "- **`{$class->location->fqcn}`**";
 
         $annotations = [];
-        if ($class->structure->keyword === Keyword::Interface && count($class->relations->extends) > 1) {
+        if ($class->structure->keyword === Keyword::Interface
+            && count($class->relations->extends) > 1
+        ) {
             $annotations[] = 'extends '
-                . $this->relationLinks($class->relations->extends, $class, $registry, $view, $currentPage);
+                . $this->relationLinks(
+                    $class->relations->extends,
+                    $class,
+                    $registry,
+                    $view,
+                    $currentPage
+                );
         }
 
         if ($class->relations->implements !== []) {
             $annotations[] = 'implements '
-                . $this->relationLinks($class->relations->implements, $class, $registry, $view, $currentPage);
+                . $this->relationLinks(
+                    $class->relations->implements,
+                    $class,
+                    $registry,
+                    $view,
+                    $currentPage
+                );
         }
 
         if ($annotations !== []) {

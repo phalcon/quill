@@ -368,7 +368,12 @@ final class ZephirReader extends AbstractReader
                 $this->propertyVisibility($property->strings('visibility')),
                 false,
                 $this->renderDefault($default),
-                $this->varType($doc, $default, $property->text('data-type')),
+                $this->varType(
+                    $doc,
+                    $default,
+                    $property->text('data-type'),
+                    $property->node('cast')?->text('value')
+                ),
                 $doc->description(),
                 $shortcuts
             );
@@ -474,17 +479,22 @@ final class ZephirReader extends AbstractReader
      *
      * `$declared` is null for a constant, which has no declared type, and for
      * an untyped property, where the parser omits the key entirely.
+     *
+     * `$cast` is the class type, which the parser carries on its own node
+     * rather than in `data-type` - `<Responder> chain` reaches here as a cast.
+     * It is already a PHP name, so zephirType() must not see it: a class named
+     * `Long` or `Char` would be rewritten into a scalar.
      */
-    private function varType(Docblock $doc, ?AstNode $default, ?string $declared = null): string
+    private function varType(Docblock $doc, ?AstNode $default, ?string $declared = null, ?string $cast = null): string
     {
         $documented = $doc->varType();
         if ($documented !== null) {
             return $documented;
         }
 
-        if ($declared !== null && $declared !== '') {
-            $type = $this->zephirType($declared);
+        $type = $cast ?? ($declared !== null && $declared !== '' ? $this->zephirType($declared) : null);
 
+        if ($type !== null) {
             // Zephir writes no union on a property, so a declared type with a
             // null default is the only one it can express. The PHP twin spells
             // the same thing `?string`, which renders as `string|null`, and

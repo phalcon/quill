@@ -39,11 +39,20 @@ final class Naming
      */
     public function anchor(ClassDefinition $class, Presentation $presentation): string
     {
-        return strtolower((string) preg_replace('/[^\w\s-]/', '', $this->title($class, $presentation)));
+        return strtolower(
+            (string) preg_replace(
+                '/[^\w\s-]/',
+                '',
+                $this->title($class, $presentation)
+            )
+        );
     }
 
-    public function methodAnchor(ClassDefinition $class, string $methodName, Presentation $presentation): string
-    {
+    public function methodAnchor(
+        ClassDefinition $class,
+        string $methodName,
+        Presentation $presentation
+    ): string {
         return $this->anchor($class, $presentation) . '-' . strtolower($methodName);
     }
 

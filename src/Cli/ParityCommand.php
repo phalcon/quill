@@ -90,7 +90,9 @@ final class ParityCommand
             }
         }
 
-        $clean = $report['leftOnly'] === [] && $report['rightOnly'] === [] && $differing === [];
+        $clean = $report['leftOnly'] === []
+            && $report['rightOnly'] === []
+            && $differing === [];
 
         return $clean ? 0 : 1;
     }
@@ -105,7 +107,10 @@ final class ParityCommand
             return;
         }
 
-        fwrite($this->stdout, sprintf('  ... and %d more%s', $total - $limit, PHP_EOL));
+        fwrite(
+            $this->stdout,
+            sprintf('  ... and %d more%s', $total - $limit, PHP_EOL)
+        );
     }
 
     /**
