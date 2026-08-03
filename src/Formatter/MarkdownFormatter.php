@@ -519,7 +519,8 @@ final class MarkdownFormatter implements Formatter
         $current = str_repeat(' ', $level * 4) . "- **`{$class->location->fqcn}`**";
 
         $annotations = [];
-        if ($class->structure->keyword === Keyword::Interface
+        if (
+            $class->structure->keyword === Keyword::Interface
             && count($class->relations->extends) > 1
         ) {
             $annotations[] = 'extends '

@@ -60,7 +60,7 @@ final class DocblocksCommand
         // The escape parameter is explicit: its default changes in PHP 8.4,
         // and an escape character would corrupt docblocks containing one.
         fputcsv(
-            $handle, 
+            $handle,
             ['fqcn', 'kind', 'member', $leftLabel, $rightLabel, 'winner'],
             ',',
             '"',
