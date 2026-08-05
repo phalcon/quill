@@ -22,8 +22,11 @@ use Phalcon\Quill\Exceptions\MissingConfiguration;
 use Phalcon\Quill\Exceptions\MissingConfigurationKey;
 use Phalcon\Quill\Exceptions\MissingDependency;
 use Phalcon\Quill\Exceptions\MissingDocument;
+use Phalcon\Quill\Exceptions\MissingTemplate;
+use Phalcon\Quill\Exceptions\MissingTemplateDirectory;
 use Phalcon\Quill\Exceptions\UnknownFormat;
 use Phalcon\Quill\Exceptions\UnknownLanguage;
+use Phalcon\Quill\Exceptions\UnknownPlaceholder;
 use Phalcon\Quill\Exceptions\WriteFailed;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -112,6 +115,41 @@ final class ExceptionsTest extends TestCase
         );
     }
 
+    /**
+     * Silently ignoring the key would produce a successful run that applied no
+     * override, so the message has to offer both ways out rather than only
+     * report the fault.
+     */
+    public function testAMissingTemplateDirectoryOffersBothWaysOut(): void
+    {
+        $exception = new MissingTemplateDirectory('/project/docs/tpl');
+
+        $this->assertSame(
+            "The configured templates directory '/project/docs/tpl' is not a"
+            . ' directory. Remove the `templates` key to use the shipped'
+            . ' templates, or correct the path - a run that silently ignored'
+            . ' it would apply no override and still report success.',
+            $exception->getMessage()
+        );
+    }
+
+    public function testAMissingTemplateListsEveryPathItTried(): void
+    {
+        $exception = new MissingTemplate(
+            'class',
+            ['/project/tpl/markdown/class.tpl', '/vendor/quill/resources/templates/markdown/class.tpl']
+        );
+
+        $this->assertSame(
+            "The template 'class' was not found. Looked in:"
+            . ' /project/tpl/markdown/class.tpl,'
+            . ' /vendor/quill/resources/templates/markdown/class.tpl.'
+            . ' The shipped set ships with quill, so a copy that cannot find'
+            . ' it is incomplete rather than misconfigured.',
+            $exception->getMessage()
+        );
+    }
+
     public function testAnIncompatibleDocumentReportsBothVersions(): void
     {
         $exception = new IncompatibleDocument('/project/model.json', 6, 7);
@@ -156,6 +194,22 @@ final class ExceptionsTest extends TestCase
         );
     }
 
+    /**
+     * Every unsupplied token at once: fixing them one run at a time is the
+     * difference between one edit and five.
+     */
+    public function testAnUnknownPlaceholderNamesEveryTokenNothingSupplies(): void
+    {
+        $exception = new UnknownPlaceholder('markdown/class', ['badge', 'title']);
+
+        $this->assertSame(
+            "The template 'markdown/class' uses {{badge}}, {{title}}, which"
+            . ' nothing supplies. Placeholders a template does not use are'
+            . ' ignored; ones it invents are not.',
+            $exception->getMessage()
+        );
+    }
+
     public function testAWriteFailureBlamesThePermissionsRatherThanTheUser(): void
     {
         $exception = new WriteFailed('/root/out.md');
@@ -182,8 +236,11 @@ final class ExceptionsTest extends TestCase
             new MissingConfigurationKey('branch'),
             new MissingDependency('a/b', 'Something'),
             new MissingDocument('/a'),
+            new MissingTemplate('class', ['/a']),
+            new MissingTemplateDirectory('/a'),
             new UnknownFormat('pdf', ['json']),
             new UnknownLanguage('cobol', ['php']),
+            new UnknownPlaceholder('markdown/class', ['title']),
             new WriteFailed('/a'),
         ];
 

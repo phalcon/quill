@@ -22,6 +22,12 @@ namespace Phalcon\Quill\Formatter\Markdown;
  * rename was invisible here and surfaced as an unstyled page on a published
  * site; gathered here, the set is something you can read, diff and version.
  *
+ * Five are still read at render time - PARAMETER, TOKEN_FUNCTION, TOKEN_MUTED,
+ * TOKEN_TYPE and TOKEN_VARIABLE, by Signature and Html, which build their
+ * markup in PHP. The rest are declarations: the markup that carries them now
+ * lives in `resources/templates/markdown`, and MarkupContractTest binds the
+ * two together so a name can no longer drift out of either side unnoticed.
+ *
  * Changing a value is a breaking change for the stylesheet. Adding one means
  * adding a rule to api.css in the same commit.
  */

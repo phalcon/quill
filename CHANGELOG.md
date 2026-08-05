@@ -2,6 +2,17 @@
 
 All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
 
+## [0.3.0](https://github.com/phalcon/quill/releases/tag/v0.3.0) (2026-08-03)
+
+### Added
+
+- The Markdown markup now lives in twenty template files under `resources/templates/markdown`, overridable one file at a time. Output is unchanged.
+- The optional `templates` configuration key, naming a directory whose templates are consulted before the shipped ones. A `.tpl` that no lookup can reach - a name outside the shipped set, or a file above the format directory - is reported with the nearest real name and ignored.
+
+### Changed
+
+- Rendering one class moved out of `MarkdownFormatter` into `Formatter\Markdown\ClassPage`.
+
 ## [0.2.3](https://github.com/phalcon/quill/releases/tag/v0.2.3) (2026-08-03)
 
 ### Fixed

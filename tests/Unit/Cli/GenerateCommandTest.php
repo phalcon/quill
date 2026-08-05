@@ -33,12 +33,18 @@ use function fopen;
 use function glob;
 use function is_dir;
 use function is_file;
+use function rewind;
 use function rmdir;
+use function stream_get_contents;
+use function strpos;
 use function unlink;
 
 final class GenerateCommandTest extends TestCase
 {
     private string $outputDir = '';
+
+    /** @var resource|null */
+    private $stdout = null;
 
     protected function setUp(): void
     {
@@ -123,6 +129,28 @@ final class GenerateCommandTest extends TestCase
         } finally {
             $this->assertSame([], glob($this->outputDir . '/*.md') ?: []);
         }
+    }
+
+    /**
+     * The position is load-bearing: format() can throw on a bad placeholder,
+     * and a warning printed after the per-page lines is buried in a successful
+     * run.
+     */
+    public function testAnUnrecognizedOverrideWarnsBeforeAnyPage(): void
+    {
+        $this->command()->execute(
+            $this->config('', dirname(__DIR__, 2) . '/Fixtures/templates'),
+            Selection::none()
+        );
+
+        $output = $this->emitted();
+
+        $warningAt    = strpos($output, 'Warning:');
+        $processingAt = strpos($output, 'Processing:');
+
+        $this->assertNotFalse($warningAt);
+        $this->assertNotFalse($processingAt);
+        $this->assertLessThan($processingAt, $warningAt);
     }
 
     public function testAnUnwritableAssetFailsLoudly(): void
@@ -223,19 +251,22 @@ final class GenerateCommandTest extends TestCase
         $this->remove($this->outputDir);
     }
 
-    private function command(?Formatter $formatter = null): GenerateCommand
+    private function command(?Formatter $formatter = null, string $format = 'markdown'): GenerateCommand
     {
         $stdout = fopen('php://memory', 'rb+');
         $this->assertIsResource($stdout);
 
+        $this->stdout = $stdout;
+
         return new GenerateCommand(
             new ReaderFactory(),
             $formatter ?? new MarkdownFormatter(),
+            $format,
             $stdout
         );
     }
 
-    private function config(string $assetsDir = ''): Config
+    private function config(string $assetsDir = '', string $templatesDir = ''): Config
     {
         return new Config(
             'zephir',
@@ -246,8 +277,22 @@ final class GenerateCommandTest extends TestCase
             'phalcon',
             'zep',
             'Phalcon',
-            $assetsDir
+            $assetsDir,
+            $templatesDir
         );
+    }
+
+    /**
+     * Everything the last command() built wrote to its stdout.
+     */
+    private function emitted(): string
+    {
+        $stdout = $this->stdout;
+        $this->assertIsResource($stdout);
+
+        rewind($stdout);
+
+        return (string) stream_get_contents($stdout);
     }
 
     /**

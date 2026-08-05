@@ -51,6 +51,7 @@ final class Config
     private readonly string $assetsDir;
     private readonly string $outputDir;
     private readonly string $sourceRoot;
+    private readonly string $templatesDir;
 
     /**
      * `$assetsDir` defaults to the output directory, which puts a formatter's
@@ -68,10 +69,12 @@ final class Config
         private readonly string $extension,
         private readonly string $rootNamespace,
         string $assetsDir = '',
+        string $templatesDir = '',
     ) {
-        $this->sourceRoot = rtrim($sourceRoot, '/');
-        $this->outputDir  = rtrim($outputDir, '/');
-        $this->assetsDir  = $assetsDir === '' ? $this->outputDir : rtrim($assetsDir, '/');
+        $this->sourceRoot   = rtrim($sourceRoot, '/');
+        $this->outputDir    = rtrim($outputDir, '/');
+        $this->assetsDir    = $assetsDir === '' ? $this->outputDir : rtrim($assetsDir, '/');
+        $this->templatesDir = rtrim($templatesDir, '/');
     }
 
     /**
@@ -95,6 +98,11 @@ final class Config
         /** @var mixed $assets */
         $assets = $config['assets'] ?? null;
 
+        // Absent from KEYS on purpose: a project using the shipped templates
+        // says nothing and takes the constructor's default.
+        /** @var mixed $templates */
+        $templates = $config['templates'] ?? null;
+
         return new self(
             $values['language'],
             self::absolute($values['source'], $root),
@@ -105,6 +113,7 @@ final class Config
             $values['extension'],
             trim($values['namespace'], '\\'),
             is_string($assets) && $assets !== '' ? self::absolute($assets, $root) : '',
+            is_string($templates) && $templates !== '' ? self::absolute($templates, $root) : '',
         );
     }
 
@@ -197,14 +206,28 @@ final class Config
     }
 
     /**
+     * Where a consumer's own templates live, or '' when they use the shipped
+     * set. The formatter resolves each template name here first.
+     */
+    public function templatesDir(): string
+    {
+        return $this->templatesDir;
+    }
+
+    /**
      * A copy writing somewhere else, for one-off runs that must not touch the
      * configured destination. Normal use never needs it.
      *
      * The assets directory is not carried over - a redirected run wants
-     * everything it produces in the one place.
+     * everything it produces in the one place. The templates directory is,
+     * because templates are input: a redirected run that fell back to the
+     * shipped set would not be the same run, and a diff against it would come
+     * back clean having proved nothing.
      */
     public function withOutputDir(string $outputDir): self
     {
+        // Assets are passed empty explicitly in order to reach templates
+        // positionally - dropping the one and carrying the other in one call.
         return new self(
             $this->language,
             $this->sourceRoot,
@@ -214,6 +237,8 @@ final class Config
             $this->sourcePrefix,
             $this->extension,
             $this->rootNamespace,
+            '',
+            $this->templatesDir,
         );
     }
 }
