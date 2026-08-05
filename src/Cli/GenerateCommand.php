@@ -20,6 +20,7 @@ use Phalcon\Quill\Exceptions\WriteFailed;
 use Phalcon\Quill\Model\Registry;
 use Phalcon\Quill\Reader\ReaderFactory;
 use Phalcon\Quill\Selection;
+use Phalcon\Quill\Template\Templates;
 
 use function array_keys;
 use function basename;
@@ -46,6 +47,7 @@ final class GenerateCommand
     public function __construct(
         private readonly ReaderFactory $factory,
         private readonly Formatter $formatter,
+        private readonly string $format,
         private $stdout = STDOUT,
     ) {
     }
@@ -56,6 +58,15 @@ final class GenerateCommand
      */
     public function execute(Config $config, Selection $selection): int
     {
+        // First, before anything can throw and before the per-page lines. A
+        // consumer with both a misnamed override and a bad token would
+        // otherwise get the exception and never see the warning that explains
+        // it, and a warning printed after the pages is line 31 of a 45-line
+        // successful run, which nobody reads.
+        foreach (Templates::unrecognized($this->format, $config->templatesDir()) as $warning) {
+            fwrite($this->stdout, 'Warning: ' . $warning . PHP_EOL);
+        }
+
         $reader   = $this->factory->create($config->language());
         $registry = $reader->read($config);
 
