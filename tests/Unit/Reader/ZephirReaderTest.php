@@ -90,6 +90,26 @@ final class ZephirReaderTest extends TestCase
         $this->assertSame('int', $plain['count']);
     }
 
+    /**
+     * Zephir writes no union, so a declared type with a null default is the
+     * only one it can express - and it is the same thing the PHP twin spells
+     * `?string`. Read as the bare declaration, the two implementations would
+     * report a parity difference that is not one.
+     */
+    public function testATypedPropertyWithANullDefaultIsNullable(): void
+    {
+        $properties = [];
+        foreach ($this->shapes()->members->properties->all() as $property) {
+            $properties[$property->name] = $property;
+        }
+
+        $this->assertSame('string|null', $properties['title']->varType);
+
+        // The same declaration without the null default stays bare, so it is
+        // the default doing the widening rather than the type being optional.
+        $this->assertSame('array', $properties['registry']->varType);
+    }
+
     public function testCapturesPrivateMembers(): void
     {
         $class = $this->sample();

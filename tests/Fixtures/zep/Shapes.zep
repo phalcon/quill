@@ -36,6 +36,10 @@ abstract class Shapes extends Consumer implements Countable, Stringable
     // only thing that can name the type.
     protected array registry;
 
+    // A declared type with a null default, which is the only union Zephir can
+    // express. The PHP twin spells the same thing `?string`.
+    protected string title = null;
+
     public function withCast(<Consumer> item) -> <Consumer>
     {
         return item;

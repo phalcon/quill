@@ -50,6 +50,13 @@ final class ConfigTest extends TestCase
         $this->assertSame('/project/docs/assets/css', $config->assetsDir());
     }
 
+    public function testAnAbsoluteTemplatesPathWins(): void
+    {
+        $config = Config::fromArray($this->values(['templates' => '/elsewhere/tpl']), '/project');
+
+        $this->assertSame('/elsewhere/tpl', $config->templatesDir());
+    }
+
     /**
      * The namespace is a name, not a path, so the separators a project might
      * write around it are stripped rather than carried into every page key and
@@ -74,6 +81,22 @@ final class ConfigTest extends TestCase
 
         $this->assertSame($absent->outputDir(), $absent->assetsDir());
         $this->assertSame($empty->outputDir(), $empty->assetsDir());
+    }
+
+    public function testARedirectedRunKeepsTemplatesAndDropsAssets(): void
+    {
+        $config = Config::fromArray(
+            $this->values(['assets' => '/assets', 'templates' => '/tpl']),
+            '/project'
+        );
+
+        $copy = $config->withOutputDir('/elsewhere');
+
+        // Templates are input: a redirected run must read the same files or it
+        // is not the same run. Assets are output, and a redirected run wants
+        // everything it produces in one place.
+        $this->assertSame('/tpl', $copy->templatesDir());
+        $this->assertSame('/elsewhere', $copy->assetsDir());
     }
 
     /**
@@ -168,6 +191,20 @@ final class ConfigTest extends TestCase
             'https://github.com/phalcon/cphalcon/blob/5.0.x/phalcon/Acl/Adapter/Memory.zep',
             $this->config()->sourceUrl('Acl\\Adapter\\Memory.zep')
         );
+    }
+
+    public function testTemplatesDefaultsToEmptyWhenAbsent(): void
+    {
+        $config = Config::fromArray($this->values(), '/project');
+
+        $this->assertSame('', $config->templatesDir());
+    }
+
+    public function testTemplatesIsResolvedRelativeToTheConfigurationFile(): void
+    {
+        $config = Config::fromArray($this->values(['templates' => 'docs/tpl']), '/project');
+
+        $this->assertSame('/project/docs/tpl', $config->templatesDir());
     }
 
     public function testTrailingSeparatorsAreNormalized(): void
