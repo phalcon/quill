@@ -75,6 +75,7 @@ return [
     'prefix'     => 'phalcon',
     'extension'  => 'zep',
     'namespace'  => 'Phalcon',
+    'templates'  => 'output/docs/templates',
 ];
 ```
 
@@ -87,10 +88,46 @@ return [
 | `repository`, `branch`, `prefix` | build the "Source on GitHub" link: `https://github.com/<repository>/blob/<branch>/<prefix>/<path>` |
 | `extension` | file extension the reader collects |
 | `namespace` | root namespace; headings drop it and page names carry it lowercased |
+| `templates` | directory holding your own templates; each is looked up there first and falls back to the shipped one. Optional |
 
-`source`, `output` and `assets` are relative to `quill.php` unless they start with a slash. Every key except `assets` is required and must be a non-empty string; anything missing raises `MissingConfigurationKey` naming the key.
+`source`, `output`, `assets` and `templates` are relative to `quill.php` unless they start with a slash. Every key except `assets` and `templates` is required and must be a non-empty string; anything missing raises `MissingConfigurationKey` naming the key.
 
 Splitting `output` from `assets` lets the destination mirror the layout of whatever consumes it. With the values above, `cp -r nikos/docs/* <site>/docs/` lands the pages and the stylesheet where each belongs.
+
+## Templates
+
+The Markdown formatter emits no markup of its own. Every fragment comes from a file in `resources/templates/markdown`, and `templates` points at a directory of your own that is consulted first, per name. Overriding one template is not vendoring the other nineteen.
+
+Files go under a directory named for the format, so `templates` set to `docs/templates` means `docs/templates/markdown/class.tpl`. A `.tpl` whose name is not in the shipped set, or one sitting above the format directory, is ignored with a warning naming it and the nearest real name - both would otherwise produce a successful run that applied no override.
+
+Slots are `{{name}}`, substituted in a single pass: a value that happens to contain `{{title}}` is text, not an instruction. A placeholder a template does not use is ignored, so a template may take fewer slots than it is handed; one it invents is fatal, and `UnknownPlaceholder` names every unsupplied token at once. Loops, ordering and conditionals stay in PHP - a section that renders nothing is handed an empty string rather than asked to decide.
+
+A template's trailing newline is stripped, exactly one. A fragment whose output must end in a newline is therefore written with a blank final line, which is also what an editor leaves behind.
+
+| Template | Renders | Placeholders |
+|---|---|---|
+| `index` | the index page | `lines` |
+| `index-line` | one entry on it | `namespace`, `label`, `page` |
+| `page` | one page's frontmatter and notice | `namespace`, `classes` |
+| `class` | one class's whole section | `title`, `structure`, `badge`, `sourceUrl`, `description`, `tree`, `uses`, `usedBy`, `summary`, `constants`, `properties`, `methods` |
+| `class-description` | its prose, when it has any | `description` |
+| `tree` | the inheritance block | `lines` |
+| `uses` | the import list | `entries` |
+| `used-by` | the classes pulling a trait in | `entries` |
+| `summary` | the method summary section | `rows` |
+| `summary-row` | one summary row | `anchor`, `visibility`, `returnType`, `signature`, `description` |
+| `summary-return-type` | its type chip, when the method declares one | `type` |
+| `constants` | the constants section | `rows` |
+| `constant-row` | one constant | `type`, `name`, `default`, `description` |
+| `properties` | the properties section | `rows` |
+| `property-row` | one property | `visibility`, `type`, `name`, `default`, `description` |
+| `row-description` | the description cell shared by all three row shapes | `description` |
+| `methods` | the method detail section | `groups` |
+| `method-group` | one visibility group's header and body | `label`, `count`, `methods` |
+| `method` | one method's heading and signature block | `name`, `anchor`, `signature`, `description` |
+| `method-description` | its prose, when it has any | `description` |
+
+The class names the templates emit are declared in `Formatter\Markdown\Classes` and styled by `resources/api.css`; a test binds all three, so a name cannot drift out of one of them unnoticed.
 
 ## What `generate` writes
 
@@ -148,6 +185,34 @@ Add `--namespace=` to both sides to compare one subsystem at a time, which keeps
     docker exec -w /srv quill-8.1 composer cs
 
 `quill-8.1` is the floor and where the byte-for-byte comparison runs; `quill-8.5` covers deprecations. The suite must pass on both.
+
+### The full-corpus gate
+
+The suite proves the rendering over fixtures. The gate proves it over the whole cphalcon tree - roughly 2,600 declarations, which is where a signature shape that appears once and in no fixture turns up. Two directories, both gitignored because committing them buries every source change under a few thousand generated lines:
+
+| Directory | Role |
+|---|---|
+| `tests/_baseline` | the expectation - a snapshot of known-good output |
+| `tests/_output/gate` | the candidate - where a fresh run writes |
+
+Run it. `tests/Fixtures/config/cphalcon.php` already points `output` at `gate`, so no `--output` is needed; `phalcon.php` beside it does the same for the PHP implementation:
+
+    docker exec -w /srv quill-8.1 rm -rf tests/_output/gate
+    docker exec -w /srv quill-8.1 php bin/quill generate --config=tests/Fixtures/config/cphalcon.php
+    diff -r tests/_baseline tests/_output/gate
+
+**Silence is the pass.** Any output is a real change to what quill emits and belongs in the CHANGELOG. Delete `gate` first or a page that should have disappeared survives from the previous run and the diff stays quiet about it.
+
+Regenerating the baseline is the same binary with the destination redirected:
+
+    docker exec -w /srv quill-8.1 php bin/quill generate \
+        --config=tests/Fixtures/config/cphalcon.php --output=/srv/tests/_baseline
+
+Read the diff before you do, and move the old snapshot aside rather than deleting it - it is gitignored, so there is no `git checkout` to undo an `rm`. Regenerating is how an accepted change is recorded; doing it to make the diff go away is how the next one goes unnoticed.
+
+Two things that catch people out. `bin/quill`, not `vendor/bin/quill` - a package in its own tree has no `vendor/bin` shim. And a redirected run keeps `templates` while dropping `assets`, so the stylesheet follows the pages into the baseline and `api.css` is compared too, while an override still applies - a run that quietly fell back to the shipped templates would produce a clean diff having compared the wrong thing.
+
+Nothing enforces this. The baseline is refreshed by hand, so it goes stale silently; when the gate reports a difference, check its age against the commits since it was written before assuming the working tree is at fault.
 
 ## License
 

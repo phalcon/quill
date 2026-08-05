@@ -186,7 +186,8 @@ try {
 
     $command = new GenerateCommand(
         new ReaderFactory(),
-        (new FormatterFactory())->create($format)
+        (new FormatterFactory())->create($format),
+        $format
     );
 
     exit($command->execute($config, Selection::of($filter, $namespace, $config)));
