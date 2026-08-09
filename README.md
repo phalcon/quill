@@ -1,4 +1,4 @@
-# Phalcon Quill
+# <img src="resources/quill-mark.svg" height="22" alt=""> Phalcon Quill
 
 [![Latest Version][packagist-version-badge]][packagist-version-link]
 [![PHP Version][php-version-badge]][packagist-version-link]
