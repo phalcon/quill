@@ -2,6 +2,26 @@
 
 All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
 
+## [0.4.0](https://github.com/phalcon/quill/releases/tag/v0.4.0) (2026-08-31)
+
+### Added
+
+- The `nimbus` output format, `--format=nimbus`: MDX for a nimbus-docs site. The markup is components carrying properties rather than classed HTML, so the format emits no stylesheet.
+- Twenty templates under `resources/templates/nimbus`, named as the markdown set is, so the `templates` configuration key overrides either format one file at a time.
+- `Formatter\Dialect`, holding what separates one Markdown output from another: the template directory, the file extension, the stylesheet, how a link to another page is written, and what prose must have escaped.
+- `Formatter\Markdown\Mdx`, which escapes what MDX reads as syntax - braces such as `{@see method()}`, `<Word>` that is not HTML, and an inline tag left unclosed in its paragraph. Fenced blocks and inline code keep their own rules and are not touched.
+- `Formatter\Markdown\Rows`, with `MarkdownRows` and `NimbusRows`: the four member shapes whose slot values, not only their markup, differ between the two outputs.
+- A `title` slot on the `page` template. The markdown template ignores it.
+
+### Changed
+
+- `MarkdownFormatter::__construct()` takes an optional `Dialect` and defaults to markdown, so an existing call is unaffected.
+- `ClassPage::__construct()` takes a `Rows` and a `Dialect`, and no longer takes a `Signature`.
+- A link to another page comes from the dialect: `phalcon_events.md` for mkdocs, `../phalcon_events/` for nimbus, which serves every page as a directory.
+- `Contracts\Formatter::assets()` may return nothing. A formatter whose markup carries its own styling ships no stylesheet.
+
+The markdown output is unchanged, byte for byte.
+
 ## [0.3.0](https://github.com/phalcon/quill/releases/tag/v0.3.0) (2026-08-03)
 
 ### Added
