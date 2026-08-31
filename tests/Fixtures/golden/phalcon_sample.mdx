@@ -1,0 +1,154 @@
+---
+title: "Phalcon Sample"
+---
+
+:::info[NOTE]
+All classes are prefixed with `Phalcon`
+:::
+
+
+## Sample\Base
+
+<ApiBadge variant="abstract">Abstract</ApiBadge>
+<SourceLink href="https://github.com/phalcon/cphalcon/blob/5.0.x/phalcon/Sample/Base.zep" />
+
+The abstract root.
+
+<ApiTree>
+
+- **`Phalcon\Sample\Base`**
+    - [`Phalcon\Sample\Child`](#samplechild)
+
+</ApiTree>
+
+### Method Summary
+
+<ApiList>
+<ApiItem href="#samplebase-describe" visibility="public" name="describe" returnType="string" params={[{"type":"string","name":"text","default":"'none'"},{"type":"int","name":"depth","default":"0"}]}>
+Describes the subject.
+</ApiItem>
+<ApiItem href="#samplebase-conceal" visibility="protected" name="conceal" returnType="" params={[{"type":"bool","name":"flag","default":null}]}>
+</ApiItem>
+</ApiList>
+
+### Constants
+
+<ApiList>
+<ApiItem kind="constant" name="LIMIT" type="int" default="10">
+How many.
+</ApiItem>
+<ApiItem kind="constant" name="MARKER" type="string" default="">
+</ApiItem>
+</ApiList>
+
+### Properties
+
+<ApiList>
+<ApiItem kind="property" visibility="protected" name="label" type="string|null" default="null">
+The label.
+</ApiItem>
+<ApiItem kind="property" visibility="public" name="store" type="array" default="">
+</ApiItem>
+</ApiList>
+
+### Methods
+
+<ApiGroup label="Public" count="1" />
+
+<h4 id="samplebase-describe"><code>describe()</code></h4>
+
+```php
+public function describe(
+    string $text = 'none',
+    int $depth = 0
+): string;
+```
+
+Describes the subject.
+
+<ApiGroup label="Protected" count="1" />
+
+<h4 id="samplebase-conceal"><code>conceal()</code></h4>
+
+```php
+protected function conceal( bool $flag );
+```
+
+
+## Sample\Child
+
+<ApiBadge variant="final">Final</ApiBadge>
+<SourceLink href="https://github.com/phalcon/cphalcon/blob/5.0.x/phalcon/Sample/Child.zep" />
+
+The concrete leaf.
+
+<ApiTree>
+
+- [`Phalcon\Sample\Base`](#samplebase)
+    - **`Phalcon\Sample\Child`** - implements [`Phalcon\Sample\Contract`](#samplecontract)
+
+</ApiTree>
+
+<ApiUses>`Phalcon\Sample\Base` · `Phalcon\Sample\Contract`</ApiUses>
+
+
+## Sample\Contract
+
+<ApiBadge variant="interface">Interface</ApiBadge>
+<SourceLink href="https://github.com/phalcon/cphalcon/blob/5.0.x/phalcon/Sample/Contract.zep" />
+
+What the leaf promises.
+
+<ApiTree>
+
+- **`Phalcon\Sample\Contract`**
+
+</ApiTree>
+
+### Method Summary
+
+<ApiList>
+<ApiItem href="#samplecontract-describe" visibility="public" name="describe" returnType="string" params={[{"type":"string","name":"text","default":null}]}>
+Describes the subject.
+</ApiItem>
+</ApiList>
+
+### Methods
+
+<ApiGroup label="Public" count="1" />
+
+<h4 id="samplecontract-describe"><code>describe()</code></h4>
+
+```php
+public function describe( string $text ): string;
+```
+
+Describes the subject.
+
+
+## Sample\Helper
+
+<ApiBadge variant="trait">Trait</ApiBadge>
+<SourceLink href="https://github.com/phalcon/cphalcon/blob/5.0.x/phalcon/Sample/Helper.zep" />
+
+Shared behavior.
+
+<ApiTree>
+
+- **`Phalcon\Sample\Helper`**
+
+</ApiTree>
+
+<ApiUsedBy>[`Phalcon\Sample\Child`](#samplechild)</ApiUsedBy>
+
+
+## Sample\Plain
+
+<ApiBadge variant="class">Class</ApiBadge>
+<SourceLink href="https://github.com/phalcon/cphalcon/blob/5.0.x/phalcon/Sample/Plain.zep" />
+
+<ApiTree>
+
+- **`Phalcon\Sample\Plain`**
+
+</ApiTree>
