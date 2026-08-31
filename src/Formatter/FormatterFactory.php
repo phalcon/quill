@@ -24,13 +24,14 @@ use Phalcon\Quill\Exceptions\UnknownFormat;
  */
 final class FormatterFactory
 {
-    private const KNOWN = ['json', 'markdown'];
+    private const KNOWN = ['json', 'markdown', 'nimbus'];
 
     public function create(string $format): Formatter
     {
         return match ($format) {
             'json'     => new JsonFormatter(),
-            'markdown' => new MarkdownFormatter(),
+            'markdown' => new MarkdownFormatter(Dialect::markdown()),
+            'nimbus'   => new MarkdownFormatter(Dialect::nimbus()),
             default    => throw new UnknownFormat($format, self::KNOWN),
         };
     }

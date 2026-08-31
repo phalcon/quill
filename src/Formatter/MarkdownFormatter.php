@@ -18,7 +18,9 @@ use Phalcon\Quill\Contracts\Formatter;
 use Phalcon\Quill\Exceptions\MissingAsset;
 use Phalcon\Quill\Formatter\Markdown\ClassPage;
 use Phalcon\Quill\Formatter\Markdown\Html;
+use Phalcon\Quill\Formatter\Markdown\MarkdownRows;
 use Phalcon\Quill\Formatter\Markdown\Naming;
+use Phalcon\Quill\Formatter\Markdown\NimbusRows;
 use Phalcon\Quill\Formatter\Markdown\Presentation;
 use Phalcon\Quill\Formatter\Markdown\Signature;
 use Phalcon\Quill\Model\Registry;
@@ -51,12 +53,18 @@ final class MarkdownFormatter implements Formatter
 {
     public const STYLESHEET = 'api.css';
 
+    private readonly Dialect $dialect;
     private readonly Html $html;
     private readonly Naming $naming;
     private readonly Signature $signature;
 
-    public function __construct()
+    /**
+     * The dialect defaults to mkdocs Markdown, which is what a caller that
+     * names none has always received.
+     */
+    public function __construct(?Dialect $dialect = null)
     {
+        $this->dialect   = $dialect ?? Dialect::markdown();
         $this->html      = new Html();
         $this->naming    = new Naming();
         $this->signature = new Signature($this->html);
@@ -71,19 +79,23 @@ final class MarkdownFormatter implements Formatter
      */
     public function assets(): array
     {
-        $path  = dirname(__DIR__, 2) . '/resources/' . self::STYLESHEET;
+        if ($this->dialect->stylesheet === null) {
+            return [];
+        }
+
+        $path  = dirname(__DIR__, 2) . '/resources/' . $this->dialect->stylesheet;
         $sheet = @file_get_contents($path);
 
         if ($sheet === false) {
             throw new MissingAsset($path);
         }
 
-        return [self::STYLESHEET => $sheet];
+        return [$this->dialect->stylesheet => $sheet];
     }
 
     public function extension(): string
     {
-        return 'md';
+        return $this->dialect->extension;
     }
 
     /**
@@ -91,7 +103,7 @@ final class MarkdownFormatter implements Formatter
      */
     public function format(Registry $registry, Config $config, Selection $selection): array
     {
-        $templates = Templates::for('markdown', $config->templatesDir());
+        $templates = Templates::for($this->dialect->name, $config->templatesDir());
         $view      = Presentation::from($config);
         $pages     = $this->pages($registry, $view, $selection);
         $output    = [];
@@ -114,8 +126,11 @@ final class MarkdownFormatter implements Formatter
             $view,
             $registry,
             $this->naming,
-            $this->signature,
-            $this->html
+            $this->html,
+            $this->dialect->stylesheet === null
+                ? new NimbusRows($this->html, $this->signature)
+                : new MarkdownRows($this->html, $this->signature),
+            $this->dialect
         );
 
         foreach ($pages as $page => $fqcns) {
@@ -130,6 +145,8 @@ final class MarkdownFormatter implements Formatter
             $output[$page] = $templates->render('page', [
                 'classes'   => $classes,
                 'namespace' => $view->rootNamespace,
+                'title'     => $view->rootNamespace . ' '
+                    . ucfirst(str_replace($view->pagePrefix, '', $page)),
             ]);
         }
 

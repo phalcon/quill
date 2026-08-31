@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Phalcon\Quill\Formatter\Markdown;
 
+use Phalcon\Quill\Formatter\Dialect;
 use Phalcon\Quill\Model\ClassDefinition;
 use Phalcon\Quill\Model\Keyword;
 use Phalcon\Quill\Model\MethodDefinitionCollection;
@@ -48,8 +49,9 @@ final class ClassPage
         private readonly Presentation $view,
         private readonly Registry $registry,
         private readonly Naming $naming,
-        private readonly Signature $signature,
         private readonly Html $html,
+        private readonly Rows $rows,
+        private readonly Dialect $dialect,
     ) {
     }
 
@@ -75,7 +77,7 @@ final class ClassPage
         $description = '';
         if ($class->description !== '') {
             $description = $this->templates->render('class-description', [
-                'description' => $class->description,
+                'description' => $this->dialect->prose($class->description),
             ]);
         }
 
@@ -103,12 +105,12 @@ final class ClassPage
 
         $rows = '';
         foreach ($class->members->constants as $constant) {
-            $rows .= $this->templates->render('constant-row', [
-                'default'     => $this->html->default($constant->default),
-                'description' => $this->rowDescription($constant->description),
-                'name'        => $this->html->escape($constant->name),
-                'type'        => $this->html->escape($constant->varType),
-            ]);
+            $rows .= $this->templates->render(
+                'constant-row',
+                $this->rows->constantRow($constant) + [
+                    'description' => $this->rowDescription($constant->description),
+                ]
+            );
         }
 
         return $this->templates->render('constants', ['rows' => $rows]);
@@ -127,7 +129,7 @@ final class ClassPage
         $href       = '#' . $this->naming->anchor($target, $this->view);
         $targetPage = $this->naming->pageKey($target, $this->view);
         if ($targetPage !== $currentPage) {
-            $href = $targetPage . '.md' . $href;
+            $href = $this->dialect->pageLink($targetPage) . $href;
         }
 
         return "[`{$display}`]({$href})";
@@ -152,16 +154,18 @@ final class ClassPage
                 $description = '';
                 if ($method->description !== '') {
                     $description = $this->templates->render('method-description', [
-                        'description' => $method->description,
+                        'description' => $this->dialect->prose($method->description),
                     ]);
                 }
 
-                $methods .= $this->templates->render('method', [
-                    'anchor'      => $this->naming->methodAnchor($class, $method->name, $this->view),
-                    'description' => $description,
-                    'name'        => $method->name,
-                    'signature'   => implode("\n", $this->signature->lines($method)),
-                ]);
+                $methods .= $this->templates->render(
+                    'method',
+                    $this->rows->methodBlock(
+                        $method,
+                        $this->naming->methodAnchor($class, $method->name, $this->view),
+                        $description
+                    )
+                );
             }
 
             $rendered .= $this->templates->render('method-group', [
@@ -210,13 +214,12 @@ final class ClassPage
 
         $rows = '';
         foreach ($visible as $property) {
-            $rows .= $this->templates->render('property-row', [
-                'default'     => $this->html->default($property->default),
-                'description' => $this->rowDescription($property->description),
-                'name'        => $this->html->escape($property->name),
-                'type'        => $this->html->escape($property->varType),
-                'visibility'  => $property->visibility,
-            ]);
+            $rows .= $this->templates->render(
+                'property-row',
+                $this->rows->propertyRow($property) + [
+                    'description' => $this->rowDescription($property->description),
+                ]
+            );
         }
 
         return $this->templates->render('properties', ['rows' => $rows]);
@@ -252,8 +255,13 @@ final class ClassPage
             return '';
         }
 
+        // A row's text is prose for nimbus, where the component renders its
+        // children as markdown, and inline markup for mkdocs, which has no
+        // component to do it.
         return $this->templates->render('row-description', [
-            'description' => $this->html->inlineCode($description),
+            'description' => $this->dialect->stylesheet === null
+                ? $this->dialect->prose($description)
+                : $this->html->inlineCode($description),
         ]);
     }
 
@@ -275,13 +283,15 @@ final class ClassPage
                     ]);
                 }
 
-                $rows .= $this->templates->render('summary-row', [
-                    'anchor'      => $this->naming->methodAnchor($class, $method->name, $this->view),
-                    'description' => $this->rowDescription($this->summaryLine($method->description)),
-                    'returnType'  => $returnType,
-                    'signature'   => $this->signature->inline($method),
-                    'visibility'  => $group,
-                ]);
+                $rows .= $this->templates->render(
+                    'summary-row',
+                    $this->rows->summaryRow(
+                        $method,
+                        $this->naming->methodAnchor($class, $method->name, $this->view),
+                        $group,
+                        $this->rowDescription($this->summaryLine($method->description))
+                    ) + ['returnType' => $returnType]
+                );
             }
         }
 
