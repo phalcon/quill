@@ -61,8 +61,9 @@ $usage = $banner . <<<'USAGE'
 
     Paths, repository and language come from a quill.php at the project root.
     --config points elsewhere; --output overrides just the destination;
-    --format picks the output (markdown or json), defaulting to markdown. The
-    optional filter limits what is written, matched case-insensitively.
+    --format picks the output (markdown, nimbus or json), defaulting to
+    markdown. The optional filter limits what is written, matched
+    case-insensitively.
 
     --namespace limits the run to one namespace and everything beneath it,
     matched exactly. The configured root is implied, so Config and

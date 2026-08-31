@@ -51,7 +51,7 @@ PhpReader     (nikic/php-parser) ─┘   (object graph)     └─> JsonFormatt
 |---|---|
 | `--config=<path>` | explicit path to `quill.php`, default `./quill.php` |
 | `--output=<dir>` | destination override for one run; assets follow the documents |
-| `--format=<name>` | `markdown` (default) or `json` |
+| `--format=<name>` | `markdown` (default), `nimbus` or `json` |
 | `--namespace=<ns>` | limit to one namespace and everything beneath it; the configured root is implied, so `Config` and `Phalcon\Config` are the same. A namespace matching nothing is an error |
 | `--help`, `-h` | usage |
 | `<filter>` | positional; narrows what is written, matched case-insensitively |
@@ -97,6 +97,8 @@ Splitting `output` from `assets` lets the destination mirror the layout of whate
 ## Templates
 
 The Markdown formatter emits no markup of its own. Every fragment comes from a file in `resources/templates/markdown`, and `templates` points at a directory of your own that is consulted first, per name. Overriding one template is not vendoring the other nineteen.
+
+The `nimbus` format writes MDX for a nimbus-docs site from `resources/templates/nimbus`, under the same twenty template names. Its markup is components rather than classed HTML, so it emits no stylesheet; `assets` is ignored for that format.
 
 Files go under a directory named for the format, so `templates` set to `docs/templates` means `docs/templates/markdown/class.tpl`. A `.tpl` whose name is not in the shipped set, or one sitting above the format directory, is ignored with a warning naming it and the nearest real name - both would otherwise produce a successful run that applied no override.
 
