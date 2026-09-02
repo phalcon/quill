@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Phalcon\Quill\Tests\Unit\Formatter;
 
 use Phalcon\Quill\Config;
+use Phalcon\Quill\Formatter\Dialect;
+use Phalcon\Quill\Formatter\FormatterFactory;
 use Phalcon\Quill\Formatter\MarkdownFormatter;
 use Phalcon\Quill\Model\ClassDefinition;
 use Phalcon\Quill\Model\ClassDefinitionCollection;
@@ -65,6 +67,47 @@ final class MarkdownFormatterTest extends TestCase
         $this->assertStringContainsString('## Sample\\Deep\\Leaf', $page);
         $this->assertStringNotContainsString('## Sample\\Base', $page);
         $this->assertStringNotContainsString('## Sample\\Child', $page);
+    }
+
+    /**
+     * The index of the nimbus dialect reaches a page without climbing, since
+     * it is served one segment above the pages it lists.
+     */
+    public function testANimbusIndexLinksItsPagesWithoutClimbing(): void
+    {
+        $documents = (new MarkdownFormatter(Dialect::nimbus()))->format(
+            $this->registry(),
+            $this->config(),
+            Selection::none()
+        );
+
+        $this->assertStringContainsString('(phalcon_sample/)', $documents['index']);
+    }
+
+    /**
+     * With a base URI every link is absolute, from the index and from a page
+     * alike.
+     */
+    public function testANimbusIndexUsesTheBaseUriWhenOneIsConfigured(): void
+    {
+        // Through the factory, which is the path that bin/quill takes: the
+        // base URI has to survive the hop for --base-uri to mean anything.
+        $documents = (new FormatterFactory())->create('nimbus', '/5.20/api')->format(
+            $this->registry(),
+            $this->config(),
+            Selection::none()
+        );
+
+        $this->assertStringContainsString('(/5.20/api/phalcon_sample/)', $documents['index']);
+    }
+
+    /**
+     * The nimbus dialect has no stylesheet, so it has nothing to write beside
+     * the pages.
+     */
+    public function testANimbusRunCarriesNoAssets(): void
+    {
+        $this->assertSame([], (new MarkdownFormatter(Dialect::nimbus()))->assets());
     }
 
     public function testConstantsSectionRendersTheApiList(): void

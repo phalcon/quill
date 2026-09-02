@@ -42,6 +42,7 @@ PhpReader     (nikic/php-parser) ─┘   (object graph)     └─> JsonFormatt
     vendor/bin/quill generate encryption                  only pages matching the filter
     vendor/bin/quill generate --format=json               one model document instead
     vendor/bin/quill generate --namespace=Phalcon\Config  one namespace and below
+    vendor/bin/quill generate --base-uri=/5.20/api        absolute links, for nimbus
     vendor/bin/quill parity left.json right.json          structural differences
     vendor/bin/quill docblocks left.json right.json out.csv
 
@@ -52,6 +53,7 @@ PhpReader     (nikic/php-parser) ─┘   (object graph)     └─> JsonFormatt
 | `--config=<path>` | explicit path to `quill.php`, default `./quill.php` |
 | `--output=<dir>` | destination override for one run; assets follow the documents |
 | `--format=<name>` | `markdown` (default), `nimbus` or `json` |
+| `--base-uri=<path>` | override for `baseUri`, the path the pages are published under. `nimbus` only |
 | `--namespace=<ns>` | limit to one namespace and everything beneath it; the configured root is implied, so `Config` and `Phalcon\Config` are the same. A namespace matching nothing is an error |
 | `--help`, `-h` | usage |
 | `<filter>` | positional; narrows what is written, matched case-insensitively |
@@ -76,6 +78,7 @@ return [
     'extension'  => 'zep',
     'namespace'  => 'Phalcon',
     'templates'  => 'output/docs/templates',
+    'baseUri'    => '/5.20/api',
 ];
 ```
 
@@ -89,8 +92,9 @@ return [
 | `extension` | file extension the reader collects |
 | `namespace` | root namespace; headings drop it and page names carry it lowercased |
 | `templates` | directory holding your own templates; each is looked up there first and falls back to the shipped one. Optional |
+| `baseUri` | the path the pages are published under, a URL path and not a directory. `nimbus` writes every link from it, so a link is absolute rather than relative to the page carrying it. Optional |
 
-`source`, `output`, `assets` and `templates` are relative to `quill.php` unless they start with a slash. Every key except `assets` and `templates` is required and must be a non-empty string; anything missing raises `MissingConfigurationKey` naming the key.
+`source`, `output`, `assets` and `templates` are relative to `quill.php` unless they start with a slash. Every key except `assets`, `templates` and `baseUri` is required and must be a non-empty string; anything missing raises `MissingConfigurationKey` naming the key.
 
 Splitting `output` from `assets` lets the destination mirror the layout of whatever consumes it. With the values above, `cp -r nikos/docs/* <site>/docs/` lands the pages and the stylesheet where each belongs.
 
@@ -99,6 +103,8 @@ Splitting `output` from `assets` lets the destination mirror the layout of whate
 The Markdown formatter emits no markup of its own. Every fragment comes from a file in `resources/templates/markdown`, and `templates` points at a directory of your own that is consulted first, per name. Overriding one template is not vendoring the other nineteen.
 
 The `nimbus` format writes MDX for a nimbus-docs site from `resources/templates/nimbus`, under the same twenty template names. Its markup is components rather than classed HTML, so it emits no stylesheet; `assets` is ignored for that format.
+
+Set `baseUri` for that format. Without it the links are relative, and a nimbus site cannot check a relative link against its routes: it skips the link rather than resolving it, so a link to a page that is not there is never reported. With it every link is one absolute form, which the site resolves like any other.
 
 Files go under a directory named for the format, so `templates` set to `docs/templates` means `docs/templates/markdown/class.tpl`. A `.tpl` whose name is not in the shipped set, or one sitting above the format directory, is ignored with a warning naming it and the nearest real name - both would otherwise produce a successful run that applied no override.
 
@@ -109,7 +115,7 @@ A template's trailing newline is stripped, exactly one. A fragment whose output 
 | Template | Renders | Placeholders |
 |---|---|---|
 | `index` | the index page | `lines` |
-| `index-line` | one entry on it | `namespace`, `label`, `page` |
+| `index-line` | one entry on it | `namespace`, `label`, `page`, `link` |
 | `page` | one page's frontmatter and notice | `namespace`, `classes` |
 | `class` | one class's whole section | `title`, `structure`, `badge`, `sourceUrl`, `description`, `tree`, `uses`, `usedBy`, `summary`, `constants`, `properties`, `methods` |
 | `class-description` | its prose, when it has any | `description` |

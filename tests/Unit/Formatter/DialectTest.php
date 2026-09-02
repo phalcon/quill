@@ -27,6 +27,11 @@ final class DialectTest extends TestCase
         $this->assertSame('api.css', Dialect::markdown()->stylesheet);
     }
 
+    public function testMarkdownIndexLinksTheSourceFile(): void
+    {
+        $this->assertSame('phalcon_events.md', Dialect::markdown()->indexLink('phalcon_events'));
+    }
+
     public function testMarkdownLinksTheSourceFile(): void
     {
         $this->assertSame('phalcon_events.md', Dialect::markdown()->pageLink('phalcon_events'));
@@ -50,6 +55,15 @@ final class DialectTest extends TestCase
         $this->assertNull(Dialect::nimbus()->stylesheet);
     }
 
+    /**
+     * The index is served one segment higher than the pages it lists, so it
+     * reaches a page without climbing.
+     */
+    public function testNimbusIndexLinksAPageWithoutClimbing(): void
+    {
+        $this->assertSame('phalcon_events/', Dialect::nimbus()->indexLink('phalcon_events'));
+    }
+
     public function testNimbusLinksASiblingDirectory(): void
     {
         $this->assertSame('../phalcon_events/', Dialect::nimbus()->pageLink('phalcon_events'));
@@ -66,5 +80,25 @@ final class DialectTest extends TestCase
     public function testNimbusProseIsMadeSafe(): void
     {
         $this->assertSame('\{@see x()\}', Dialect::nimbus()->prose('{@see x()}'));
+    }
+
+    public function testNimbusWithABaseUriIgnoresATrailingSlash(): void
+    {
+        $dialect = Dialect::nimbus('/5.20/api/');
+
+        $this->assertSame('/5.20/api/phalcon_events/', $dialect->pageLink('phalcon_events'));
+        $this->assertSame('/5.20/api/phalcon_events/', $dialect->indexLink('phalcon_events'));
+    }
+
+    /**
+     * The point of the base URI: one string that is correct from a page at
+     * any depth, so the index needs no form of its own.
+     */
+    public function testNimbusWithABaseUriIsAbsoluteFromEveryDepth(): void
+    {
+        $dialect = Dialect::nimbus('/5.20/api');
+
+        $this->assertSame('/5.20/api/phalcon_events/', $dialect->pageLink('phalcon_events'));
+        $this->assertSame($dialect->pageLink('phalcon_events'), $dialect->indexLink('phalcon_events'));
     }
 }

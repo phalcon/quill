@@ -32,6 +32,7 @@ final class Dialect
         public readonly string $extension,
         public readonly ?string $stylesheet,
         private readonly bool $mdx,
+        private readonly string $baseUri = '',
     ) {
     }
 
@@ -40,20 +41,46 @@ final class Dialect
         return new self('markdown', 'md', MarkdownFormatter::STYLESHEET, false);
     }
 
-    public static function nimbus(): self
+    /**
+     * `$baseUri` is the path the pages are published under, `/5.20/api` for
+     * example. Give it and every link becomes absolute, which is one string
+     * that is correct from any depth. Leave it out and the links stay
+     * relative, each one written for the depth of the page that refers.
+     */
+    public static function nimbus(string $baseUri = ''): self
     {
-        return new self('nimbus', 'mdx', null, true);
+        return new self('nimbus', 'mdx', null, true, rtrim($baseUri, '/'));
     }
 
     /**
-     * A link to another page of the same run.
+     * A link to another page, from the index.
+     *
+     * The index sits one segment above the pages it lists, so it reaches a
+     * page without climbing. mkdocs keeps every page in one directory, where
+     * the index is a file beside the rest and the two forms are the same.
+     */
+    public function indexLink(string $page): string
+    {
+        if ($this->baseUri !== '') {
+            return $this->baseUri . '/' . $page . '/';
+        }
+
+        return $this->mdx ? $page . '/' : $page . '.md';
+    }
+
+    /**
+     * A link to another page of the same run, from a page.
      *
      * mkdocs links the source file. nimbus serves every page as a directory,
-     * so a sibling is one level up. Neither form carries the version prefix,
-     * which quill does not know.
+     * so a sibling is one level up. A base URI removes the question: the link
+     * is then absolute and the depth of the page that refers does not matter.
      */
     public function pageLink(string $page): string
     {
+        if ($this->baseUri !== '') {
+            return $this->baseUri . '/' . $page . '/';
+        }
+
         return $this->mdx ? '../' . $page . '/' : $page . '.md';
     }
 

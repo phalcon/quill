@@ -157,6 +157,7 @@ final class MarkdownFormatter implements Formatter
     {
         return $templates->render('index-line', [
             'label'     => ucfirst(str_replace($view->pagePrefix, '', $page)),
+            'link'      => $this->dialect->indexLink($page),
             'namespace' => $view->rootNamespace,
             'page'      => $page,
         ]);
