@@ -1,2 +1,2 @@
-- [{{namespace}} {{label}}]({{page}}/)
+- [{{namespace}} {{label}}]({{link}})
 

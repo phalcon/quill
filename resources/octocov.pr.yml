@@ -6,20 +6,14 @@
 # to avoid a coverage blip red-Xing master; keep the rest of this file in sync
 # with octocov.yml.
 #
-# Must sit at the repo root for the same reason as .octocov.yml - see the
-# note there about codeToTestRatio globs being unable to climb out of the
-# config file's directory.
+# Paths are relative to THIS file's directory, and there is no
+# codeToTestRatio, for the reasons that the note in octocov.yml gives.
 coverage:
   paths:
-    - tests/_output/coverage.xml
-  acceptable: "current >= 80.0% && diff >= 0"
+    - ../tests/_output/coverage.xml
+  acceptable: "current >= 99.0% && diff >= 0"
   badge:
-    path: tests/_output/coverage.svg
-codeToTestRatio:
-  code:
-    - src/**/*.php
-  test:
-    - tests/**/*.php
+    path: ../tests/_output/coverage.svg
 testExecutionTime:
   steps:
     - Tests with coverage
