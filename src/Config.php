@@ -49,6 +49,7 @@ final class Config
     ];
 
     private readonly string $assetsDir;
+    private readonly string $baseUri;
     private readonly string $outputDir;
     private readonly string $sourceRoot;
     private readonly string $templatesDir;
@@ -70,11 +71,13 @@ final class Config
         private readonly string $rootNamespace,
         string $assetsDir = '',
         string $templatesDir = '',
+        string $baseUri = '',
     ) {
         $this->sourceRoot   = rtrim($sourceRoot, '/');
         $this->outputDir    = rtrim($outputDir, '/');
         $this->assetsDir    = $assetsDir === '' ? $this->outputDir : rtrim($assetsDir, '/');
         $this->templatesDir = rtrim($templatesDir, '/');
+        $this->baseUri      = rtrim($baseUri, '/');
     }
 
     /**
@@ -103,6 +106,11 @@ final class Config
         /** @var mixed $templates */
         $templates = $config['templates'] ?? null;
 
+        // Absent from KEYS on purpose: a project that publishes its pages
+        // where quill wrote them says nothing and keeps the relative links.
+        /** @var mixed $baseUri */
+        $baseUri = $config['baseUri'] ?? null;
+
         return new self(
             $values['language'],
             self::absolute($values['source'], $root),
@@ -114,6 +122,7 @@ final class Config
             trim($values['namespace'], '\\'),
             is_string($assets) && $assets !== '' ? self::absolute($assets, $root) : '',
             is_string($templates) && $templates !== '' ? self::absolute($templates, $root) : '',
+            is_string($baseUri) ? $baseUri : '',
         );
     }
 
@@ -141,6 +150,16 @@ final class Config
     public function assetsDir(): string
     {
         return $this->assetsDir;
+    }
+
+    /**
+     * The path the pages are published under, `/5.20/api` for example, or ''
+     * when they are published where quill wrote them. The nimbus dialect
+     * makes its links absolute from it.
+     */
+    public function baseUri(): string
+    {
+        return $this->baseUri;
     }
 
     public function branch(): string
@@ -239,6 +258,7 @@ final class Config
             $this->rootNamespace,
             '',
             $this->templatesDir,
+            $this->baseUri,
         );
     }
 }

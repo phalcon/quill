@@ -26,12 +26,16 @@ final class FormatterFactory
 {
     private const KNOWN = ['json', 'markdown', 'nimbus'];
 
-    public function create(string $format): Formatter
+    /**
+     * `$baseUri` reaches the nimbus dialect only. The other two formats have
+     * no link that a published path could change.
+     */
+    public function create(string $format, string $baseUri = ''): Formatter
     {
         return match ($format) {
             'json'     => new JsonFormatter(),
             'markdown' => new MarkdownFormatter(Dialect::markdown()),
-            'nimbus'   => new MarkdownFormatter(Dialect::nimbus()),
+            'nimbus'   => new MarkdownFormatter(Dialect::nimbus($baseUri)),
             default    => throw new UnknownFormat($format, self::KNOWN),
         };
     }
