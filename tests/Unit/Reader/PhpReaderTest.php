@@ -158,6 +158,21 @@ final class PhpReaderTest extends TestCase
         );
     }
 
+    /**
+     * The two method modifiers that only a declaration of their own carries:
+     * every other fixture method is neither abstract nor final.
+     */
+    public function testMethodModifiersAreRead(): void
+    {
+        $methods = $this->definition('Phalcon\\Sample\\Modifiers')->members->methods->all();
+
+        $this->assertSame('shape', $methods[0]->name);
+        $this->assertSame(['abstract', 'public'], $methods[0]->modifiers);
+
+        $this->assertSame('sealed', $methods[1]->name);
+        $this->assertSame(['final', 'public'], $methods[1]->modifiers);
+    }
+
     public function testNullableReturnsRenderAsUnionsForParity(): void
     {
         $methods = $this->sample()->members->methods->all();

@@ -100,6 +100,17 @@ final class ConfigTest extends TestCase
     }
 
     /**
+     * The base URI is input for the links of a run, so a redirected run keeps
+     * it for the same reason it keeps the templates.
+     */
+    public function testARedirectedRunKeepsTheBaseUri(): void
+    {
+        $config = Config::fromArray($this->values(['baseUri' => '/5.20/api']), '/project');
+
+        $this->assertSame('/5.20/api', $config->withOutputDir('/elsewhere')->baseUri());
+    }
+
+    /**
      * A root that already ends in a separator must not produce a doubled one.
      */
     public function testARootWithATrailingSeparatorIsNotDoubled(): void
@@ -120,6 +131,22 @@ final class ConfigTest extends TestCase
 
         $this->assertSame('/project/phalcon', $config->sourceRoot());
         $this->assertSame('/project/nikos/api', $config->outputDir());
+    }
+
+    /**
+     * Absent on purpose: a project that publishes its pages where quill wrote
+     * them says nothing and keeps the relative links.
+     */
+    public function testBaseUriDefaultsToEmptyWhenAbsent(): void
+    {
+        $this->assertSame('', Config::fromArray($this->values(), '/project')->baseUri());
+    }
+
+    public function testBaseUriLosesATrailingSeparator(): void
+    {
+        $config = Config::fromArray($this->values(['baseUri' => '/5.20/api/']), '/project');
+
+        $this->assertSame('/5.20/api', $config->baseUri());
     }
 
     public function testEveryConfiguredValueIsReadableBack(): void
