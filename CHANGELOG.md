@@ -2,6 +2,26 @@
 
 All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
 
+## [0.5.0](https://github.com/phalcon/quill/releases/tag/v0.5.0) (2026-09-01)
+
+### Added
+
+- A `baseUri` configuration key, optional: the path the generated pages are published under, `/5.20/api` for example. The nimbus format writes every link from it, so a link is absolute instead of relative to the page that carries it.
+- `--base-uri=<path>`, which overrides that key for one run. A site that publishes one version per run gives it here rather than editing the configuration between runs.
+- `Formatter\Dialect::indexLink()`, the link form of the index. The index is served one segment above the pages it lists, so it reaches a page without climbing, where a page reaches a sibling with `../`.
+
+### Changed
+
+- `Dialect::nimbus()` and `FormatterFactory::create()` take an optional base URI. Both default to none, which keeps the relative links.
+- The `index-line` template of both formats receives `link`, the built link, in place of writing one around `page`. `page` is still passed, so a template that overrides the shipped one and uses it is unaffected.
+
+### Fixed
+
+- The nimbus format wrote its links in a form that a nimbus site cannot verify. `../page/` was reported as a relative link and skipped by the link rule, and the bare `page/` of the index was resolved against the site root, where no such page is. Both reached the right page in a browser, but neither was checked, so a link to a page that does not exist would not have been reported. A run with `baseUri` writes one absolute form, which the site resolves against its route set.
+- The link of the index was built in the template while the link of a page was built in the dialect, each with its own assumption about the depth of the file that refers. Both now come from the dialect.
+
+With no base URI the output is unchanged, byte for byte.
+
 ## [0.4.0](https://github.com/phalcon/quill/releases/tag/v0.4.0) (2026-08-31)
 
 ### Added
