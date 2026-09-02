@@ -51,7 +51,7 @@ $usage = $banner . <<<'USAGE'
 
     Usage:
       quill generate [filter] [--config=<path>] [--output=<dir>] [--format=<name>]
-                     [--namespace=<ns>]
+                     [--namespace=<ns>] [--base-uri=<path>]
       quill parity <left.json> <right.json>
       quill docblocks <left.json> <right.json> <out.csv>
 
@@ -64,6 +64,12 @@ $usage = $banner . <<<'USAGE'
     --format picks the output (markdown, nimbus or json), defaulting to
     markdown. The optional filter limits what is written, matched
     case-insensitively.
+
+    --base-uri overrides the baseUri of the configuration: the path the pages
+    are published under, /5.20/api for example. The nimbus dialect then writes
+    every link absolute instead of relative to the page that refers. A site
+    that publishes one version per run gives it here rather than editing the
+    configuration between runs.
 
     --namespace limits the run to one namespace and everything beneath it,
     matched exactly. The configured root is implied, so Config and
@@ -140,6 +146,7 @@ if ($command !== 'generate') {
 }
 
 $configPath = 'quill.php';
+$baseUri    = null;
 $outputDir  = null;
 $format     = 'markdown';
 $filter     = '';
@@ -154,6 +161,12 @@ foreach (array_slice($argv, 2) as $token) {
 
     if (str_starts_with($token, '--output=')) {
         $outputDir = substr($token, 9);
+
+        continue;
+    }
+
+    if (str_starts_with($token, '--base-uri=')) {
+        $baseUri = substr($token, 11);
 
         continue;
     }
@@ -187,7 +200,7 @@ try {
 
     $command = new GenerateCommand(
         new ReaderFactory(),
-        (new FormatterFactory())->create($format),
+        (new FormatterFactory())->create($format, $baseUri ?? $config->baseUri()),
         $format
     );
 
