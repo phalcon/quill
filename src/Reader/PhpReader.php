@@ -50,7 +50,9 @@ use function is_string;
 final class PhpReader extends AbstractReader
 {
     private readonly Parser $parser;
+
     private readonly TypeRenderer $types;
+
     private readonly ValueRenderer $values;
 
     public function __construct()
@@ -508,7 +510,7 @@ final class PhpReader extends AbstractReader
     }
 
     /**
-     * @return 'public'|'protected'|'private'
+     * @return 'private'|'protected'|'public'
      */
     private function visibility(bool $isPrivate, bool $isProtected): string
     {

@@ -141,7 +141,7 @@ final class MarkdownFormatterMethodsTest extends TestCase
         array $parameters,
         ?string $returnType
     ): MethodDefinition {
-        /** @var 'public'|'protected'|'private' $visibility */
+        /** @var 'private'|'protected'|'public' $visibility */
         return new MethodDefinition(
             $name,
             $modifiers,

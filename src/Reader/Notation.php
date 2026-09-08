@@ -31,15 +31,21 @@ use function trim;
 final class Notation
 {
     public const ARRAY_EMPTY  = '[]';
+
     public const ARRAY_FILLED = '[...]';
 
     public const NULL = 'null';
 
     public const TYPE_ARRAY  = 'array';
+
     public const TYPE_BOOL   = 'bool';
+
     public const TYPE_FLOAT  = 'float';
+
     public const TYPE_INT    = 'int';
+
     public const TYPE_MIXED  = 'mixed';
+
     public const TYPE_STRING = 'string';
 
     /**
@@ -99,7 +105,7 @@ final class Notation
     }
 
     /**
-     * @return 'public'|'protected'|'private'
+     * @return 'private'|'protected'|'public'
      */
     public static function visibility(bool $isPrivate, bool $isProtected): string
     {

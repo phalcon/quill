@@ -25,8 +25,8 @@ use function implode;
 abstract class UnknownChoice extends Exception
 {
     /**
-     * @param string       $noun     what was being chosen, singular and lower case
-     * @param list<string> $known    every accepted value
+     * @param string       $noun  what was being chosen, singular and lower case
+     * @param list<string> $known every accepted value
      */
     public function __construct(string $noun, string $value, array $known)
     {

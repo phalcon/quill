@@ -55,6 +55,15 @@ final class MdxTest extends TestCase
         $this->assertSame('Pass `{$name}` here.', Mdx::safe('Pass `{$name}` here.'));
     }
 
+    /**
+     * The mirror of the bare opener. Escaping one and not the other would
+     * leave an orphan that fails the compile just the same.
+     */
+    public function testACloserWithNoOpenerBecomesText(): void
+    {
+        $this->assertSame('Ends with &lt;/a> alone', Mdx::safe('Ends with </a> alone'));
+    }
+
     public function testAKnownTagSurvives(): void
     {
         $this->assertSame(
@@ -68,20 +77,19 @@ final class MdxTest extends TestCase
         $this->assertSame('when a &lt; b', Mdx::safe('when a < b'));
     }
 
-    /**
-     * The mirror of the bare opener. Escaping one and not the other would
-     * leave an orphan that fails the compile just the same.
-     */
-    public function testACloserWithNoOpenerBecomesText(): void
-    {
-        $this->assertSame('Ends with &lt;/a> alone', Mdx::safe('Ends with </a> alone'));
-    }
-
     public function testAMatchedTagPairSurvives(): void
     {
         $this->assertSame(
             'See <a href="x">this</a> link',
             Mdx::safe('See <a href="x">this</a> link')
+        );
+    }
+
+    public function testAnUnknownTagBecomesText(): void
+    {
+        $this->assertSame(
+            '@extends AbstractLocator&lt;Access>',
+            Mdx::safe('@extends AbstractLocator<Access>')
         );
     }
 
@@ -94,14 +102,6 @@ final class MdxTest extends TestCase
         $this->assertSame(
             "Open &lt;a> here\n\nand &lt;/a> there",
             Mdx::safe("Open <a> here\n\nand </a> there")
-        );
-    }
-
-    public function testAnUnknownTagBecomesText(): void
-    {
-        $this->assertSame(
-            '@extends AbstractLocator&lt;Access>',
-            Mdx::safe('@extends AbstractLocator<Access>')
         );
     }
 

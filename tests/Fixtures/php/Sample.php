@@ -4,13 +4,6 @@ declare(strict_types=1);
 
 namespace Phalcon\Sample;
 
-use Phalcon\Sample\Support\Helper;
-use Phalcon\Sample\Support\Other as Aliased;
-
-use function is_string;
-
-use const PHP_EOL;
-
 /**
  * Sample fixture.
  *
@@ -24,9 +17,6 @@ final class Sample extends Base implements Countable
 
     public const DEFAULT_MODE = 'strict';
 
-    /**
-     * @var array
-     */
     protected array $store = [];
 
     private ?string $hidden = null;

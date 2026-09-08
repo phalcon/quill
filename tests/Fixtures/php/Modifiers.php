@@ -10,10 +10,10 @@ namespace Phalcon\Sample;
  */
 abstract class Modifiers
 {
-    abstract public function shape(): string;
-
     final public function sealed(): string
     {
         return 'sealed';
     }
+
+    abstract public function shape(): string;
 }

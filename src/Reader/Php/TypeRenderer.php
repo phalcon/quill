@@ -74,7 +74,7 @@ final class TypeRenderer
     {
         $parts = [];
 
-        /** @var list<Identifier|Name|ComplexType> $types */
+        /** @var list<ComplexType|Identifier|Name> $types */
         $types = $type->types ?? [];
         foreach ($types as $part) {
             $rendered = $this->render($part);

@@ -9,12 +9,12 @@ namespace Phalcon\Sample;
  */
 enum SampleEnum: string implements Countable
 {
+    case Loose = 'loose';
+
     /**
      * The strict mode.
      */
     case Strict = 'strict';
-
-    case Loose = 'loose';
 
     public function count(): int
     {

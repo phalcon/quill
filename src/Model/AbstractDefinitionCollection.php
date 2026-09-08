@@ -67,8 +67,6 @@ abstract class AbstractDefinitionCollection implements Countable, IteratorAggreg
 
     /**
      * @param callable(TDefinition): bool $predicate
-     *
-     * @return static
      */
     public function filter(callable $predicate): static
     {
@@ -90,8 +88,6 @@ abstract class AbstractDefinitionCollection implements Countable, IteratorAggreg
 
     /**
      * @param callable(TDefinition, TDefinition): int $comparator
-     *
-     * @return static
      */
     public function sorted(callable $comparator): static
     {
@@ -101,9 +97,6 @@ abstract class AbstractDefinitionCollection implements Countable, IteratorAggreg
         return new static($items);
     }
 
-    /**
-     * @return static
-     */
     public function sortedByName(): static
     {
         return $this->sorted(

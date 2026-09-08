@@ -24,7 +24,7 @@ final class MethodDefinition implements VisibleDefinition
 {
     /**
      * @param list<string>                   $modifiers
-     * @param 'public'|'protected'|'private' $visibility
+     * @param 'private'|'protected'|'public' $visibility
      */
     public function __construct(
         public readonly string $name,

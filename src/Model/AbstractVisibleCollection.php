@@ -29,8 +29,6 @@ abstract class AbstractVisibleCollection extends AbstractDefinitionCollection
 {
     /**
      * The model keeps private members; hiding them is a formatter decision.
-     *
-     * @return static
      */
     public function withoutPrivate(): static
     {
@@ -40,9 +38,7 @@ abstract class AbstractVisibleCollection extends AbstractDefinitionCollection
     }
 
     /**
-     * @param 'public'|'protected'|'private' $visibility
-     *
-     * @return static
+     * @param 'private'|'protected'|'public' $visibility
      */
     public function withVisibility(string $visibility): static
     {

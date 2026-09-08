@@ -23,7 +23,7 @@ namespace Phalcon\Quill\Model;
 final class PropertyDefinition implements VisibleDefinition
 {
     /**
-     * @param 'public'|'protected'|'private' $visibility
+     * @param 'private'|'protected'|'public' $visibility
      * @param list<string>                   $shortcuts
      */
     public function __construct(

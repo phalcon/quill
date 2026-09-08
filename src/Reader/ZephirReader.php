@@ -63,7 +63,7 @@ final class ZephirReader extends AbstractReader
     /**
      * @param list<string> $modifiers
      *
-     * @return 'public'|'protected'|'private'
+     * @return 'private'|'protected'|'public'
      */
     private function methodVisibility(array $modifiers): string
     {
@@ -97,7 +97,7 @@ final class ZephirReader extends AbstractReader
     /**
      * @param list<string> $modifiers
      *
-     * @return 'public'|'protected'|'private'
+     * @return 'private'|'protected'|'public'
      */
     private function propertyVisibility(array $modifiers): string
     {

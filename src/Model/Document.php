@@ -30,11 +30,17 @@ namespace Phalcon\Quill\Model;
 final class Document
 {
     public const DEFINITIONS = 'definitions';
+
     public const DESCRIPTION = 'description';
+
     public const LANGUAGE    = 'language';
+
     public const MEMBERS     = 'members';
+
     public const NAME        = 'name';
+
     public const REPOSITORY  = 'repository';
+
     public const VERSION     = 'version';
 
     /**

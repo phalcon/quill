@@ -49,6 +49,7 @@ use const PHP_EOL;
 final class Templates
 {
     private const EXTENSION   = '.tpl';
+
     private const PLACEHOLDER = '/\{\{([a-zA-Z][a-zA-Z0-9]*)\}\}/';
 
     /** @var array<string, array{body: string, tokens: list<string>}> */
@@ -70,26 +71,6 @@ final class Templates
             $templatesDir === '' ? '' : $templatesDir . '/' . $format,
             self::shipped($format)
         );
-    }
-
-    /**
-     * @param array<string, string> $values
-     */
-    public function render(string $name, array $values): string
-    {
-        $template = $this->load($name);
-
-        $missing = array_values(array_diff($template['tokens'], array_keys($values)));
-        if ($missing !== []) {
-            throw new UnknownPlaceholder($this->format . '/' . $name, $missing);
-        }
-
-        $pairs = [];
-        foreach ($values as $key => $value) {
-            $pairs['{{' . $key . '}}'] = $value;
-        }
-
-        return strtr($template['body'], $pairs);
     }
 
     /**
@@ -168,6 +149,26 @@ final class Templates
     private static function shipped(string $format): string
     {
         return dirname(__DIR__, 2) . '/resources/templates/' . $format;
+    }
+
+    /**
+     * @param array<string, string> $values
+     */
+    public function render(string $name, array $values): string
+    {
+        $template = $this->load($name);
+
+        $missing = array_values(array_diff($template['tokens'], array_keys($values)));
+        if ($missing !== []) {
+            throw new UnknownPlaceholder($this->format . '/' . $name, $missing);
+        }
+
+        $pairs = [];
+        foreach ($values as $key => $value) {
+            $pairs['{{' . $key . '}}'] = $value;
+        }
+
+        return strtr($template['body'], $pairs);
     }
 
     /**

@@ -54,8 +54,11 @@ final class MarkdownFormatter implements Formatter
     public const STYLESHEET = 'api.css';
 
     private readonly Dialect $dialect;
+
     private readonly Html $html;
+
     private readonly Naming $naming;
+
     private readonly Signature $signature;
 
     /**

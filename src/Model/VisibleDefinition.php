@@ -26,7 +26,7 @@ namespace Phalcon\Quill\Model;
  * the analyzer rather than enforced by the engine, the same way NamedDefinition
  * states `$name`.
  *
- * @property-read 'public'|'protected'|'private' $visibility
+ * @property-read 'private'|'protected'|'public' $visibility
  */
 interface VisibleDefinition extends NamedDefinition
 {

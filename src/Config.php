@@ -49,9 +49,13 @@ final class Config
     ];
 
     private readonly string $assetsDir;
+
     private readonly string $baseUri;
+
     private readonly string $outputDir;
+
     private readonly string $sourceRoot;
+
     private readonly string $templatesDir;
 
     /**
