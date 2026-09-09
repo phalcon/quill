@@ -18,7 +18,11 @@ $root = dirname(__DIR__);
 return ConfigFactory::create(
     [
         $root . '/src',
-        $root . '/tests',
+        // Only the test code. `tests/Fixtures` holds parse targets, not code:
+        // the fixer would strip their unused imports and sort their members,
+        // which is the exact shape the reader tests assert. `tests/_baseline`
+        // and `tests/_output` are generated and gitignored.
+        $root . '/tests/Unit',
     ],
     $root . '/tests/_output/.php-cs-fixer.cache'
 );

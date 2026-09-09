@@ -17,12 +17,15 @@ class Subject
 {
     public const QUOTE = '"';
 
-    protected bool $enabled;
-
     // Typed here, documented in the twin. Zephir can type a property too, but
     // the reader takes its answer from the docblock, so the two spellings have
     // to land on one model value.
-    protected string | null $label = null;
+    protected string|null $label = null;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected array $store = [];
 
     // Typed with no docblock, which is where the sources are heading. Zephir
     // reports `float` as `double`, so this also pins the keyword mapping.
@@ -30,10 +33,7 @@ class Subject
 
     protected float $ratio;
 
-    /**
-     * @var array<string, mixed>
-     */
-    protected array $store = [];
+    protected bool $enabled;
 
     public function describe(?string $text = null): string
     {
@@ -41,14 +41,14 @@ class Subject
         return $text ?? '';
     }
 
+    protected function hidden(int $count): void
+    {
+    }
+
     // The parser reports `float` as `double` for both the parameter and the
     // return, so this pins the keyword mapping on all three member kinds.
     public function scale(float $factor): float
     {
         return $factor;
-    }
-
-    protected function hidden(int $count): void
-    {
     }
 }
