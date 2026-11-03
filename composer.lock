@@ -1260,12 +1260,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/zephir-lang/zephir.git",
-                "reference": "109f0f47d1bcf57a6e35b21f698c497ff01671d8"
+                "reference": "aca1ab2e55020df3dd25c8c6d4d5eba5a9416d4e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/zephir-lang/zephir/zipball/109f0f47d1bcf57a6e35b21f698c497ff01671d8",
-                "reference": "109f0f47d1bcf57a6e35b21f698c497ff01671d8",
+                "url": "https://api.github.com/repos/zephir-lang/zephir/zipball/aca1ab2e55020df3dd25c8c6d4d5eba5a9416d4e",
+                "reference": "aca1ab2e55020df3dd25c8c6d4d5eba5a9416d4e",
                 "shasum": ""
             },
             "require": {
@@ -1342,8 +1342,8 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-30T11:25:59+00:00",
-            "published-time": "2026-10-30T11:26:05+00:00"
+            "time": "2026-11-02T09:23:41+00:00",
+            "published-time": "2026-11-02T09:23:46+00:00"
         },
         {
             "name": "phar-io/manifest",
