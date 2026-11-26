@@ -2,6 +2,16 @@
 
 All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
 
+## [Unreleased](https://github.com/phalcon/quill/compare/v0.5.0...HEAD)
+
+### Fixed
+
+- The PHP reader did not render a default that joins values with `|`, such as `ENT_QUOTES | ENT_SUBSTITUTE`, or a `new` expression, such as `new ArrayObject()`. The page showed the parameter with no default. A default with a different operator, such as `1 + 2`, is still not rendered, because a correct rendering needs the operator precedence.
+- A string default with a control character lost its escape: `"\n"` was written as a quote, a line break, and a quote. It is now written `"\n"`, as in the source.
+- The Zephir reader showed a union parameter, such as `int | string id`, as `mixed`. It now shows the union, `int|string`, or `int|string|null` when the default is `null`.
+
+The output changes only for a parameter with one of these defaults or a union type.
+
 ## [0.5.0](https://github.com/phalcon/quill/releases/tag/v0.5.0) (2026-09-01)
 
 ### Added
