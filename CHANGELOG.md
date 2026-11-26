@@ -2,7 +2,11 @@
 
 All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
 
-## [Unreleased](https://github.com/phalcon/quill/compare/v0.5.0...HEAD)
+## [0.6.0](https://github.com/phalcon/quill/releases/tag/v0.6.0) (2026-11-25)
+
+### Added
+
+### Changed
 
 ### Fixed
 
@@ -11,6 +15,8 @@ All notable changes are documented here. The format is based on [Keep a Changelo
 - The Zephir reader showed a union parameter, such as `int | string id`, as `mixed`. It now shows the union, `int|string`, or `int|string|null` when the default is `null`.
 
 The output changes only for a parameter with one of these defaults or a union type.
+
+### Removed
 
 ## [0.5.0](https://github.com/phalcon/quill/releases/tag/v0.5.0) (2026-09-01)
 
