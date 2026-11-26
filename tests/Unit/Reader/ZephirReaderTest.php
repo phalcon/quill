@@ -257,6 +257,23 @@ final class ZephirReaderTest extends TestCase
         $this->assertSame('mixed', $types['A_NULL']);
     }
 
+    public function testUnionParametersRenderTheirParts(): void
+    {
+        $methods = [];
+        foreach ($this->shapes()->members->methods->all() as $method) {
+            $methods[$method->name] = $method;
+        }
+
+        $types = [];
+        foreach ($methods['unions']->parameters->all() as $parameter) {
+            $types[$parameter->name] = $parameter->type;
+        }
+
+        $this->assertSame('int|string', $types['id']);
+        $this->assertSame('Consumer|Countable', $types['item']);
+        $this->assertSame('int|string|null', $types['key']);
+    }
+
     public function testUsesAreMapped(): void
     {
         $class = $this->sample();

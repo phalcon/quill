@@ -64,4 +64,9 @@ abstract class Shapes extends Consumer implements Countable, Stringable
     {
         return text;
     }
+
+    public function unions(int | string id, <Consumer> | <Countable> item, int | string key = null) -> var
+    {
+        return id;
+    }
 }

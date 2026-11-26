@@ -74,15 +74,24 @@ final class ZephirReader extends AbstractReader
     }
 
     /**
-     * Zephir has no union syntax for parameters - anything genuinely of two
-     * types is declared `var`. A null default is the one exception it can
-     * express, and Notation renders it the way PHP writes `?string`.
+     * A union parameter (`int | string id`) carries its parts in `data-types`,
+     * and its `data-type` is `variable`. The parts render in source order, as
+     * the PHP reader renders them. A null default adds `null`, and Notation
+     * renders it the way PHP writes `?string`.
      */
     private function parameterType(AstNode $parameter): string
     {
+        $parts = [];
+        foreach ($parameter->section('data-types') as $entry) {
+            $parts[] = $entry->node('cast')?->text('value')
+                ?? $this->zephirType($entry->text('data-type') ?? 'var');
+        }
+
         $cast = $parameter->node('cast')?->text('value');
         if ($cast !== null) {
             $type = $cast;
+        } elseif ($parts !== []) {
+            $type = implode('|', $parts);
         } else {
             $type = $this->zephirType($parameter->text('data-type') ?? 'var');
         }

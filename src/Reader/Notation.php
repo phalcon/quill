@@ -72,9 +72,9 @@ final class Notation
     }
 
     /**
-     * Zephir cannot write a union on a property or a parameter, so a typed one
-     * defaulting to null is how it says `?T`. Both readers render that as
-     * `T|null`. `mixed` already admits null and is left alone.
+     * Zephir cannot write a union on a property, so a typed one defaulting to
+     * null is how it says `?T`. A parameter does the same. Both readers render
+     * that as `T|null`. `mixed` already admits null and is left alone.
      */
     public static function nullable(string $type): string
     {
@@ -84,11 +84,12 @@ final class Notation
     /**
      * A string default given as its value rather than its source text, which is
      * what php-parser hands back. The escapes go back on here so both readers
-     * write the same thing.
+     * write the same thing. A control character also gets its escape, as
+     * `"\n"` in the source.
      */
     public static function string(string $value): string
     {
-        return self::escapedString(addcslashes($value, "\"\\"));
+        return self::escapedString(addcslashes($value, "\"\\\0..\37"));
     }
 
     /**
