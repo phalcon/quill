@@ -55,4 +55,15 @@ class Shapes
         mixed $computed = 1 + 2
     ): void {
     }
+
+    public function expressions(
+        int $flags = ENT_QUOTES | ENT_SUBSTITUTE,
+        int $options = JSON_HEX_TAG
+            | JSON_HEX_APOS
+            | JSON_HEX_QUOT,
+        int $partial = ENT_QUOTES | (1 + 2),
+        Shapes $instance = new Shapes('plain', open: 1),
+        string $delimiter = "\n"
+    ): void {
+    }
 }

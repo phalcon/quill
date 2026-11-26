@@ -51,4 +51,10 @@ class Subject
     {
         return $factor;
     }
+
+    // A union parameter, and a string default with a control character.
+    public function separate(int|string $key, string $delimiter = "\n"): string
+    {
+        return $delimiter;
+    }
 }

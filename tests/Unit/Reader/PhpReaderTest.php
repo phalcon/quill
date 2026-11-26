@@ -83,6 +83,28 @@ final class PhpReaderTest extends TestCase
         $this->assertSame(Keyword::Trait, $this->definition('Phalcon\\Sample\\Marker')->structure->keyword);
     }
 
+    public function testBitwiseOrNewAndControlCharacterDefaultsRender(): void
+    {
+        $methods = [];
+        foreach ($this->definition('Phalcon\\Sample\\Shapes')->members->methods->all() as $method) {
+            $methods[$method->name] = $method;
+        }
+
+        $defaults = [];
+        foreach ($methods['expressions']->parameters->all() as $parameter) {
+            $defaults[$parameter->name] = $parameter->default;
+        }
+
+        $this->assertSame('ENT_QUOTES | ENT_SUBSTITUTE', $defaults['flags']);
+        // A default on more than one line renders on one line.
+        $this->assertSame('JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT', $defaults['options']);
+        // A part that cannot be rendered leaves the full default unrendered.
+        $this->assertNull($defaults['partial']);
+        $this->assertSame('new Shapes("plain", open: 1)', $defaults['instance']);
+        // The escape goes back on, as the Zephir reader keeps it from the source.
+        $this->assertSame('"\n"', $defaults['delimiter']);
+    }
+
     public function testConstantsCarryTheirRenderedDefault(): void
     {
         $constant = $this->sample()->members->constants->all()[0];
